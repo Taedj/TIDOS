@@ -20,6 +20,7 @@ TIDOS/
 │   ├── installation.md                # Multi-mode installation guide
 │   ├── upgrade.md                     # Version upgrade procedures
 │   ├── cli_spec.md                    # Future CLI specification
+│   ├── chora_session.md                 # CHORA human-bridge operator guide
 │   ├── architecture_review.md         # Enterprise architecture review
 │   ├── repository_tree.md             # This file
 │   ├── dependency_diagram.md          # Dependency/relationship map
@@ -48,6 +49,8 @@ TIDOS/
 │   ├── workflow_engine.md             # 10-stage execution workflow
 │   ├── quality_engine.md              # 8-dimensional quality gates
 │   ├── memory_engine.md               # 4-tier memory persistence
+│   ├── chora_trigger_engine.md        # CHORA entry/escalation layer
+│   ├── chora_session_engine.md        # CHORA consultation session layer
 │   ├── learning_engine.md             # RCA & lesson extraction
 │   ├── research_engine.md             # 4-factor research analysis
 │   └── plugin_engine.md               # Plugin matching & mounting
@@ -84,6 +87,11 @@ TIDOS/
 │   ├── quality_report.md              # Quality audit scorecard
 │   ├── release_checklist.md           # Pre-deployment sign-off
 │   ├── known_issues.md                # Defect registry
+│   ├── chora_trigger_report.md          # CHORA trigger evaluation report
+│   ├── chora_session.md                 # CHORA session record
+│   ├── chora_response.md                # CHORA advisor response envelope
+│   ├── chora_claims.md                  # CHORA claims + verification
+│   ├── chora_synthesis.md               # CHORA comparison + synthesis
 │   └── pattern_library.md             # Reusable patterns
 │
 ├── plugins/                           # Technology Specialization Plugins
@@ -108,7 +116,10 @@ TIDOS/
 │   └── figma.md                       # Design tokens
 │
 ├── prompts/                           # System Prompt Scaffolds
-│   └── README.md
+│   ├── README.md
+│   └── chora/                         # CHORA advisor prompt pack
+│       ├── advisor_base.md            # Locked per-advisor scaffold
+│       └── perspectives.md            # Seven complementary lenses
 │
 ├── memory/                            # User Intelligence Layer
 │   ├── README.md
@@ -138,6 +149,8 @@ TIDOS/
 │
 ├── scripts/                           # Helper Scripts
 │   ├── README.md
+│   ├── verify_chora_trigger.ps1         # Trigger harness (21 checks)
+│   ├── verify_chora_session.ps1         # Session structural validator
 │   ├── install.sh                     # Linux/macOS installer (NEW)
 │   └── install.ps1                    # Windows installer (NEW)
 │

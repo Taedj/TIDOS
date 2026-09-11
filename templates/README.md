@@ -1,6 +1,6 @@
 # TIDOS Reusable Document Templates (`templates/`)
 
-The `templates/` directory contains 13 protected, reusable Markdown document templates for TIDOS (v3.0).
+The `templates/` directory contains 18 protected, reusable Markdown document templates for TIDOS (v3.0).
 
 ---
 
@@ -19,6 +19,11 @@ The `templates/` directory contains 13 protected, reusable Markdown document tem
 - [release_checklist.md](file:///d:/work/Dev/TIDOS/templates/release_checklist.md): Pre-deployment sign-off checklist template.
 - [known_issues.md](file:///d:/work/Dev/TIDOS/templates/known_issues.md): Defect and technical debt registry template.
 - [pattern_library.md](file:///d:/work/Dev/TIDOS/templates/pattern_library.md): Reusable code pattern template.
+- [chora_trigger_report.md](file:///d:/work/Dev/TIDOS/templates/chora_trigger_report.md): CHORA Trigger evaluation report template with machine-readable decision block, signals, user action, and outcome.
+- [chora_session.md](file:///d:/work/Dev/TIDOS/templates/chora_session.md): CHORA Session instance record (locked scope, advisors, links).
+- [chora_response.md](file:///d:/work/Dev/TIDOS/templates/chora_response.md): Advisor raw-response envelope with provenance and intake notes.
+- [chora_claims.md](file:///d:/work/Dev/TIDOS/templates/chora_claims.md): Claim table with kind, authority, method, result, and PENDING/VERIFIED/REJECTED/UNVERIFIABLE/SUPERSEDED status.
+- [chora_synthesis.md](file:///d:/work/Dev/TIDOS/templates/chora_synthesis.md): Comparison, TIDOS synthesis/decision, validation plan, and outcome digest.
 
 ---
 
