@@ -1,10 +1,10 @@
 # Version
 
-**Current Version**: 3.0.0
-**Release Date**: 2026-07-28
+**Current Version**: 3.2.0
+**Release Date**: 2026-09-11
 **Status**: Production Ready
 
-**Codename**: GitHub Release & Multi-Project Ecosystem
+**Codename**: CHORA Robustness
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

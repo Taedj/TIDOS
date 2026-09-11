@@ -16,9 +16,9 @@ repository:
 
 ```yaml
 version:
-  current: 3.0.0
-  codename: Centralized GitHub Operating System
-  release_date: 2026-07-28
+  current: 3.2.0
+  codename: CHORA Robustness
+  release_date: 2026-09-11
 ```
 
 ## CHORA Trigger Engine
@@ -47,6 +47,23 @@ chora:
     human_bridge: true
     no_external_apis: true
     persist_under: memory/
+    channel:
+      enabled: true
+      default_mode: chat-channel
+      legacy_templates_deprecated: true
+      reply_format: single-md-box
+      context: minimal-pointers
+      validation:
+        require_direction: true
+        require_name: true
+        single_box_only: true
+        reject_on_authority_override: true
+        reject_on_instruction_override: true
+      limits:
+        max_turn_chars: 8000
+        max_receipt_chars: 12000
+        max_turns_per_round: 12
+        overflow_policy: truncate-and-summarize
 ```
 
 ## Usage

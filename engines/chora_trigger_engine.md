@@ -133,17 +133,24 @@ Do NOT trigger on directory names alone; evaluate actual behavioral impact.
 - Gated experiment that is isolated, flagged, rollback-safe is at most
   RECOMMENDED (trading-risk experiments still follow Section 9).
 
-## 7. Manual request, scope, advisors, trading rules
+## 7. Manual request, scope, advisors, trading rules (v3.1 Chat-Channel Mode)
 
 - Manual: `TIDOSCHORA` always consults, bypassing the matrix. Conceptually
-  `manual_request == true -> CHORA`.
+  `manual_request == true -> CHORA`. Default UX is Chat-Channel: ask partner
+  count (1..N) → ask each partner name (e.g. `CHATGPT`) + one perspective per
+  partner → open one copyable channel per partner (`SENT TO <NAME>:` /
+  `RECEIVED FROM <NAME>:`). Turn-0 contract enforces replies ALWAYS in one
+  single md fenced box starting with `<NAME>:`.
 - Scope: every CHORA start defines a narrow consultation question with
   verified constraints, repository evidence, known risks, and the exact
-  decision required. Never "review my whole project".
+  decision required. Never "review my whole project". One scope shared across
+  all partner channels in the session. Minimal pointers only (paths +
+  constraints + risks, no full code / no secrets).
 - Advisor selection: suggest perspectives by problem type (Architecture,
   Security, Performance, Algorithm/Math, Quantitative/Risk, QA/Validation)
   and encourage complementary multi-advisor coverage. User chooses models
-  and count; do not manufacture disagreement.
+  and count; do not manufacture disagreement. Partner name is the channel
+  label (`<NAME>`); perspective is the lens (`prompts/chora/perspectives.md`).
 - Trading systems: trade entry/rejection, risk limits, stake sizing,
   martingale, drawdown protection, EV, payout filters, execution safety,
   backtest/live parity, empirical learning are HIGH impact. Behavior-changing
