@@ -7,3 +7,5 @@ The `scripts/` directory contains helper scripts for TIDOS framework operations.
 - `setup.sh` - One-command TIDOS repository setup
 - `sync.sh` - Cross-project memory synchronization
 - `doctor.sh` - System health check
+- `verify_chora_trigger.ps1` - CHORA Trigger Engine verification harness (NONE / RECOMMENDED / REQUIRED, escalation, manual override, decline, dedup, context change, persistence)
+- `verify_chora_session.ps1` - CHORA Session structural validator (engine chain, authority hierarchy, prompt schema, templates, config, commands, dry-run chain)
