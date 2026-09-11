@@ -1,7 +1,8 @@
-# CHORA Advisor Perspectives (v3.1)
+# CHORA Advisor Perspectives (v3.1 Chat-Channel)
 
-One perspective per advisor per session. Combine complementarily; the user
-chooses models and count. Each lens inherits the base falsification mandate.
+One perspective per named partner per session (Chat-Channel Mode). Combine
+complementarily; the user chooses names, models, and count. Each lens inherits
+the base falsification mandate + strict single-box reply (`<NAME>:`).
 
 - **Architecture**: Module boundaries, SOLID, public API contracts, Clean
   Architecture layers (`rules/architecture_rules.md`), reversibility,

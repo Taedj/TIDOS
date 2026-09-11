@@ -4,6 +4,35 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [3.2.0] - 2026-09-11
+
+### Added
+- **Channel validation**: `SENT TO <NAME>:` + `[TIDOS:` and `RECEIVED FROM <NAME>:` + single `<NAME>:` box enforced; missing name/direction → `MALFORMED` before claims (`engines/chora_session_engine.md` Sec 8).
+- **Untrusted boundary**: RECEIVED is data-only; authority/governance override + embedded execute attempts → `REJECTED`; never executed.
+- **Bloat control**: bounded ledger `templates/chora_session.md` §4; limits `max_turn_chars: 8000`, `max_receipt_chars: 12000`, `max_turns_per_round: 12`, overflow `truncate-and-summarize`.
+- **Validator coverage**: `verify_chora_session.ps1` 34→44 (8 deterministic v3.2 tests: valid SENT/RECEIVED, missing name, malformed direction, oversize, embedded instruction, authority override, zero-secret).
+
+### Verified
+- `verify_chora_session.ps1` 44/44 PASS, `verify_chora_trigger.ps1` 21/21 PASS. Decision via CHORA `chora-20260911-002` (CHATGPT).
+
+---
+
+## [3.1.0] - 2026-09-11
+
+### Added
+- **TIDOSCHORA Chat-Channel Mode (default)**: bare `TIDOSCHORA` asks partner count → names (e.g. `CHATGPT`) + perspective → opens copyable `SENT TO <NAME>:` / `RECEIVED FROM <NAME>:` channels. Turn-0 contract enforces single-md-box replies (`<NAME>:`), minimal pointers, zero secrets.
+- **`config/framework.md` `chora.session.channel`**: `enabled/default_mode/reply_format/context` flags.
+- **Validator coverage**: `verify_chora_session.ps1` now asserts channel markers (`SENT TO`, `RECEIVED FROM`, `Partner name`, `Channel`) alongside legacy markers.
+
+### Changed
+- `engines/chora_trigger_engine.md` Sec 7, `engines/chora_session_engine.md` Sec 4-5, `docs/chora_session.md`, `commands/session_commands.md`, `prompts/chora/advisor_base.md`, `prompts/chora/perspectives.md`, `templates/chora_session.md`, `templates/chora_response.md` migrated to channel default.
+- Legacy `templates/chora_response.md` envelope retained as deprecated compat path (verified claims-only synthesis, authority hierarchy, `max_rounds: 2` unchanged).
+
+### Verified
+- `verify_chora_session.ps1` + `verify_chora_trigger.ps1` green. Decision via CHORA `chora-20260911-001` (4 claims VERIFIED: C4/C6/C7/C8).
+
+---
+
 ## [3.0.0] - 2026-07-28
 
 ### Added
