@@ -5,6 +5,7 @@ Firebase-based authentication for the TIDOS framework: users authenticate with *
 
 **Canonical config**: `config/firebase.md` (project `tidos-framework`).
 **Helpers**: `scripts/auth_verify.ps1` (Windows), `scripts/auth_verify.sh` (Linux/macOS, requires `jq` + `curl`).
+**Boot gate**: mandatory Step 0.5 — see `TIDSTART.md`.
 
 ---
 
@@ -51,13 +52,29 @@ FIREBASE_API_KEY=AIzaSyDzbyda_7ygLaWtqjLZtiHrqSd0b_CYBQk
 
 ## 4. Usage
 
-### Email/password sign-in
+### Mandatory Auth Gate (START TIDOS Step 0.5)
+
+Signature desired. On every boot, `auth_verify.ps1/.sh -Session` restores the saved session (remember-me,
+refresh token from `~/.tidos`, validated against Firebase). exit 0 = authenticated, boot proceeds; exit 1 =
+**block boot** and ask the user to **Login** (existing account) or **Register** (new account + verification
+email); exit 2 or network failure = warn and continue (auth never hard-blocks when Firebase is unreachable
+or `FIREBASE_API_KEY` is unset).
+
+### Sign in / create account
 
 ```powershell
 .\scripts\auth_verify.ps1 -Login -Email user@example.com -Password '****'
+.\scripts\auth_verify.ps1 -Register -Email user@example.com -Password '****'
 ```
 
-### Verify a settled ID token
+### Validate saved session / clear it
+
+```powershell
+.\scripts\auth_verify.ps1 -Session     # remember-me check (used by boot gate)
+.\scripts\auth_verify.ps1 -Logout      # delete ~\.tidos\tidos-session.json
+```
+
+### Verify a settled (foreign) ID token
 
 ```powershell
 .\scripts\auth_verify.ps1 -Verify $env:TIDOS_ID_TOKEN
@@ -66,10 +83,19 @@ FIREBASE_API_KEY=AIzaSyDzbyda_7ygLaWtqjLZtiHrqSd0b_CYBQk
 ### In AI-agent workflows (TIDOS gateway pattern)
 
 1. The user signs in via FirebaseUI (web/mobile) or the helpers above and supplies an **ID token**.
-2. The TIDOS agent verifies the token (`auth_verify` → exit 0 + uid/email) **before**
+2. The TIDOS agent verifies the token (`auth_verify -Verify` → exit 0 + uid/email) **before**
    privileged operations (`TIDOS AUTH` directive — see `commands/session_commands.md`).
 3. The token is treated as untrusted, never logged, and its `uid`/`email` is attributed to session state.
-4. Sessions can additionally be gated locally (offline) — the framework NEVER requires Firebase at boot.
+4. Sessions can additionally be gated locally (offline) — the framework NEVER requires Firebase reachability at boot.
+
+## 4b. Session Storage & Security
+
+## 4b. Session Storage & Security
+
+- The refresh token lives in `~/.tidos/tidos-session.json` (OS user profile — **outside any repository**, chmod 600 on Unix, never committed; there is no `.gitignore` needed and the repo never contains it).
+- `idToken` is refreshed and re-persisted on each `-Session`; tokens are never printed by helpers.
+- `scripts/auth_verify.ps1` stores the session in `$HOME\.tidos\tidos-session.json`; the bash variant in `$HOME/.tidos/tidos-session.json`.
+- Clear any machine-level session with `auth_verify -Logout` or `TIDOS AUTH logout`.
 
 ## 5. Security Rules
 

@@ -22,7 +22,18 @@ graph TD
 
 ### Step 0: Update Gate (mandatory, runs before the checklist)
 
-Before step 1, force-sync TIDOS with GitHub: run `scripts/update.ps1` (Windows) or `scripts/update.sh` (Linux/macOS) against the TIDOS checkout (`.tidos/`, multi-root folder, or central repo). The gate fetch-compares `HEAD` against the remote and `reset --hard` to it when behind, then boot proceeds on the synced version. Safety rules: ABORT (never wipe) on uncommitted `memory/`/`evolution/` changes or unpushed commits — commit/push first, then re-run; NEVER block boot when GitHub is unreachable or no `.git` exists — warn and continue on the local version. Record the before→after version in the Startup Report. (Optional, if Firebase is configured: `TIDOS AUTH status` — see `docs/firebase_auth.md`. Auth never blocks boot.)
+Before step 1, force-sync TIDOS with GitHub: run `scripts/update.ps1` (Windows) or `scripts/update.sh` (Linux/macOS) against the TIDOS checkout (`.tidos/`, multi-root folder, or central repo). The gate fetch-compares `HEAD` against the remote and `reset --hard` to it when behind, then boot proceeds on the synced version. Safety rules: ABORT (never wipe) on uncommitted `memory/`/`evolution/` changes or unpushed commits — commit/push first, then re-run; NEVER block boot when GitHub is unreachable or no `.git` exists — warn and continue on the local version. Record the before→after version in the Startup Report.
+
+### Step 0.5: Authentication Gate (mandatory, Firebase-enabled instances)
+
+TIDOS requires the user to be authenticated before any work proceeds (project `tidos-framework`, see `docs/firebase_auth.md`).
+
+1. Run `scripts/auth_verify.ps1 -Session` (Windows) or `scripts/auth_verify.sh -Session` (Linux/macOS).
+   - **Exit 0** → session validated (remember-me). Announce `Authenticated: <email>` in the Startup Report and proceed.
+   - **Exit 1** → user is NOT authenticated. **BLOCK BOOT** and ask the user to sign in: `Login` (email + password) or `Register` (create account; verification email sent). Run the corresponding helper with the user's credentials, then re-run `-Session`. Loop until exit 0 or the user reports offline/unconfigured.
+   - **Exit 2 or network error** (FIREBASE_API_KEY missing / Firebase unreachable) → warn "Authentication unavailable (configured check failed)" and CONTINUE on the local version — auth never hard-blocks boot when the backend is unreachable or unconfigured.
+2. The user may end the session at any time with `TIDOS AUTH logout` (clears the saved refresh token in `~/.tidos`, outside the repo).
+3. Record auth status in the Startup Report: `Authenticated: <email>` or `Authentication: unauthenticated/offline`.
 
 ### Mandatory Subsystem Checklist
 - [ ] **1. OS Core**: Read [core/kernel.md](file:///d:/work/Dev/TIDOS/core/kernel.md) (Protected OS Freeze invariant).
