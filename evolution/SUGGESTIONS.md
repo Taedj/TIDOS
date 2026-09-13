@@ -136,3 +136,19 @@ RECEIVED FROM <NAME> — paste below:
 - **Recommended Version**: 3.3.0 (MINOR — additive, backward compatible)
 - **Acceptance**: routing matrix green (sample requests → expected persona, incl. override + ambiguous-ask cases); activation announcement present; manual keywords unaffected.
 - **Status**: PROPOSED 2026-09-13. Awaiting explicit user approval before implementation. Note: TIDOSUIUX change set still uncommitted; router builds on working tree.
+
+---
+
+### Title: TIDOS Update Gate (update-on-start with memory-safe force)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit update-system request; safety variant: memory-safe force)
+- **Reason**: `START TIDOS` documents only a plain `git pull` in `.tidos` — no force, no version check, no offline handling, submodule-mode only. User wants every session to force-sync with GitHub before work begins.
+- **Proposed behavior (Step 0, before the 9-step boot)**: locate TIDOS (`.tidos` → central/multi-root dir → local copy) → `git fetch` + compare `HEAD` vs remote → behind: memory-safety check then `git reset --hard` → report before→after version in Startup Report → boot. Rules: abort (never wipe) on uncommitted `memory/`/`evolution/` changes; never block boot when network/remote unreachable (warn + continue local); local-copy mode (no `.git`) skips with warning.
+- **Benefits**: Every project always works on current TIDOS; deterministic startup version reporting; zero silent loss of institutional memory.
+- **Risks**: Force-sync discards uncommitted OS-file edits (intended — central is source of truth); `reset --hard` briefly disrupts concurrent edits (mitigated: run at session start only).
+- **Priority**: High
+- **Affected Modules**: `scripts/update.ps1` + `scripts/update.sh` (NEW, non-protected dir), `commands/session_commands.md` (`START TIDOS` bullet), `TIDSTART.md` (Step 0 note), `scripts/README.md` (index)
+- **Recommended Version**: 3.3.0 (MINOR — additive gate, backward compatible)
+- **Acceptance**: already-current / behind-updated / uncommitted-memory-blocked / offline-continue paths verified; Startup Report shows version transition.
+- **Status**: Implemented locally 2026-09-13 via explicit user approval (safety variant + wiring both approved). Live-tested already-current path (`8c29e0d`, exit 0). UNCOMMITTED — commit only on separate explicit authorization.

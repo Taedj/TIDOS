@@ -5,7 +5,7 @@ This document defines standard directives and session triggers understood by AI 
 ---
 
 ## 1. Startup & Synchronization Directives
-- **`START TIDOS` / `Mount TIDOS` / `Load TIDOS`**: Triggers automatic TIDOS sync from GitHub (`cd .tidos && git pull`), then executes the full 9-step boot sequence, hydrates core, engines, rules, user profile, and outputs Startup Report.
+- **`START TIDOS` / `Mount TIDOS` / `Load TIDOS`**: Step 0 Update Gate first (`scripts/update.ps1` on Windows, `scripts/update.sh` on Linux/macOS — fetch + memory-safe force-sync to remote, abort on uncommitted `memory/`/`evolution/` or unpushed commits, never block when offline), reporting before→after version. Then executes the full 9-step boot sequence, hydrates core, engines, rules, user profile, and outputs Startup Report.
 - **`Upgrade TIDOS` / `Update TIDOS`**: Triggers explicit version upgrade workflow, applying queued proposals from `evolution/APPROVED.md` to system files and incrementing SemVer tag in `VERSION.md`.
 
 ---
