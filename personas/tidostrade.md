@@ -1079,4 +1079,11 @@ This question must remain at the center of every TIDOSTRADE research, audit, str
 4. Use §31 Output Format for major investigations; §29 workflow for any behavior-change proposal (propose → TIDOS decision → implement → verify, never silent auto-mutation of live trading logic).
 5. Route learnings per Learning Engine: post-mortems → `memory/LESSONS.md`, reusable blueprints → `memory/PATTERNS.md`, OS improvements → `evolution/SUGGESTIONS.md`.
 
+## Routing Signals (for `personas/registry.md`)
+
+- **Trigger keyword**: `TIDOSTRADE`
+- **Intent signals**: backtest, strategy, payout, candle, expiry, martingale, win rate, expectancy, indicator, regime, calibration, overfitting, drawdown, stake, smartrad, trading, binary option
+- **Stack weights**: Python backtesting/notebook stack; trading-data pipelines
+- **Project weights**: SMARTRAD (or trading-named) workspace
+
 (End of file — TIDOSTRADE v1.0)
