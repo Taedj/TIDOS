@@ -152,3 +152,18 @@ RECEIVED FROM <NAME> — paste below:
 - **Recommended Version**: 3.3.0 (MINOR — additive gate, backward compatible)
 - **Acceptance**: already-current / behind-updated / uncommitted-memory-blocked / offline-continue paths verified; Startup Report shows version transition.
 - **Status**: Implemented locally 2026-09-13 via explicit user approval (safety variant + wiring both approved). Live-tested already-current path (`8c29e0d`, exit 0). UNCOMMITTED — commit only on separate explicit authorization.
+
+---
+
+### Title: TIDOS Framework Firebase Auth (Google Sign-In + Email/Password)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit; authorized full Firebase actions)
+- **Reason**: TIDOS needs first-party authentication for its users across projects. Firebase project `tidos-framework` created via CLI; providers Google + email/password.
+- **Delivered**: `config/firebase.md` (canonical project/app metadata — public web config only), `scripts/auth_verify.ps1` + `scripts/auth_verify.sh` (REST: sign-in, token verify, status), `docs/firebase_auth.md` (setup, security, troubleshooting), `TIDOS AUTH` directive (`commands/session_commands.md`), optional Step 0 note (`TIDSTART.md`).
+- **Blocker (external)**: Firebase provisions a fresh project's Auth service + enables providers only from the console — no CLI/API equivalent exists, `gcloud` absent, `login:ci` needs a browser. Exact console steps are documented in `docs/firebase_auth.md` §2 (get-started → enable Email/Password → enable Google).
+- **Risks**: Public web API key in repo is safe by design (client-side); service-account/OAuth secrets stay in `.env`/vault. Tokens are untrusted + never logged. Auth never blocks offline boot.
+- **Priority**: High
+- **Affected Modules**: `config/firebase.md`, `scripts/auth_verify.ps1`, `scripts/auth_verify.sh`, `docs/firebase_auth.md`, `commands/session_commands.md`, `TIDSTART.md`
+- **Recommended Version**: 3.3.0 (MINOR)
+- **Status**: Framework integration implemented locally 2026-09-13. Console enable pending (user browser action). UNCOMMITTED — commit only on separate explicit authorization.
