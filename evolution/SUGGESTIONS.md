@@ -101,3 +101,38 @@ RECEIVED FROM <NAME> — paste below:
 - **Affected Modules**: `personas/tidostrade.md` (NEW), `personas/README.md` (index), `commands/session_commands.md` (trigger registration)
 - **Recommended Version**: 3.3.0 (MINOR — additive persona, no breaking change)
 - **Status**: Implemented 2026-09-13 via explicit user-commanded upgrade (Protected OS Freeze override authorized by user request).
+
+---
+
+### Title: TIDOSUIUX Persona (Universal UI/UX, Product Design & Interface Engineering)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit `TIDOSUIUX` creation handoff; NO commit authorized)
+- **Reason**: TIDOS needs a domain-agnostic, reusable UI/UX specialist persona (UX research, interaction design, design systems, accessibility, responsive/adaptive, UI engineering incl. Flutter/web/desktop) invocable via `TIDOSUIUX`, operating under TIDOS final authority.
+- **Benefits**: Standardized audit lifecycle (DISCOVER→VERIFY); screen-by-screen analysis discipline; design-decision quality gate (problem/evidence/impact/trade-off/confidence); alternatives with migration risk; governed implementation control (no silent changes to business logic/security/data/APIs).
+- **Risks**: Subjective redesign churn; fabricated usability/accessibility claims. Mitigated by §§13/20 (evidence + confidence levels, anti-patterns) and §22 implementation control.
+- **Priority**: High
+- **Affected Modules**: `personas/tidosuiux.md` (NEW), `personas/README.md` (index), `commands/session_commands.md` (trigger registration)
+- **Recommended Version**: 3.3.0 (MINOR — additive persona, no breaking change)
+- **Status**: Implemented locally 2026-09-13; UNCOMMITTED per explicit handoff governance (§§1, 26–27). Commit only on separate explicit authorization.
+
+---
+
+### Title: TIDOS Persona Router (smart auto-selection of personas)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit choice: Auto-router)
+- **Reason**: Persona selection is 100% manual keyword today (`TIDOSTRADE`, `TIDOSUIUX`). User wants TIDOS to smartly use the right persona in any mounted project. Precedent: Plugin Engine already auto-mounts `plugins/*.md` from Bootstrap stack detection — personas have no equivalent.
+- **Proposed behavior**:
+  1. Explicit keyword always wins (user override; backward compatible).
+  2. Otherwise score each persona from a registry (`personas/registry.md`): request intent signals + Bootstrap stack detection + target project context (e.g., SMARTRAD workspace weights trading signals).
+  3. Score above threshold → auto-activate + announce (`TIDOS persona active: <NAME> — <reason>.`).
+  4. Score below threshold / tie → ask user (suggest-only fallback).
+  5. Initial signal map: trading/backtest/strategy/payout/candle → TIDOSTRADE; UI/UX/design/accessibility/screen/layout/responsive → TIDOSUIUX; else `roles.md` specialists via workflow Stage 4.
+- **Benefits**: Zero-friction persona use in every mounted project; deterministic and auditable (scores + reasons announced); manual keywords keep working.
+- **Risks**: Mis-routing (mitigated: announcement + explicit override + ask-on-ambiguity); registry drift as personas are added (mitigated: each persona spec declares its own `## Routing Signals` block); protected-file edits (mitigated: additive only, evolution workflow with explicit approval).
+- **Priority**: High
+- **Affected Modules**: `personas/registry.md` (NEW), `engines/workflow_engine.md` (Stage 2/Stage 4 routing step, additive), `commands/session_commands.md` (auto-route directive, additive), `personas/tidostrade.md` + `personas/tidosuiux.md` (`## Routing Signals` blocks, additive). No kernel/rules/roles changes.
+- **Recommended Version**: 3.3.0 (MINOR — additive, backward compatible)
+- **Acceptance**: routing matrix green (sample requests → expected persona, incl. override + ambiguous-ask cases); activation announcement present; manual keywords unaffected.
+- **Status**: PROPOSED 2026-09-13. Awaiting explicit user approval before implementation. Note: TIDOSUIUX change set still uncommitted; router builds on working tree.
