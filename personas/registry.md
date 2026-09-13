@@ -56,4 +56,14 @@
 
 Every new persona spec MUST include a `## Routing Signals` block (trigger keyword + intent signals + stack/project weights) and a matching row in Section 2 above. Removing a persona MUST remove its row. Registry edits are additive and backward compatible — manual keywords keep working regardless of registry state.
 
-(End of file — Persona Registry v1.0)
+## 5. Persona Factory (auto-generated personas)
+
+Rows may also be added by the **Persona Factory** (`engines/persona_factory_engine.md`) when a stack-gap or recurring-domain signal (>= 2 sources) has no active coverage — granted OS Freeze exception (2026-09-13). Factory conventions:
+
+- **New-file only**: the factory creates `personas/tidos<domain>.md`; it never edits or deletes existing personas or rows.
+- **One row + one evolution entry** per generated persona, committed + pushed to `origin/main` via `scripts/factory_sync.ps1/.sh`.
+- **Trigger keyword** is always the bare persona name (`TIDOS<DOMAIN>`, e.g. `TIDOSDEVX`); manual keywords override the router.
+- Auto-synced personas are advisory specialist personas under the same governance as hand-made ones (TIDOS remains final authority).
+- Diagnostic command: `TIDOS PERSONA FACTORY` (scan + generate + sync), `STOP FACTORY` (suspend for the boot).
+
+(End of file — Persona Registry v1.0 + Factory v1.0)

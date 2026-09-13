@@ -66,6 +66,22 @@ chora:
         overflow_policy: truncate-and-summarize
 ```
 
+## Persona Factory (self-learning persona generation)
+
+```yaml
+persona_factory:
+  enabled: true
+  os_freeze_exception: approved  # user-granted 2026-09-13: NEW personas in personas/ only
+  new_files_only: true           # never edit/delete existing personas
+  triggers:
+    stack_gap: true              # uncovered stack seen across >= 2 sessions
+    domain_recurrence: true      # domain vocab recurs across >= 2 user requests, no active coverage
+  depth_threshold: 2             # sessions/sources needed before generation
+  one_run_per_boot: true
+  auto_sync: true                # factory_sync commits persona+registry+evolution, pushes to main
+  auto_sync_force: false         # NEVER force-push
+```
+
 ## Usage
 
 Reference the URL in documentation as:
