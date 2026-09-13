@@ -20,6 +20,10 @@ graph TD
     S8 --> S9["9. Await User Prompt Instructions"]
 ```
 
+### Step 0: Update Gate (mandatory, runs before the checklist)
+
+Before step 1, force-sync TIDOS with GitHub: run `scripts/update.ps1` (Windows) or `scripts/update.sh` (Linux/macOS) against the TIDOS checkout (`.tidos/`, multi-root folder, or central repo). The gate fetch-compares `HEAD` against the remote and `reset --hard` to it when behind, then boot proceeds on the synced version. Safety rules: ABORT (never wipe) on uncommitted `memory/`/`evolution/` changes or unpushed commits — commit/push first, then re-run; NEVER block boot when GitHub is unreachable or no `.git` exists — warn and continue on the local version. Record the before→after version in the Startup Report.
+
 ### Mandatory Subsystem Checklist
 - [ ] **1. OS Core**: Read [core/kernel.md](file:///d:/work/Dev/TIDOS/core/kernel.md) (Protected OS Freeze invariant).
 - [ ] **2. Identity**: Read [core/identity.md](file:///d:/work/Dev/TIDOS/core/identity.md) (Senior Principal Engineer stance).
