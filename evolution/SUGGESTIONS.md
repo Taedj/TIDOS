@@ -167,3 +167,18 @@ RECEIVED FROM <NAME> — paste below:
 - **Affected Modules**: `config/firebase.md`, `scripts/auth_verify.ps1`, `scripts/auth_verify.sh`, `docs/firebase_auth.md`, `commands/session_commands.md`, `TIDSTART.md`
 - **Recommended Version**: 3.3.0 (MINOR)
 - **Status**: Framework integration implemented locally 2026-09-13. Console enable pending (user browser action). UNCOMMITTED — commit only on separate explicit authorization.
+
+**Update 2026-09-13 (committed `953ce67`, then extended)**: Console steps completed (Email/Password verified live via `INVALID_LOGIN_CREDENTIALS`). Per user feature request, auth is now a **MANDATORY boot gate** (TIDSTART.md Step 0.5): `-Session` remember-me check; exit 1 blocks boot and the user must **Login** or **Register** (email/password only, in-session, min 6-char password); verification email auto-sent; refresh token persisted to `~/.tidos/tidos-session.json` (outside repo, never committed); `-Logout` clears it; exit 2/network failure warns and continues (auth never hard-blocks when Firebase unreachable/unconfigured). UNCOMMITTED — commit only on separate explicit authorization.
+
+---
+
+### Title: TIDOSHELP (always-on command list menu)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit: "always when we write TIDOSHELP give me all the command list with explanations to choose between them")
+- **Behavior**: `TIDOSHELP` → always output EVERY directive from `commands/session_commands.md`, grouped (Startup / Execution), each with a one-line explanation, then ask the user which to execute. Treated as a selection menu, never as a work task.
+- **Deliverable**: `# Section 0: Help & Command Selection` added to `commands/session_commands.md`.
+- **Protected File Note**: `commands/` is OS-protected; this additive directive was written per explicit user request.
+- **Priority**: High
+- **Recommended Version**: 3.3.0 (MINOR)
+- **Status**: Implemented locally 2026-09-13. UNCOMMITTED — commit only on separate explicit authorization.

@@ -4,6 +4,9 @@ This document defines standard directives and session triggers understood by AI 
 
 ---
 
+## 0. Help & Command Selection
+- **`TIDOSHELP`**: Always outputs the complete TIDOS command list with one-line explanations so the user can choose what to run next. On trigger, present EVERY directive below grouped by section (Startup / Execution), then ask the user which one to execute. The help output is a selection menu, not a work task.
+
 ## 1. Startup & Synchronization Directives
 - **`START TIDOS` / `Mount TIDOS` / `Load TIDOS`**: Step 0 Update Gate first (`scripts/update.ps1` on Windows, `scripts/update.sh` on Linux/macOS — fetch + memory-safe force-sync to remote, abort on uncommitted `memory/`/`evolution/` or unpushed commits, never block when offline), reporting before→after version. Then executes the full 9-step boot sequence, hydrates core, engines, rules, user profile, and outputs Startup Report.
 - **`Upgrade TIDOS` / `Update TIDOS`**: Triggers explicit version upgrade workflow, applying queued proposals from `evolution/APPROVED.md` to system files and incrementing SemVer tag in `VERSION.md`.
@@ -11,7 +14,7 @@ This document defines standard directives and session triggers understood by AI 
 ---
 
 ## 2. Execution Directives
-- **`TIDOS AUTH`**: Firebase authentication directive (`docs/firebase_auth.md`, project `config/firebase.md`). `TIDOS AUTH verify <idToken>` → runs `scripts/auth_verify.ps1/.sh -Verify` and, on exit 0, attributes the verified `uid`/`email` to the session. `TIDOS AUTH login` → email/password sign-in helper. `TIDOS AUTH status` → self-check. Tokens are never logged; auth never blocks offline operation.
+- **`TIDOS AUTH`**: Firebase authentication directive (`docs/firebase_auth.md`, project `config/firebase.md`). Mandatory at boot (Step 0.5, `TIDSTART.md`): `TIDOS AUTH session` → `auth_verify.ps1/.sh -Session` (remember-me check; exit 1 blocks boot and requires Login/Register). `TIDOS AUTH login` → email/password sign-in. `TIDOS AUTH register` → create account (+ verification email). `TIDOS AUTH verify <idToken>` → verify a foreign ID token and attribute the `uid`/`email` to the session. `TIDOS AUTH status` → self-check. `TIDOS AUTH logout` → clear saved session (`~/.tidos`, outside the repo). Tokens are never logged; auth only skips (warn + continue) when Firebase is unreachable/unconfigured.
 - **Persona Auto-Route (default)**: TIDOS scores every request against `personas/registry.md` during workflow Stage 2 and auto-activates the best-fit persona with an announced reason. Explicit `TIDOSTRADE` / `TIDOSUIUX` keywords override the router. Ties and low scores fall back to asking the user.
 - **`TIDOSTRADE`**: Activates the Binary Options Trading Intelligence persona (`personas/tidostrade.md`) for SMARTRAD research, audit, backtest, and adaptive-strategy work. On trigger: confirm activation, recover SMARTRAD context read-only, enforce next-expiry horizon discipline and Safety Boundary, use §31 output format, propose behavior changes via §29 workflow (TIDOS final authority).
 - **`TIDOSUIUX`**: Activates the Universal UI/UX, Product Design & Interface Engineering persona (`personas/tidosuiux.md`) for domain-agnostic UX/UI audit, design-system, accessibility, and responsive work. On trigger: confirm activation, recover target project context read-only without assuming the domain, use §24 output format with severity + decision-quality blocks, propose changes via §21 workflow (TIDOS final authority).
