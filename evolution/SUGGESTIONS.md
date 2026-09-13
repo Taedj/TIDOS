@@ -87,3 +87,17 @@ RECEIVED FROM <NAME> — paste below:
 - **Priority**: Medium
 - **Affected Modules**: `engines/`, `docs/tools/`, `scripts/`
 - **Recommended Version**: 2.1.0
+
+---
+
+### Title: TIDOSTRADE Persona (Binary Options Trading Intelligence)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit `TIDOSTRADE` invocation request)
+- **Reason**: SMARTRAD binary-options system needs a dedicated evidence-driven quant/research/audit persona inside TIDOS, invocable via `TIDOSTRADE` keyword.
+- **Benefits**: Standardized 1-minute expiry forecasting discipline; per-strategy performance intelligence; ensemble/regime weighting; pipeline-suffocation detection; payout-aware EV gating; backtest/anti-overfit rigor; TIDOS-governed change control.
+- **Risks**: Trading-risk domain (CHORA `trading_risk: required` applies to live-trading decisions); no guaranteed wins; small-sample overconfidence; backtest-vs-live divergence. Mitigated by Safety Boundary (§30) + TIDOS final-authority workflow (§29).
+- **Priority**: High
+- **Affected Modules**: `personas/tidostrade.md` (NEW), `personas/README.md` (index), `commands/session_commands.md` (trigger registration)
+- **Recommended Version**: 3.3.0 (MINOR — additive persona, no breaking change)
+- **Status**: Implemented 2026-09-13 via explicit user-commanded upgrade (Protected OS Freeze override authorized by user request).
