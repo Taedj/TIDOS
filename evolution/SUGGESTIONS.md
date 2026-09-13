@@ -182,3 +182,16 @@ RECEIVED FROM <NAME> — paste below:
 - **Priority**: High
 - **Recommended Version**: 3.3.0 (MINOR)
 - **Status**: Implemented locally 2026-09-13. UNCOMMITTED — commit only on separate explicit authorization.
+
+---
+
+### Title: TIDOS Persona Factory (self-learning persona generation + central-brain auto-sync)
+
+- **Date**: 2026-09-13
+- **Requestor**: User (explicit: let TIDOS create/develop personas per project, learn from users across projects, gather everything in the central GitHub brain)
+- **Approvals**: OS Freeze exception GRANTED by user ("yes approve persona factory", 2026-09-13) — the factory may add NEW files to protected `personas/` and push to `origin/main`. Decisions via Q&A: fully automatic generation, auto-sync to GitHub, triggers = both stack-gap + recurring-domain.
+- **Deliverables**: `engines/persona_factory_engine.md` (engine spec), `scripts/factory_sync.ps1` + `factory_sync.sh` (3-path commit+push, no force), `TIDOS PERSONA FACTORY` / `STOP FACTORY` directives (`commands/session_commands.md`), `personas/registry.md` §5 factory rules, `config/framework.md` `persona_factory` block, `docs/persona_factory.md` operator guide.
+- **Safety**: new-file-only (never edits/deletes existing personas); one run per boot; factory_sync stages exactly persona+registry+evolution; never force-push; TIDOS remains final authority; generated personas are advisors.
+- **Priority**: High
+- **Recommended Version**: 3.3.0 (MINOR)
+- **Status**: Implemented locally 2026-09-13. UNCOMMITTED — commit/push only on separate explicit authorization.
