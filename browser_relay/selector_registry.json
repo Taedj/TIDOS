@@ -1,0 +1,58 @@
+{
+  "$schema": "gptid-selector-registry/1",
+  "version": "1.0.0",
+  "note": "Central DOM abstraction for chatgpt.com. Update ONLY this file when the ChatGPT UI changes. Never hardcode selectors elsewhere.",
+  "page": {
+    "url_patterns": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+    "logged_out_markers": ["Log in", "Sign up"],
+    "captcha_markers": ["Verify you are human", "cf-challenge", "captcha",
+      "Just a moment", "Verifying you are human", "Attention Required",
+      "Checking your browser before you access"]
+  },
+  "composer": {
+    "description": "Message input box",
+    "fallback_chain": [
+      "[data-testid='composer-input']",
+      "textarea[data-testid='prompt-textarea']",
+      "div[contenteditable='true'][data-lexical-editor='true']",
+      "textarea[placeholder*='Message']",
+      "#prompt-textarea"
+    ]
+  },
+  "send_button": {
+    "description": "Send button",
+    "fallback_chain": [
+      "[data-testid='send-button']",
+      "button[aria-label='Send prompt']",
+      "button[data-testid='fruitjuice-send-button']"
+    ]
+  },
+  "assistant_messages": {
+    "description": "Assistant response bubbles (last one = newest)",
+    "fallback_chain": [
+      "[data-message-author-role='assistant']",
+      "div[data-testid='conversation-turn-assistant']",
+      ".markdown.prose"
+    ]
+  },
+  "stop_button": {
+    "description": "Visible while ChatGPT is generating; disappearance ~= completion (heuristic only)",
+    "fallback_chain": [
+      "[data-testid='stop-button']",
+      "button[aria-label='Stop generating']"
+    ]
+  },
+  "new_chat": {
+    "description": "New conversation control",
+    "fallback_chain": [
+      "a[href='/']",
+      "[data-testid='create-new-chat-button']"
+    ]
+  },
+  "completion": {
+    "strategy": "stop-button-gone + message-count-stable + trailing-text-stable",
+    "stable_polls_required": 3,
+    "poll_interval_ms": 1500,
+    "timeout_seconds_default": 180
+  }
+}
