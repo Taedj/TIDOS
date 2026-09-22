@@ -49,3 +49,14 @@
 - **Claims VERIFIED in code**: recovery is CONDITIONAL martingale (loss sets `_activeRecoveryStep = step+1`, but RecoveryEngine resets unless evidence passes); defaults never escalate (`stakeModel=flat`, `rolloutMode=controlled`); model EV is unconditional per-trade EV (never streak-conditional) → Step 1 is UNVALIDATED by design; `recentVsLongTermGap = recent−longTerm`, healthy when ≥ 0 (authorization text was INVERTED — implemented corrected semantics); exposure math base $1/balance $100/payout 0.89 = Step1 $3.25 (3.25%), Step2 $8.02 (8.02%), Step3 $18.15 (18.15%), Step4 blocked.
 - **Decision**: G1 deferral ONLY while `recoveryStep1Enabled && step1ProtectionsActive(useEvFilter,useAdxFilter,useRegimeDirectionGate,useWeakRegimeFilter,useMartingaleSequenceCap all ON) && step==1`; G2 evidence wall unchanged; G3 stricter (exact evidence, empEV ≥ 0.05, ADX ≥ 25, drawdown < 0.8%, gap ≥ 0); step ≥ 4 BLOCK; kill-switch OFF restores legacy byte-for-byte; 4 new codes only in the flag branch.
 - **Outcome**: decision_changed=false, useful=true, risks_identified=1 (Step-1 statistically unvalidated — telemetry states it explicitly), claims_verified=5, claims_rejected=0, implementation_result=IMPLEMENTED — SHADOW SOAK REQUIRED. No commit.
+
+## GPTID E2E Acceptance — gptid-20260922-001 (2026-09-22, CLOSED — PASS)
+
+- **Trigger**: explicit `GPTID` invocation → `TIDOS GPTID audit` → implement-remediation → final acceptance gate (headed session PID 12728).
+- **Audit finding**: claimed readiness fix NOT present (chain-only detection, split 10s/5s budgets, stale LOADING reproduced live: dead page + `tabs=0` reported LOADING while relay claimed CHATGPT_READY).
+- **Remediation** (`browser_relay/chatgpt_adapter.py`, `browser_relay/relay_server.py`, `browser_relay/tests/test_gptid_readiness.py`, `scripts/verify_gptid.ps1`): shared semantic-first `composer_usable` detector; unified total budgets; liveness gates; monitor downgrade via `sync_relay_state`; detector-backed `/dom_probe`; 14 regression tests (A–L); +8 validator checks.
+- **Verification**: 40/40 existing tests, 14/14 readiness tests, validator 60/60; live honest READY on authenticated composer; honest ERROR after headed-page death (downgrade log verified); headless Cloudflare wall → `AUTHENTICATION_REQUIRED`, stopped, never bypassed.
+- **E2E**: exactly ONE bounded REVIEW round-trip on the verified headed session — `gtask-5270055bf900`, 1056 chars captured, correlation=True. Response held as `chatgpt-untrusted`. No retry, no second attempt.
+- **Constraints**: no credentials/cookies/tokens accessed; no SMARTRAD/trading/broker/risk/CHORA code touched; no E2E re-run at close-out.
+- **Follow-ups tracked (not implemented)**: `gptid.ps1`/`gptid_cli.py` unassisted-start failure (double-Python spawn + 15s window too short for headed launch); PID-file lifecycle hygiene. See `evolution/SUGGESTIONS.md`.
+- **Outcome**: useful=true, implementation_result=PASS (acceptance GREEN, complete).

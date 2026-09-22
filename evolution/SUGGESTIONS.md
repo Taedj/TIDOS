@@ -186,7 +186,6 @@ RECEIVED FROM <NAME> — paste below:
 ---
 
 ### Title: TIDOS Persona Factory (self-learning persona generation + central-brain auto-sync)
-
 - **Date**: 2026-09-13
 - **Requestor**: User (explicit: let TIDOS create/develop personas per project, learn from users across projects, gather everything in the central GitHub brain)
 - **Approvals**: OS Freeze exception GRANTED by user ("yes approve persona factory", 2026-09-13) — the factory may add NEW files to protected `personas/` and push to `origin/main`. Decisions via Q&A: fully automatic generation, auto-sync to GitHub, triggers = both stack-gap + recurring-domain.
@@ -195,3 +194,41 @@ RECEIVED FROM <NAME> — paste below:
 - **Priority**: High
 - **Recommended Version**: 3.3.0 (MINOR)
 - **Status**: Implemented locally 2026-09-13. UNCOMMITTED — commit/push only on separate explicit authorization.
+
+---
+
+### Title: GPTID — ChatGPT Free Local Browser Relay Persona (no API, no key)
+
+- **Date**: 2026-09-21
+- **Requestor**: User (explicit GPTID build task)
+- **Reason**: TIDOS needs an optional local bridge to the user's ChatGPT Free web session for second-opinion review/audit/architecture/debug without any OpenAI API usage or key.
+- **Deliverables**: `personas/tidosgptid.md` (persona, trigger `GPTID`, 6 modes), `engines/gptid_relay_engine.md` (relay spec), `browser_relay/` (`gptid_protocol.py`, `relay_server.py`, `chatgpt_adapter.py`, `selector_registry.json`, `gptid_cli.py`, `tests/test_gptid_protocol.py`), `docs/gptid.md`, `scripts/gptid.ps1`/`.sh`, `scripts/verify_gptid.ps1`, `templates/gptid_task.md` + `gptid_response.md`; additive registry/README/commands/config wiring (`GPTID` row, `TIDOS GPTID` directive, `gptid:` config block); workflow explicit-keyword list extended.
+- **Safety**: localhost-only relay; dedicated/user-selected browser context; no password/token/cookie handling; redaction on build/ingest/render/log; CAPTCHA/auth bypass out of scope (`UNAVAILABLE`); ChatGPT output is external-untrusted; TIDOS remains sole implementation authority; SMARTRAD review-only boundary; optional channel (TIDOS fully functional offline).
+- **Priority**: High
+- **Affected Modules**: `personas/`, `engines/`, `browser_relay/` (NEW), `docs/gptid.md` (NEW), `scripts/gptid.*` + `verify_gptid.ps1` (NEW), `templates/gptid_*` (NEW), `config/framework.md` (`gptid:` block), `commands/session_commands.md` (`TIDOS GPTID`)
+- **Recommended Version**: 3.3.0 (MINOR — additive, backward compatible)
+- **Status**: Implemented 2026-09-21 — verification pending (`scripts/verify_gptid.ps1` + E2E probe).
+
+**Update 2026-09-22 (ACCEPTANCE PASS, session `gptid-20260922-001`)**: readiness remediation implemented + verified (shared semantic-first detector, unified budgets, liveness gates, monitor downgrade, detector-backed `/dom_probe`); 40/40 + 14/14 tests, validator 60/60; ONE bounded REVIEW E2E passed (`gtask-5270055bf900`, correlation=True, `chatgpt-untrusted`).
+
+---
+
+### Title: GPTID follow-up — unassisted `start` failure (TRACKED, not implemented)
+
+- **Date**: 2026-09-22
+- **Observed**: `scripts/gptid.ps1 start` → `gptid_cli.py cmd_start` never brings the relay up unassisted. Two defects identified during the acceptance session: (1) `cmd_start` spawns `Popen([sys.executable, "-u"] + cmd)` where `cmd[0]` is already the interpreter → the interpreter binary is passed as a script argument and the child exits immediately; (2) the 15s health window (`30 × 0.5s`) is too short for headed Chromium launch + navigation + classification (observed 45–75s), so even a healthy launch reports `STATUS=UNAVAILABLE (reason=relay did not become healthy)`. Workaround used: direct `relay_server.py` launch with PID recorded manually.
+- **Proposed scope**: fix argv construction (single interpreter), extend/parameterize the health window (e.g. 120s for headed), reuse don't respawn when a live relay already answers.
+- **Priority**: Medium
+- **Affected Modules**: `browser_relay/gptid_cli.py` (`cmd_start`), optionally `scripts/gptid.ps1` (pass-through timeout)
+- **Status**: TRACKED 2026-09-22 — do NOT implement without explicit authorization.
+
+---
+
+### Title: GPTID follow-up — relay PID-file lifecycle hygiene (TRACKED, not implemented)
+
+- **Date**: 2026-09-22
+- **Observed**: `~/.tidos/gptid-relay.pid` (outside repo) pointed at manually launched relay PIDs during acceptance (PID 4836/6952/12728) rather than a CLI-managed lifecycle; `stop` kills whatever PID is recorded without verifying it is a relay; stale PID files survive dead processes.
+- **Proposed scope**: `stop`/`start` verify the recorded PID is a live `relay_server.py` process before kill/reuse; stale PID invalidated with a warning; document PID ownership in `docs/gptid.md`.
+- **Priority**: Low
+- **Affected Modules**: `browser_relay/gptid_cli.py` (`cmd_start`, `cmd_stop`), `docs/gptid.md`
+- **Status**: TRACKED 2026-09-22 — do NOT implement without explicit authorization.
