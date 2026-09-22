@@ -40,6 +40,13 @@
 - **Stack weights (+1)**: Flutter (`pubspec.yaml`), React/Next.js (`package.json` + `*.tsx`), any `ThemeData`/design-token setup
 - **Project weights (+1)**: none (domain-agnostic by design — scores on intent + stack only)
 
+### GPTID — ChatGPT Interface & Reasoning Relay (`personas/tidosgptid.md`)
+
+- **Trigger keyword**: `GPTID`
+- **Intent signals**: gptid, chatgpt relay, chatgpt review, browser relay, chatgpt free, second opinion, external review, ask chatgpt, chatgpt audit, chatgpt debug
+- **Stack weights (+1)**: none (transport persona — scores on intent only, works in any project)
+- **Project weights (+1)**: none (domain-agnostic by design)
+
 ---
 
 ## 3. Threshold & Tie Rules

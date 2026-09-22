@@ -14,6 +14,7 @@ The `engines/` directory contains the protected core processing engines of the T
 - [plugin_engine.md](file:///d:/work/Dev/TIDOS/engines/plugin_engine.md): Master technology plugin matching and mounting engine.
 - [chora_trigger_engine.md](file:///d:/work/Dev/TIDOS/engines/chora_trigger_engine.md): CHORA Trigger Engine entry/escalation layer (NONE / RECOMMENDED / REQUIRED) with machine-readable reasons, decision-scoped blocking, and deduplication.
 - [chora_session_engine.md](file:///d:/work/Dev/TIDOS/engines/chora_session_engine.md): CHORA Session consultation layer (scope lock, human-bridge advisors, claim verification, comparison, synthesis, TIDOS decision) with authority hierarchy and Round-2 exception.
+- [gptid_relay_engine.md](file:///d:/work/Dev/TIDOS/engines/gptid_relay_engine.md): GPTID Relay Engine — local-only ChatGPT Free browser bridge (AUTO Playwright / MANUAL human-bridge), task protocol, state machine, failure matrix (TIDOS final authority, no API key).
 
 ---
 

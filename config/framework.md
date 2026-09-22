@@ -67,7 +67,6 @@ chora:
 ```
 
 ## Persona Factory (self-learning persona generation)
-
 ```yaml
 persona_factory:
   enabled: true
@@ -80,6 +79,31 @@ persona_factory:
   one_run_per_boot: true
   auto_sync: true                # factory_sync commits persona+registry+evolution, pushes to main
   auto_sync_force: false         # NEVER force-push
+```
+
+## GPTID Browser Relay (local ChatGPT Free bridge — no API, no key)
+
+```yaml
+gptid:
+  enabled: false               # optional channel; TIDOS works normally when off/unreachable
+  browser: auto               # auto (Playwright, dedicated profile, default) | manual (human bridge fallback)
+  relay_host: 127.0.0.1        # local-only; non-localhost refused unless GPTID_ALLOW_REMOTE=1
+  relay_port: 8765
+  chatgpt_url: https://chatgpt.com/
+  timeout_seconds: 30
+  response_timeout_seconds: 180
+  dedicated_conversation: true # prefer one GPTID conversation; reset via TIDOS GPTID reset
+  auto:
+    browser: chromium            # chromium = Playwright-bundled build (default) | firefox (installed) | firefox-nightly
+    headless: true             # false (--headed) for the first manual login window
+    profile_dir: ~/.tidos/gptid-profile
+    auto_fallback_to_manual: false  # AUTO failure never silently switches modes
+  limits:
+    max_context_chars: 6000
+    max_files: 8
+    max_response_chars: 12000
+    max_history: 5
+    overflow_policy: truncate-and-label
 ```
 
 ## Usage
