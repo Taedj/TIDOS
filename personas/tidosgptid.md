@@ -86,8 +86,7 @@ present a ChatGPT suggestion as a TIDOS decision. Every returned recommendation 
 | `TRADING_REVIEW` | `GPTID.TRADING_REVIEW` | Trading architecture/execution-flow/telemetry/risk-logic review (advisory only) |
 
 `TRADING_REVIEW` hard rules: never instruct ChatGPT to make financial decisions for the user;
-never bypass SMARTRAD safety controls; risk-affecting claims fall under CHORA `trading_risk`
-handling (`config/framework.md`) before any TIDOS decision.
+never bypass SMARTRAD safety controls; risk-affecting claims must be strictly verified against codebase and tests before any TIDOS decision.
 
 ---
 

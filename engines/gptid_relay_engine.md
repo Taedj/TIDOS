@@ -29,11 +29,11 @@ state machine → `relay_server.py`; protocol → `gptid_protocol.py`; control �
 
 ## 2. Drivers
 
-- **AUTO**: Playwright Chromium, profile `~/.tidos/gptid-profile` (user performs the one-time
+- **AUTO**: Playwright Google Chrome (`channel="chrome"`, fallback to Chromium), profile `~/.tidos/gptid-profile` (user performs the one-time
   manual login there). Page detection = URL pattern + composer selector from the registry.
   Completion = stop-button-gone + message-count-stable + trailing-text-stable
   (`stable_polls_required: 3`, `poll 1500ms`, default timeout `180s`).
-- **MANUAL** (default, always available): `SENT TO CHATGPT:` copyable block → user paste →
+- **MANUAL** (always available): `SENT TO CHATGPT:` copyable block → user paste →
   `RECEIVED FROM CHATGPT:` verbatim paste → `parse_received_block` → `build_response`.
   No DOM access. Auth walls/CAPTCHAs surface as `STATUS=UNAVAILABLE (reason=auth-wall/captcha)`
   and stop the round-trip — bypass is out of scope.
@@ -57,7 +57,7 @@ CONNECTED`, with `ERROR` reachable from any state. States are observable via `/s
 
 Schemas, id shapes (`gtask-<12hex>` / `gsess-<12hex>`), and validation live in
 `browser_relay/gptid_protocol.py` (mirrored by `scripts/verify_gptid.ps1`). Required task keys:
-`task_id, session_id, persona=GPTID, mode∈{REVIEW,AUDIT,ARCHITECT,DEBUG,UIUX,TRADING_REVIEW},
+`task_id, session_id, persona=GPTID, mode∈{ENHANCE,CORRECT,DEVELOP,DESIGN,CHAT,PARTNER,REVIEW,AUDIT,ARCHITECT,DEBUG,UIUX,TRADING_REVIEW},
 objective, context, scope, constraints, questions, requested_output_format`.
 Required response keys: `task_id, session_id, status∈{OK,UNAVAILABLE,TIMEOUT,MALFORMED,REJECTED,ERROR},
 chatgpt_response, structured_findings, recommendations, uncertainties, errors, timestamp`.

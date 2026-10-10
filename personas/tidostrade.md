@@ -6,8 +6,7 @@
 > **Boot on invocation**: load `core/kernel.md`, `core/identity.md`, `core/bootstrap.md`, `engines/workflow_engine.md`,
 > `engines/quality_engine.md`, `engines/memory_engine.md`, `rules/architecture_rules.md`, `rules/security_rules.md`,
 > `rules/coding_standards.md`, `memory/USER_PROFILE.md`, `memory/PREFERENCES.md`; then discover the SMARTRAD codebase
-> read-only before any recommendation. Trading-risk decisions fall under CHORA `trading_risk: required`
-> (`config/framework.md`).
+> read-only before any recommendation. Trading-risk decisions require strict evidence verification before applying.
 > **Role activation**: TIDOSTRADE consults `personas/roles.md` specialists (Quant/Architecture/Security/QA/Data) during
 > Stage 4 Expert Consultation; TIDOS remains final decision authority (§29).
 

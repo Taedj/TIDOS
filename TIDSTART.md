@@ -20,20 +20,25 @@ graph TD
     S8 --> S9["9. Await User Prompt Instructions"]
 ```
 
-### Step 0: Update Gate (mandatory, runs before the checklist)
+### Step 0: Mandatory Force-Update Gate (Runs First on "START TIDOS")
 
-Before step 1, force-sync TIDOS with GitHub: run `scripts/update.ps1` (Windows) or `scripts/update.sh` (Linux/macOS) against the TIDOS checkout (`.tidos/`, multi-root folder, or central repo). The gate fetch-compares `HEAD` against the remote and `reset --hard` to it when behind, then boot proceeds on the synced version. Safety rules: ABORT (never wipe) on uncommitted `memory/`/`evolution/` changes or unpushed commits — commit/push first, then re-run; NEVER block boot when GitHub is unreachable or no `.git` exists — warn and continue on the local version. Record the before→after version in the Startup Report.
+Whenever the user or session prompts `START TIDOS`, the system or AI Agent **must first force-update TIDOS** from GitHub:
+- Run `scripts/update.ps1` (Windows) or `scripts/update.sh` (Linux/macOS) (or execute `.\start_tidos.ps1` / `./start_tidos.sh`).
+- **Resilient Multi-Location Detection**: Auto-detects the TIDOS checkout across `.tidos/`, `TIDOS/`, `tidos/`, `.`, and parent paths.
+- **Universal Force Sync**: Even if an old version of TIDOS is cloned to the project, or detached in a submodule, or missing a `.git` folder, the update gate reconnects to `https://github.com/Taedj/TIDOS.git`, fetches `origin/main`, and executes a memory-safe **force-sync** (`git reset --hard origin/main` and `git clean -fd`).
+- **Memory Safety**: User institutional memory in `memory/` and `evolution/` is non-destructively preserved and re-applied, while all OS core, engines, personas, rules, and scripts are force-aligned to the latest GitHub push.
+- **Offline Resilient**: If GitHub or network is unreachable, it logs a warning and cleanly continues on the local version without crashing.
+- Record the before→after version revision in the Startup Report.
 
-### Step 0.5: Authentication Gate (mandatory, Firebase-enabled instances)
+### Step 0.5: Authentication Gate (MANDATORY STRICT LOCK — Firebase Google Sign-In)
 
-TIDOS requires the user to be authenticated before any work proceeds (project `tidos-framework`, see `docs/firebase_auth.md`).
+TIDOS strictly requires the user to authenticate via Google (Gmail) before any work or system operations can proceed (project `tidos-framework`, see [docs/firebase_auth.md](file:///d:/work/Dev/TIDOS/docs/firebase_auth.md)).
 
 1. Run `scripts/auth_verify.ps1 -Session` (Windows) or `scripts/auth_verify.sh -Session` (Linux/macOS).
-   - **Exit 0** → session validated (remember-me). Announce `Authenticated: <email>` in the Startup Report and proceed.
-   - **Exit 1** → user is NOT authenticated. **BLOCK BOOT** and ask the user to sign in: `Login` (email + password) or `Register` (create account; verification email sent). Run the corresponding helper with the user's credentials, then re-run `-Session`. Loop until exit 0 or the user reports offline/unconfigured.
-   - **Exit 2 or network error** (FIREBASE_API_KEY missing / Firebase unreachable) → warn "Authentication unavailable (configured check failed)" and CONTINUE on the local version — auth never hard-blocks boot when the backend is unreachable or unconfigured.
-2. The user may end the session at any time with `TIDOS AUTH logout` (clears the saved refresh token in `~/.tidos`, outside the repo).
-3. Record auth status in the Startup Report: `Authenticated: <email>` or `Authentication: unauthenticated/offline`.
+   - **Exit 0** → session validated (remember-me). Announce `Authenticated: <email> (Google)` in the Startup Report and proceed.
+   - **Exit 1 or unauthenticated** → **STRICTLY BLOCK BOOT**. TIDOS CANNOT be used without authenticating with Google / Gmail. Prompt the user and run `scripts/auth_verify.ps1 -GoogleLogin` (opens the browser to sign in/up via Gmail). TIDOS remains locked until exit 0 is achieved.
+2. The user may disconnect at any time with `TIDOS AUTH logout` (clears the saved session in `~/.tidos`).
+3. Record auth status in the Startup Report: `Authenticated: <email> (Google)`.
 
 ### Mandatory Subsystem Checklist
 - [ ] **1. OS Core**: Read [core/kernel.md](file:///d:/work/Dev/TIDOS/core/kernel.md) (Protected OS Freeze invariant).

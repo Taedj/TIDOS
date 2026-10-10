@@ -9,20 +9,23 @@
 #          never committed). Contains refresh token; idToken is never printed.
 #
 # Usage:
+#   .\scripts\auth_verify.ps1 -GoogleLogin                  # open browser to sign in with Google / Gmail
 #   .\scripts\auth_verify.ps1 -Status                       # config + session self-check
 #   .\scripts\auth_verify.ps1 -Session                      # validate saved session (remember-me)
+#   .\scripts\auth_verify.ps1 -Login                        # triggers Google Sign-In by default
 #   .\scripts\auth_verify.ps1 -Login -Email <e> -Password <p>    # email/password sign-in
 #   .\scripts\auth_verify.ps1 -Register -Email <e> -Password <p> # create account
 #   .\scripts\auth_verify.ps1 -Verify <idToken>             # verify an external ID token
-#   .\scripts\auth_verify.ps1 -Logout                       # clear saved session (no API key needed)
+#   .\scripts\auth_verify.ps1 -Logout                       # clear saved session
 #
 # Exit codes: 0 = ready/valid/authenticated
-#             1 = auth failed (bad token / wrong credentials / no session) - re-auth needed
-#             2 = configuration error (missing API key / no operation selected)
+#             1 = auth failed / locked - re-auth needed
+#             2 = configuration error
 # ============================================================================
 
 param(
     [string]$Verify,
+    [switch]$GoogleLogin,
     [switch]$Login,
     [switch]$Register,
     [switch]$Session,
@@ -33,6 +36,22 @@ param(
 )
 
 function Fail($msg, $code) { Write-Error $msg; exit $code }
+
+# --- Google Sign-In Helper ---------------------------------------------------
+function Invoke-GoogleLogin {
+    $script = Join-Path $PSScriptRoot "google_auth_server.py"
+    if (-not (Test-Path $script)) { Fail "Google auth server script not found: $script" 2 }
+    Write-Host "Opening browser for Google / Gmail authentication with Firebase..."
+    & python $script
+    if ($LASTEXITCODE -ne 0) {
+        Fail "Google authentication failed or was cancelled. TIDOS system cannot be used without Google authentication." 1
+    }
+    exit 0
+}
+
+if ($GoogleLogin) {
+    Invoke-GoogleLogin
+}
 
 # --- Session storage (OS user profile - outside any repository) ---------------
 function Get-SessionPath { return Join-Path (Join-Path $HOME ".tidos") "tidos-session.json" }
@@ -57,22 +76,7 @@ if ($Logout) {
     exit 0
 }
 
-if ($Status) {
-    $envKey = $env:FIREBASE_API_KEY
-    if (-not $envKey) {
-        $envFile = Join-Path $PSScriptRoot "..\.env"
-        if (Test-Path $envFile) { $envKey = Get-Content $envFile | Where-Object { $_ -match '^\s*FIREBASE_API_KEY\s*=' } | Select-Object -First 1 }
-    }
-    if (-not $envKey) { Write-Host "FIREBASE_API_KEY: NOT SET (set env var or add to .env)" }
-    else { Write-Host "FIREBASE_API_KEY: present." }
-    Write-Host "Project reference: config/firebase.md (tidos-framework)."
-    $s = Read-Session
-    if ($s) { Write-Host "Saved session: present ($($s.email)) - use -Session to validate, -Logout to disconnect." }
-    else { Write-Host "Saved session: none." }
-    exit 0
-}
-
-# --- API key required below this line (env var, then .env at repo root) ------
+# --- API key resolution (env var -> .env -> config/firebase.md) -------------
 $apiKey = $env:FIREBASE_API_KEY
 if (-not $apiKey) {
     $envFile = Join-Path $PSScriptRoot "..\.env"
@@ -82,7 +86,26 @@ if (-not $apiKey) {
         }
     }
 }
-if (-not $apiKey) { Fail "FIREBASE_API_KEY not set (env or .env). See docs/firebase_auth.md." 2 }
+if (-not $apiKey) {
+    $cfgFile = Join-Path $PSScriptRoot "..\config\firebase.md"
+    if (Test-Path $cfgFile) {
+        Get-Content $cfgFile | ForEach-Object {
+            if ($_ -match '^\s*api_key:\s*(.+?)\s*$') { $apiKey = $Matches[1].Trim("'", '"') }
+        }
+    }
+}
+
+if ($Status) {
+    if (-not $apiKey) { Write-Host "FIREBASE_API_KEY: NOT SET (set env var, .env, or config/firebase.md)" }
+    else { Write-Host "FIREBASE_API_KEY: present." }
+    Write-Host "Project reference: config/firebase.md (tidos-framework)."
+    $s = Read-Session
+    if ($s) { Write-Host "Saved session: present ($($s.email), provider: $($s.providerId)) - use -Session to validate, -Logout to disconnect." }
+    else { Write-Host "Saved session: none. TIDOS is LOCKED until Google login: .\scripts\auth_verify.ps1 -GoogleLogin" }
+    exit 0
+}
+
+if (-not $apiKey) { Fail "FIREBASE_API_KEY not configured. See docs/firebase_auth.md." 2 }
 
 # --- REST helper ---------------------------------------------------------------
 function Auth-Post($url, $body) {
@@ -118,24 +141,29 @@ if ($Register) {
     } catch { Fail $_.Exception.Message 1 }
 }
 
-# --- Login (email/password) ----------------------------------------------------
+# --- Login (Google default, email/password fallback) ---------------------------
 if ($Login) {
-    if (-not $Email -or -not $Password) { Fail "Login requires -Email and -Password." 2 }
+    if (-not $Email) {
+        Invoke-GoogleLogin
+    }
+    if (-not $Password) { Fail "Email login requires -Password." 2 }
     try {
         $r = Auth-Post $signInUrl (@{ email = $Email; password = $Password; returnSecureToken = $true } | ConvertTo-Json)
-        Write-Session @{ refreshToken = $r.refreshToken; idToken = $r.idToken; localId = $r.localId; email = $r.email; emailVerified = $r.emailVerified }
+        Write-Session @{ refreshToken = $r.refreshToken; idToken = $r.idToken; localId = $r.localId; email = $r.email; emailVerified = $r.emailVerified; providerId = "password" }
         Write-Host "Authenticated: $($r.email) (uid $($r.localId), email verified: $($r.emailVerified)). Session saved (remember-me)."
         exit 0
     } catch {
-        if ($_.Exception.Message -match "INVALID_LOGIN_CREDENTIALS") { Fail "Wrong email/password, or no account under this email. Use -Register to create one." 1 }
+        if ($_.Exception.Message -match "INVALID_LOGIN_CREDENTIALS") { Fail "Wrong email/password, or no account under this email. Use -GoogleLogin to sign in with Google." 1 }
         Fail $_.Exception.Message 1
     }
 }
 
-# --- Session (remember-me boot check) ------------------------------------------
+# --- Session (remember-me boot check - STRICT LOCK) ---------------------------
 if ($Session) {
     $s = Read-Session
-    if (-not $s) { Fail "No saved session - TIDOS requires authentication (Login or Register)." 1 }
+    if (-not $s) {
+        Fail "TIDOS system is LOCKED. No active session. TIDOS requires Google authentication to be used. Please run: .\scripts\auth_verify.ps1 -GoogleLogin" 1
+    }
     try {
         $r = Auth-Post $refreshUrl (@{ grant_type = "refresh_token"; refresh_token = $s.refreshToken } | ConvertTo-Json)
         $uid = $r.user_id; $email = $s.email
@@ -143,12 +171,14 @@ if ($Session) {
             $lk = Auth-Post $lookupUrl (@{ idToken = $r.id_token } | ConvertTo-Json)
             $email = $lk.users[0].email
         } catch { }
-        Write-Session @{ refreshToken = $r.refresh_token; idToken = $r.id_token; localId = $uid; email = $email }
-        Write-Host "Session validated: $email (uid $uid)."
+        $prov = "google.com"
+        if ($s.providerId) { $prov = $s.providerId }
+        Write-Session @{ refreshToken = $r.refresh_token; idToken = $r.id_token; localId = $uid; email = $email; providerId = $prov }
+        Write-Host "Session validated: $email (uid $uid, provider: $prov)."
         exit 0
     } catch {
         $p = Get-SessionPath; if (Test-Path $p) { Remove-Item $p -Force }
-        Fail "Saved session expired/revoked - removed. TIDOS requires authentication (Login or Register)." 1
+        Fail "Saved session expired/revoked. TIDOS system is LOCKED until re-authenticated. Run: .\scripts\auth_verify.ps1 -GoogleLogin" 1
     }
 }
 
@@ -162,4 +192,4 @@ if ($Verify) {
     } catch { Fail $_.Exception.Message 1 }
 }
 
-Fail "No operation selected. Use -Status, -Session, -Login, -Register, -Verify, or -Logout." 2
+Fail "No operation selected. Use -GoogleLogin, -Status, -Session, -Login, -Register, -Verify, or -Logout." 2

@@ -113,12 +113,28 @@ def detect_driver(preferred="auto"):
     return "manual"
 
 
+def _get_partner_mandate(mode):
+    m = str(mode or "REVIEW").upper()
+    if m == "ENHANCE":
+        return "Partner Mandate: Propose high-impact enhancements, optimizations, and clean refactorings. Include concrete code improvements."
+    if m == "CORRECT":
+        return "Partner Mandate: Analyze errors/bugs, identify root causes, and provide precise corrections and verified fixes."
+    if m == "DEVELOP":
+        return "Partner Mandate: Partner in feature development. Provide thorough code implementations, architecture, and step-by-step guidance."
+    if m == "DESIGN":
+        return "Partner Mandate: Provide architectural, system, or UI/UX design specifications, component structure, and patterns."
+    if m in ("CHAT", "PARTNER"):
+        return "Partner Mandate: Collaborate actively with TIDOS as an engineering partner. Provide detailed, expert, and actionable advice."
+    return "Reply with: 3 observations + findings + uncertainties. No code execution, no secrets."
+
+
 def render_sent_block(task):
     """Copyable human-bridge prompt for MANUAL mode. No secrets (caller redacts)."""
+    mode = task.get("mode", "REVIEW")
     lines = [
         "SENT TO CHATGPT — copy below into your ChatGPT Free tab:",
         "```text",
-        "[TIDOS via GPTID | mode=%s | task=%s]" % (task.get("mode"), task.get("task_id")),
+        "[TIDOS via GPTID | mode=%s | task=%s]" % (mode, task.get("task_id")),
         "Objective: %s" % task.get("objective"),
     ]
     if task.get("questions"):
@@ -130,15 +146,16 @@ def render_sent_block(task):
         lines.append(str(task["context"])[:4000])
     if task.get("constraints"):
         lines.append("Constraints: %s" % "; ".join(task["constraints"]))
-    lines.append("Reply with: 3 observations + findings + uncertainties. No code execution, no secrets.")
+    lines.append(_get_partner_mandate(mode))
     lines.append("```")
     return "\n".join(lines)
 
 
 def render_auto_prompt(task):
     """Prompt text injected into the ChatGPT composer by the AUTO driver."""
+    mode = task.get("mode", "REVIEW")
     lines = [
-        "[TIDOS via GPTID | mode=%s | task=%s]" % (task.get("mode"), task.get("task_id")),
+        "[TIDOS via GPTID | mode=%s | task=%s]" % (mode, task.get("task_id")),
         "Objective: %s" % task.get("objective"),
     ]
     if task.get("questions"):
@@ -150,7 +167,7 @@ def render_auto_prompt(task):
         lines.append(str(task["context"])[:4000])
     if task.get("constraints"):
         lines.append("Constraints: %s" % "; ".join(task["constraints"]))
-    lines.append("Reply with: 3 observations + findings + uncertainties. No code execution, no secrets.")
+    lines.append(_get_partner_mandate(mode))
     return "\n".join(lines)
 
 
@@ -301,7 +318,8 @@ class AutoDriver:
     OK | UNAVAILABLE | TIMEOUT | MALFORMED | ERROR.
     """
 
-    ENGINES = ("firefox", "firefox-nightly", "chromium")
+    ENGINES = ("firefox", "firefox-nightly", "chromium", "chrome")
+    # chrome          -> installed Google Chrome (channel="chrome"), dedicated GPTID profile.
     # firefox         -> installed stable Mozilla Firefox (channel="firefox"),
     #                    dedicated GPTID profile (binary shared, profile isolated).
     # firefox-nightly -> Playwright-bundled Nightly build (fallback).
@@ -311,7 +329,7 @@ class AutoDriver:
                  selectors=None, headless=True, response_timeout_seconds=180,
                  browser_name="chromium"):
         if browser_name not in self.ENGINES:
-            raise ValueError("unknown engine %r (expected firefox|chromium)" % (browser_name,))
+            raise ValueError("unknown engine %r (expected chrome|chromium|firefox)" % (browser_name,))
         self.browser_name = browser_name
         self.profile_dir = profile_dir or os.path.join(
             os.path.expanduser("~"), ".tidos", "gptid-profile")
@@ -367,6 +385,22 @@ class AutoDriver:
                     kwargs["channel"] = "firefox"  # installed stable Firefox
                 self._ctx = self._pw.firefox.launch_persistent_context(
                     self.profile_dir, **kwargs)
+            elif self.browser_name == "chrome":
+                kwargs = {
+                    "headless": self.headless,
+                    "viewport": {"width": 1366, "height": 900},
+                    "channel": "chrome",
+                    "args": ["--disable-blink-features=AutomationControlled",
+                             "--no-first-run",
+                             "--no-default-browser-check"]
+                }
+                try:
+                    self._ctx = self._pw.chromium.launch_persistent_context(
+                        self.profile_dir, **kwargs)
+                except Exception:
+                    kwargs.pop("channel", None)
+                    self._ctx = self._pw.chromium.launch_persistent_context(
+                        self.profile_dir, **kwargs)
             else:
                 self._ctx = self._pw.chromium.launch_persistent_context(
                     self.profile_dir, headless=self.headless,
@@ -668,7 +702,15 @@ class AutoDriver:
     def send_prompt(self, prompt_text):
         """Inject the prompt into the composer and submit. Bounded single retry."""
         for attempt in (1, 2):
-            composer = self._find_first(self.selectors["composer"]["fallback_chain"])
+            # Single-detector rule: send uses the SAME semantic-first
+            # find_usable_composer as readiness (never registry-only),
+            # else READY diverges from send on ChatGPT DOM changes.
+            try:
+                usable, sel, _detail = find_usable_composer(
+                    self._page, self.selectors, budget_ms=READINESS_BUDGET_MS)
+                composer = self._page.locator(sel).first if (usable and sel) else None
+            except Exception:
+                composer = None
             if composer is None:
                 if attempt == 1:
                     try:
@@ -680,14 +722,29 @@ class AutoDriver:
                 return False, "ERROR", "selector failure: composer not found (attempt %d)" % attempt
             try:
                 before = self._assistant_count()
-                try:
-                    composer.click(timeout=8000)
-                    composer.fill(prompt_text, timeout=15000)
-                except Exception:
-                    # contenteditable fallback: click + sequential typing
-                    composer.click(timeout=8000)
-                    self._page.keyboard.press("ControlOrMeta+a")
-                    self._page.keyboard.type(prompt_text, delay=2)
+                # ProseMirror/contenteditable editors ignore programmatic fill
+                # (React state never registers it): type real keystrokes so the
+                # app enables Send, then VERIFY the text landed before sending.
+                entered = False
+                for entry in ("type", "fill"):
+                    try:
+                        composer.click(timeout=8000)
+                        if entry == "type":
+                            self._page.keyboard.press("ControlOrMeta+a")
+                            self._page.keyboard.type(prompt_text[:4000], delay=2)
+                        else:
+                            composer.fill(prompt_text, timeout=15000)
+                    except Exception:
+                        continue
+                    try:
+                        shown = (composer.inner_text(timeout=5000) or "")
+                    except Exception:
+                        shown = ""
+                    if prompt_text[:48] in shown or shown.strip() == prompt_text.strip()[:len(shown.strip())] and shown.strip():
+                        entered = True
+                        break
+                if not entered:
+                    raise RuntimeError("composer did not accept text (fill+type both unverified)")
                 send_btn = self._find_first(self.selectors["send_button"]["fallback_chain"],
                                             timeout_ms=5000)
                 if send_btn is not None:
@@ -695,6 +752,14 @@ class AutoDriver:
                 else:
                     self._page.keyboard.press("Enter")
                 self._page.wait_for_timeout(2500)
+                # Submit ACK: ChatGPT clears the composer on send. Text still
+                # present => nothing was sent (button disabled / Enter ignored).
+                try:
+                    leftover = (composer.inner_text(timeout=5000) or "").strip()
+                except Exception:
+                    leftover = ""
+                if leftover and prompt_text[:48] in leftover:
+                    raise RuntimeError("submit not acknowledged (composer still full)")
                 return True, "OK", "message submitted (assistant turns before=%d)" % before
             except Exception as e:
                 if attempt == 2:
@@ -707,16 +772,20 @@ class AutoDriver:
         return False, "ERROR", "submit failed after retry"
 
     @_on_browser_thread
-    def wait_completion(self, timeout_seconds=None):
-        """Completion detection: stop-button-gone + count-stable + tail-stable.
+    def wait_completion(self, timeout_seconds=None, baseline_tail=None):
+        """Completion detection: NEW content appeared AND stabilized.
 
-        Timeout is NEVER success — it returns TIMEOUT explicitly.
+        baseline_tail = assistant tail captured BEFORE submit. Stability of
+        pre-existing page text alone is NEVER completion (stale-text race):
+        at least one poll must differ from the baseline before stable
+        counting begins. Timeout is NEVER success.
         """
         limit = timeout_seconds or self.response_timeout_seconds
         comp = self.selectors.get("completion", {})
         need = int(comp.get("stable_polls_required", 3))
         interval = float(comp.get("poll_interval_ms", 1500)) / 1000.0
         stable, last_tail, last_count = 0, None, None
+        seen_new = baseline_tail in (None, "")
         deadline = time.time() + limit
         while time.time() < deadline:
             if self._wall_state() in ("auth-wall", "captcha"):
@@ -724,7 +793,9 @@ class AutoDriver:
             generating = self._generating()
             count = self._assistant_count()
             tail = (self._last_assistant_text() or "")[-200:]
-            if (not generating and count == last_count and tail
+            if not seen_new and tail and tail != baseline_tail and not tails_stable(baseline_tail or "", tail):
+                seen_new = True
+            if (seen_new and not generating and count == last_count and tail
                     and tails_stable(last_tail, tail)):
                 stable += 1
             else:
@@ -733,6 +804,8 @@ class AutoDriver:
             if stable >= need and tail:
                 return True, "OK", "generation completed (turns=%s)" % count
             time.sleep(interval)
+        if not seen_new:
+            return False, "TIMEOUT", "no new assistant content after %ds (submit may not have sent)" % limit
         return False, "TIMEOUT", "response timeout after %ds (never treated as success)" % limit
 
     @_on_browser_thread
@@ -749,10 +822,14 @@ class AutoDriver:
         ok, status, msg = self.ensure_ready()
         if not ok:
             return False, status, msg
+        try:
+            baseline = (self._last_assistant_text() or "")[-200:]
+        except Exception:
+            baseline = ""
         ok, status, msg = self.send_prompt(prompt_text)
         if not ok:
             return False, status, msg
-        ok, status, msg = self.wait_completion(timeout_seconds)
+        ok, status, msg = self.wait_completion(timeout_seconds, baseline_tail=baseline)
         if not ok:
             return False, status, msg
         return self.extract_response()

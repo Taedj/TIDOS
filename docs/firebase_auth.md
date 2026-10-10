@@ -54,17 +54,16 @@ FIREBASE_API_KEY=AIzaSyDzbyda_7ygLaWtqjLZtiHrqSd0b_CYBQk
 
 ### Mandatory Auth Gate (START TIDOS Step 0.5)
 
-Signature desired. On every boot, `auth_verify.ps1/.sh -Session` restores the saved session (remember-me,
-refresh token from `~/.tidos`, validated against Firebase). exit 0 = authenticated, boot proceeds; exit 1 =
-**block boot** and ask the user to **Login** (existing account) or **Register** (new account + verification
-email); exit 2 or network failure = warn and continue (auth never hard-blocks when Firebase is unreachable
-or `FIREBASE_API_KEY` is unset).
+TIDOS strictly enforces authentication: **the system cannot be used without authenticating via Google / Gmail**.
+On boot, `auth_verify.ps1/.sh -Session` restores the saved session from `~/.tidos`, validated against Firebase.
+- **Exit 0** = authenticated, boot proceeds.
+- **Exit 1** = **STRICT BLOCK**. TIDOS system is locked. The user must authenticate via Google (opens browser to sign in/up with Gmail).
 
-### Sign in / create account
+### Sign in via Google / Gmail (Browser)
 
 ```powershell
-.\scripts\auth_verify.ps1 -Login -Email user@example.com -Password '****'
-.\scripts\auth_verify.ps1 -Register -Email user@example.com -Password '****'
+.\scripts\auth_verify.ps1 -GoogleLogin   # Opens browser window to authenticate with Google / Gmail
+.\scripts\auth_verify.ps1 -Login         # Defaults to Google Sign-In
 ```
 
 ### Validate saved session / clear it

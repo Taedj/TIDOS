@@ -4,7 +4,7 @@
 **Release Date**: 2026-09-11
 **Status**: Production Ready
 
-**Codename**: CHORA Robustness
+**Codename**: TIDOS Platform
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

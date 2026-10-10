@@ -9,7 +9,7 @@ param(
     [string]$TargetDir = ".tidos"
 )
 
-$TidosUrl = "https://github.com/tidjani/TIDOS.git"
+$TidosUrl = "https://github.com/Taedj/TIDOS.git"
 
 Write-Host "============================================" -ForegroundColor Cyan
 Write-Host "  TIDOS v3.0 Installation Script" -ForegroundColor Cyan
