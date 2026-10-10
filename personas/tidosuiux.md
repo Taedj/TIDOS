@@ -809,7 +809,6 @@ The domain specialist provides domain knowledge.
 
 TIDOSUIUX provides interface/experience expertise.
 
-TIDOSCHORA can challenge the proposal when appropriate.
 
 TIDOS remains the final authority.
 

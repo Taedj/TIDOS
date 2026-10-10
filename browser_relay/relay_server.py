@@ -504,9 +504,9 @@ def main(argv=None):
     ap.add_argument("--host", default="127.0.0.1")
     ap.add_argument("--port", type=int, default=8765)
     ap.add_argument("--driver", default="auto", choices=("manual", "auto"))
-    ap.add_argument("--browser", default="chromium",
-                    choices=("firefox", "firefox-nightly", "chromium"),
-                    help="AUTO engine (default chromium = Playwright-bundled build)")
+    ap.add_argument("--browser", default="chrome",
+                    choices=("firefox", "firefox-nightly", "chromium", "chrome"),
+                    help="AUTO engine (chrome = Google Chrome, chromium = Playwright build)")
     ap.add_argument("--headed", action="store_true",
                     help="AUTO: show the browser window (needed for first manual login)")
     ap.add_argument("--response-timeout", type=int, default=180)

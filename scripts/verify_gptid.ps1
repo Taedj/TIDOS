@@ -120,6 +120,9 @@ Assert-G 'review-noapply' (Has-G $rev @('NO code-apply path', 'only TIDOS may ac
 $cli = Read-G 'browser_relay/gptid_cli.py'
 Assert-G 'review-cli' (Has-G $cli @('review-auto', 'cmd_review_auto', 'no retry'))
 Assert-G 'review-ps1' (Has-G (Read-G 'scripts/gptid.ps1') @('review-auto', 'ChangeJson'))
+Assert-G 'ask-auto-capture' (Has-G $cli @('def cmd_ask', 'auto_response', 'correlation=True', 'no retry loop'))
+Assert-G 'ask-auto-timeout' (Has-G $cli @('response_timeout=args.response_timeout + 60'))
+Assert-G 'ask-ps1-timeout' (Has-G (Read-G 'scripts/gptid.ps1') @('--response-timeout'))
 
 # --- startup/lifecycle (single spawn, bounded polling, PID safety) --------
 Assert-G 'lifecycle-spawn' (Has-G $cli @('DEFAULT_STARTUP_TIMEOUT', 'STARTUP_POLL_SECONDS', 'exactly one', '--startup-timeout'))

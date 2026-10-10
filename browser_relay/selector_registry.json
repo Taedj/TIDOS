@@ -10,8 +10,10 @@
       "Checking your browser before you access"]
   },
   "composer": {
-    "description": "Message input box",
+    "description": "Message input box (verified 2026-10-10: ProseMirror editor; data-testid hooks all dead)",
     "fallback_chain": [
+      "div[contenteditable='true'].ProseMirror",
+      ".ProseMirror",
       "[data-testid='composer-input']",
       "textarea[data-testid='prompt-textarea']",
       "div[contenteditable='true'][data-lexical-editor='true']",
@@ -20,23 +22,27 @@
     ]
   },
   "send_button": {
-    "description": "Send button",
+    "description": "Send button (verified 2026-10-10: no aria/testid hooks; first form button; Enter fallback kept)",
     "fallback_chain": [
       "[data-testid='send-button']",
       "button[aria-label='Send prompt']",
-      "button[data-testid='fruitjuice-send-button']"
+      "button[data-testid='fruitjuice-send-button']",
+      "form button:nth-of-type(1)",
+      "form button"
     ]
   },
   "assistant_messages": {
-    "description": "Assistant response bubbles (last one = newest)",
+    "description": "Assistant response bubbles, last = newest (verified 2026-10-10: data-role/markdown hooks dead; whitespace-pre-wrap live)",
     "fallback_chain": [
+      "[class*='whitespace-pre-wrap']",
+      "div[class*='turn'] p",
       "[data-message-author-role='assistant']",
       "div[data-testid='conversation-turn-assistant']",
       ".markdown.prose"
     ]
   },
   "stop_button": {
-    "description": "Visible while ChatGPT is generating; disappearance ~= completion (heuristic only)",
+    "description": "Visible while ChatGPT is generating; disappearance ~= completion (heuristic only; no hook 2026-10-10, completion falls back to text-stability)",
     "fallback_chain": [
       "[data-testid='stop-button']",
       "button[aria-label='Stop generating']"

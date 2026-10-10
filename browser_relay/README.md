@@ -21,7 +21,7 @@ it drives (or guides) a browser the user already authenticated themselves.
 - `AUTO` — Playwright-controlled Chromium on a dedicated local profile
   (`~/.tidos/gptid-profile`). The user signs into ChatGPT once, manually, in that
   profile. The relay reuses it afterwards. Unavailable unless `playwright` is installed.
-- `MANUAL` (default) — human bridge, same philosophy as the CHORA channel:
+- `MANUAL` (default) — human bridge:
   TIDOS emits a copyable `SENT TO CHATGPT:` block, the user pastes it into their
   ChatGPT Free tab, pastes the reply back as `RECEIVED FROM CHATGPT:`. No DOM scraping.
 

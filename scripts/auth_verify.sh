@@ -27,6 +27,9 @@ API_KEY="${FIREBASE_API_KEY:-}"
 if [ -z "$API_KEY" ] && [ -f "$(dirname "$0")/../.env" ]; then
   API_KEY=$(grep -E '^\s*FIREBASE_API_KEY\s*=' "$(dirname "$0")/../.env" | head -n1 | sed 's/^[^=]*=//' | tr -d "'\" ")
 fi
+if [ -z "$API_KEY" ] && [ -f "$(dirname "$0")/../config/firebase.md" ]; then
+  API_KEY=$(grep -E '^\s*api_key:\s*' "$(dirname "$0")/../config/firebase.md" | head -n1 | sed 's/^[^:]*:[[:space:]]*//' | tr -d "'\" ")
+fi
 
 SESSION_DIR="${HOME}/.tidos"
 SESSION_PATH="${SESSION_DIR}/tidos-session.json"
@@ -58,6 +61,10 @@ case "$1" in
     if [ -n "$S" ]; then echo "Saved session: present ($(echo "$S" | jq -r .email)) - use -Session to validate, -Logout to disconnect."; else echo "Saved session: none."; fi
     exit 0
     ;;
+  -GoogleLogin|google)
+    python3 "$(dirname "$0")/google_auth_server.py" || python "$(dirname "$0")/google_auth_server.py"
+    exit $?
+    ;;
   -Logout|logout)
     if [ -f "$SESSION_PATH" ]; then rm -f "$SESSION_PATH"; echo "Session cleared. Disconnected from the TIDOS account."; else echo "No saved session. Already disconnected."; fi
     exit 0
@@ -88,10 +95,10 @@ case "$1" in
     ;;
   -Session)
     S=$(read_session)
-    [ -n "$S" ] || { echo "ERROR: No saved session - TIDOS requires authentication (Login or Register)." >&2; exit 1; }
-    R=$(auth_post "$REFRESH?key=$API_KEY" "{\"grant_type\":\"refresh_token\",\"refresh_token\":$(echo "$S" | jq -r .refreshToken | jq -Rs .)}") || { rm -f "$SESSION_PATH"; echo "ERROR: Saved session expired/revoked - removed. TIDOS requires authentication (Login or Register)." >&2; exit 1; }
+    [ -n "$S" ] || { echo "ERROR: TIDOS system is LOCKED. No saved session. Please run ./scripts/auth_verify.sh -GoogleLogin to authenticate with Google." >&2; exit 1; }
+    R=$(auth_post "$REFRESH?key=$API_KEY" "{\"grant_type\":\"refresh_token\",\"refresh_token\":$(echo "$S" | jq -r .refreshToken | jq -Rs .)}") || { rm -f "$SESSION_PATH"; echo "ERROR: Saved session expired/revoked. TIDOS is LOCKED until re-authenticating with Google." >&2; exit 1; }
     save_session "$R" || { echo "ERROR: cannot write session to $SESSION_DIR." >&2; exit 2; }
-    echo "Session validated: $(echo "$R" | jq -r .user_id) (email saved)."
+    echo "Session validated: $(echo "$R" | jq -r .user_id) (provider: Google)."
     exit 0
     ;;
   -Verify)

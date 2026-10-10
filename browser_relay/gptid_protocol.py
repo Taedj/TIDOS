@@ -9,7 +9,54 @@ from datetime import datetime, timezone
 
 PROTOCOL_VERSION = "1.0.0"
 
-MODES = ("REVIEW", "AUDIT", "ARCHITECT", "DEBUG", "UIUX", "TRADING_REVIEW")
+MODES = (
+    "REVIEW", "AUDIT", "ARCHITECT", "DEBUG", "UIUX", "TRADING_REVIEW",
+    "ENHANCE", "CORRECT", "DEVELOP", "DESIGN", "CHAT", "PARTNER",
+)
+
+MODE_ALIASES = {
+    "enhancing": "ENHANCE",
+    "enhance": "ENHANCE",
+    "improving": "ENHANCE",
+    "improve": "ENHANCE",
+    "correcting": "CORRECT",
+    "correct": "CORRECT",
+    "debugging": "CORRECT",
+    "debug": "CORRECT",
+    "fixing": "CORRECT",
+    "fix": "CORRECT",
+    "developing": "DEVELOP",
+    "develop": "DEVELOP",
+    "building": "DEVELOP",
+    "build": "DEVELOP",
+    "implementing": "DEVELOP",
+    "implement": "DEVELOP",
+    "designing": "DESIGN",
+    "design": "DESIGN",
+    "architecting": "DESIGN",
+    "architect": "ARCHITECT",
+    "uiux": "UIUX",
+    "reviewing": "REVIEW",
+    "review": "REVIEW",
+    "auditing": "AUDIT",
+    "audit": "AUDIT",
+    "chat": "CHAT",
+    "chatting": "CHAT",
+    "partner": "PARTNER",
+    "ask": "CHAT",
+}
+
+
+def normalize_mode(mode):
+    if not mode:
+        return "REVIEW"
+    up = str(mode).strip().upper()
+    if up in MODES:
+        return up
+    m = str(mode).strip().lower()
+    if m in MODE_ALIASES:
+        return MODE_ALIASES[m]
+    return mode
 
 CONTEXT_KINDS = (
     "PROJECT_SUMMARY", "CURRENT_TASK", "RELEVANT_FILES", "RELEVANT_CODE",
@@ -119,6 +166,7 @@ def build_task(objective, mode="REVIEW", context="", scope=None, constraints=Non
                questions=None, session_id=None, task_id=None,
                requested_output_format="structured", limits=None):
     """Create a protocol task dict. Raises ValueError on bad mode."""
+    mode = normalize_mode(mode)
     if mode not in MODES:
         raise ValueError("unknown mode %r (expected one of %s)" % (mode, ",".join(MODES)))
     lim = dict(DEFAULT_LIMITS)

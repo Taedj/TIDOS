@@ -28,12 +28,11 @@
 - All URLs reference `config/framework.md` instead of hardcoded values.
 - Updated all documentation, headers, and cross-references to v3.0.0.
 
-### v3.1.0 — CHORA Chat-Channel Mode ✅ (2026-09-11)
-- Named partners + copyable `SENT TO <NAME>:` / `RECEIVED FROM <NAME>:` turns as default; Turn-0 contract, single-box replies, minimal pointers; legacy templates deprecated.
-- Supersedes prior v3.1.0 MCP plan below (moved to future).
+### v3.1.0 — Partner Consultation Mode (2026-09-11)
+- Named partners + copyable communication turns; Turn-0 contract, single-box replies.
 
-### v3.2.0 — CHORA Robustness ✅ (2026-09-11)
-- Structural validation (`MALFORMED`), untrusted RECEIVED boundary (`REJECTED`), bloat bounds (`truncate-and-summarize`), ledger, 8 deterministic tests (44/44 + 21/21 green).
+### v3.2.0 — Platform Robustness (2026-09-11)
+- Structural validation, untrusted input boundary, bloat bounds, ledger.
 
 ### Future — Planned
 - Native MCP Server implementation (`tidos-mcp-server`) for direct tool-based OS context hydration across all MCP-compatible AI clients.

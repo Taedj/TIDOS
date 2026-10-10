@@ -8,30 +8,34 @@ cat .tidos/VERSION.md
 
 ## Upgrade Procedure
 
+### Automatic Force-Update on `START TIDOS` (Recommended)
+
+Whenever you prompt `START TIDOS` (or run `.\start_tidos.ps1` / `./start_tidos.sh`), TIDOS automatically executes Step 0 (Update Gate):
+- Automatically connects to `https://github.com/Taedj/TIDOS.git`.
+- Fetches `origin/main` and force-syncs all OS core files, engines, personas, and scripts.
+- Even if an old clone exists, or the submodule is detached, or `.git` was previously removed, TIDOS force updates to the latest GitHub push.
+- Preserves local user preferences and custom institutional memory in `memory/` and `evolution/`.
+
+### Manual Upgrade Script
+
+```powershell
+# Windows PowerShell
+powershell -ExecutionPolicy Bypass -File scripts/update.ps1
+
+# Linux / macOS
+bash scripts/update.sh
+```
+
 ### Submodule Mode
 
 ```bash
 cd .tidos
 git fetch origin
-git checkout v3.0.0
+git checkout main
+git reset --hard origin/main
 cd ..
 git add .tidos
-git commit -m "chore: upgrade TIDOS to v3.0.0"
-```
-
-### Local Copy Mode
-
-```bash
-rm -rf .tidos
-git clone https://github.com/tidjani/TIDOS.git .tidos
-rm -rf .tidos/.git
-```
-
-### Multi-Root Mode
-
-```bash
-cd TIDOS
-git pull origin main
+git commit -m "chore: force-update TIDOS to latest main"
 ```
 
 ## Version Compatibility

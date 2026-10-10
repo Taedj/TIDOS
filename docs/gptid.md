@@ -1,14 +1,21 @@
-# GPTID Operator Guide (v1.0): local ChatGPT Free browser relay
+# GPTID Operator Guide (v1.0): local ChatGPT Free browser relay & partner system
 
 GPTID connects TIDOS to your own ChatGPT Free web session through a **local-only**
-relay. No OpenAI API, no API key. You stay logged in; the relay never sees your credentials.
+relay using Google Chrome. No OpenAI API, no API key. You stay logged in; the relay never sees your credentials.
+When invoked, GPTID automatically opens Google Chrome to ChatGPT and acts as an engineering partner
+on specific user commands (enhancing, correcting, developing, designing, reviewing, chatting), automatically copying
+and pasting exchanges between TIDOS and ChatGPT.
 
 ## 1. Lifecycle
 
 ```text
-TIDOS GPTID start → handshake → TIDOS GPTID ask/review/audit
-  → SENT TO CHATGPT (copyable) → you paste into chatgpt.com → ChatGPT replies
-  → you paste reply back → TIDOS validates → TIDOS evaluates → TIDOS decides
+TIDOS GPTID command (enhance / correct / develop / design / review / chat)
+  → Auto-ensures Relay + Headed Chrome running on dedicated profile
+  → Formats partner prompt [TIDOS -> CHATGPT] with explicit engineering mandate
+  → Sends to chatgpt.com composer & submits automatically
+  → Polls and captures response until generation is complete
+  → Ingests [CHATGPT -> TIDOS] into TIDOS console / protocol
+  → TIDOS validates → TIDOS evaluates → TIDOS decides
 ```
 
 Statuses: `DISCONNECTED | STARTING | BROWSER_READY | CHATGPT_READY | BUSY |
@@ -17,12 +24,21 @@ WAITING_RESPONSE | CONNECTED | ERROR` (`TIDOS GPTID status`).
 ## 2. Commands (PowerShell shown; `.sh` equivalents exist)
 
 ```powershell
+# Interactive Continuous Partnership Chat (auto opens Chrome & streams chat back-and-forth)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 chat
+
+# Partner Commands (auto opens Chrome, delivers prompt, captures response)
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 enhance -Objective "Enhance login UI with glassmorphism"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 correct -Objective "Correct regex logic in auth validator"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 develop -Objective "Develop token refresh background worker"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 design -Objective "Design resilient state machine for relay"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 review -Objective "Review auth flow"
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 audit -Objective "Audit error handling in Y"
+
+# Relay Lifecycle Controls
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 start
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 status
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 test
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 ask -Objective "Review X" -Mode REVIEW
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 review -Objective "Review auth flow"
-powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 audit -Objective "Audit error handling in Y"
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 reset
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 stop
 ```
@@ -39,11 +55,10 @@ powershell -NoProfile -ExecutionPolicy Bypass -File scripts/gptid.ps1 stop
 5. TIDOS validates correlation + shape, marks findings `source: chatgpt-untrusted`,
    evaluates against repo evidence, and decides. Only TIDOS implements.
 
-## 4. AUTO mode (Playwright, dedicated profile)
+## 4. AUTO mode (Playwright, Google Chrome dedicated profile)
 
-Runtime: `playwright` 1.63.0 + Playwright-bundled Chromium (default engine;
-alternatives: installed stable Mozilla Firefox via `--browser firefox`, Nightly via
-`--browser firefox-nightly`). Install: `pip install playwright` + `python -m playwright install chromium`.
+Runtime: `playwright` 1.63.0 + installed Google Chrome (default engine `channel="chrome"`,
+fallback to Playwright Chromium; alternatives: Mozilla Firefox via `--browser firefox`).
 Driver: `browser_relay/chatgpt_adapter.py`
 (`AutoDriver`: persistent context on `~/.tidos/gptid-profile`, registry-driven selectors,
 stop-button + count + tail stability completion, bounded retries, graceful shutdown).

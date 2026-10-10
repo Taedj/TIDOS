@@ -9,7 +9,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TIDOS_URL="https://github.com/tidjani/TIDOS.git"
+TIDOS_URL="https://github.com/Taedj/TIDOS.git"
 TARGET_DIR="${1:-.tidos}"
 
 echo "============================================"
