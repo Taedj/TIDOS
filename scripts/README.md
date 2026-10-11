@@ -15,3 +15,6 @@ The `scripts/` directory contains helper scripts for TIDOS framework operations.
 - `gptid.ps1` - GPTID relay control (Windows): `start|stop|status|test|reset|ask|review|audit` over `browser_relay/gptid_cli.py` (localhost relay, no secrets)
 - `gptid.sh` - GPTID relay control (Linux/macOS): same as `gptid.ps1`
 - `verify_gptid.ps1` - GPTID structural + protocol validator (files, persona/engine/config/commands markers, selector fallbacks, secret-mirror checks, python unit tests)
+- `sanitizer.py` - Privacy & Sanitization Firewall: audits and sanitizes upstream contribution bundles, redacting secrets, local PII paths, and rejecting unapproved file extensions (.md whitelist).
+- `factory_sync.ps1` / `factory_sync.sh` - Persona Factory direct maintainer sync: audits via sanitizer, commits persona trio, and pushes to origin/main.
+- `community_sync.ps1` / `community_sync.sh` - Federated community sync: audits candidate personas via sanitizer, submits automated upstream PR to `Taedj/TIDOS` via GitHub CLI (`gh`), or exports sanitized bundles.

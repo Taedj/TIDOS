@@ -35,6 +35,7 @@
 - Structural validation, untrusted input boundary, bloat bounds, ledger.
 
 ### Future — Planned
+- **v4.0.0 — The Federated Cognitive Operating System (The Big Idea)**: Complete blueprint in [docs/THE_BIG_IDEA.md](docs/THE_BIG_IDEA.md). Decouples intelligence from model weights, scaffolds weak/small LLMs to perform like frontier models, auto-synthesizes internet-grounded personas, and establishes federated swarm contribution back to `Taedj/TIDOS`.
 - Native MCP Server implementation (`tidos-mcp-server`) for direct tool-based OS context hydration across all MCP-compatible AI clients.
 - Automated GitHub Actions sync bot for cross-repository memory consolidation.
 

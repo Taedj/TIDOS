@@ -11,6 +11,7 @@ The `personas/` directory defines the Virtual AI Engineering Company persona spe
 - [tidostrade.md](file:///d:/work/Dev/TIDOS/personas/tidostrade.md): TIDOSTRADE Binary Options Trading Intelligence persona (trigger: `TIDOSTRADE`).
 - [tidosuiux.md](file:///d:/work/Dev/TIDOS/personas/tidosuiux.md): TIDOSUIUX Universal UI/UX, Product Design & Interface Engineering persona (trigger: `TIDOSUIUX`).
 - [tidosgptid.md](file:///d:/work/Dev/TIDOS/personas/tidosgptid.md): GPTID ChatGPT Interface & Reasoning Relay persona — local browser bridge to the user's ChatGPT Free session, no API key (trigger: `GPTID`, engine: `engines/gptid_relay_engine.md`).
+- [tidosmobile.md](file:///d:/work/Dev/TIDOS/personas/tidosmobile.md): TIDOSMOBILE Mobile & Flutter Systems Architecture Specialist persona (trigger: `TIDOSMOBILE`, generated via Persona Factory v2.0).
 
 ---
 
