@@ -128,6 +128,12 @@ def _get_partner_mandate(mode):
     return "Reply with: 3 observations + findings + uncertainties. No code execution, no secrets."
 
 
+# Prefix of every prompt this relay injects (AUTO + MANUAL). If extraction ever
+# returns text starting with this marker, it captured OUR OWN user bubble
+# (role-agnostic selector race) instead of an assistant reply — never OK.
+SENT_ECHO_PREFIX = "[TIDOS via GPTID"
+
+
 def render_sent_block(task):
     """Copyable human-bridge prompt for MANUAL mode. No secrets (caller redacts)."""
     mode = task.get("mode", "REVIEW")
@@ -672,18 +678,29 @@ class AutoDriver:
         return None
 
     def _assistant_count(self):
-        try:
-            return self._page.locator(
-                self.selectors["assistant_messages"]["fallback_chain"][0]).count()
-        except Exception:
-            return -1
+        for sel in self.selectors.get("assistant_messages", {}).get("fallback_chain", []):
+            try:
+                cnt = self._page.locator(sel).count()
+                if cnt > 0:
+                    return cnt
+            except Exception:
+                continue
+        return 0
 
     def _last_assistant_text(self):
-        for sel in self.selectors["assistant_messages"]["fallback_chain"]:
+        for sel in self.selectors.get("assistant_messages", {}).get("fallback_chain", []):
             try:
                 loc = self._page.locator(sel)
-                if loc.count() > 0:
-                    return loc.last.inner_text(timeout=8000)
+                cnt = loc.count()
+                if cnt <= 0:
+                    continue
+                for idx in range(cnt - 1, -1, -1):
+                    try:
+                        txt = (loc.nth(idx).inner_text(timeout=3000) or "").strip()
+                    except Exception:
+                        continue
+                    if txt and not txt.lstrip().startswith(SENT_ECHO_PREFIX):
+                        return txt
             except Exception:
                 continue
         return ""
@@ -803,7 +820,15 @@ class AutoDriver:
                 return False, "UNAVAILABLE", "%s: wall appeared mid-generation" % USER_ACTION_REQUIRED
             generating = self._generating()
             count = self._assistant_count()
-            tail = (self._last_assistant_text() or "")[-200:]
+            full = (self._last_assistant_text() or "")
+            tail = full[-200:]
+            if full.lstrip().startswith(SENT_ECHO_PREFIX):
+                # Our own SENT prompt bubble (role-agnostic selector race):
+                # NEVER completion evidence — skip it and keep waiting.
+                stable = 0
+                last_tail, last_count = tail, count
+                time.sleep(interval)
+                continue
             if not seen_new and tail and tail != baseline_tail and not tails_stable(baseline_tail or "", tail):
                 seen_new = True
             if (seen_new and not generating and count == last_count and tail
@@ -821,10 +846,13 @@ class AutoDriver:
 
     @_on_browser_thread
     def extract_response(self):
-        """Extract the newest assistant message. Empty => explicit failure."""
+        """Extract the newest assistant message. Empty or SENT-echo => explicit failure."""
         text = (self._last_assistant_text() or "").strip()
         if not text:
             return False, "ERROR", "response extraction failure: no assistant text found"
+        if text.lstrip().startswith(SENT_ECHO_PREFIX):
+            return False, "ERROR", ("response extraction failure: captured our own SENT prompt "
+                                    "(role-agnostic selector race) instead of an assistant reply")
         return True, "OK", text
 
     @_on_browser_thread
