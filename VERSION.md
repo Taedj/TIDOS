@@ -1,10 +1,10 @@
 # Version
 
-**Current Version**: 3.2.0
-**Release Date**: 2026-09-11
+**Current Version**: 4.0.0
+**Release Date**: 2026-10-11
 **Status**: Production Ready
 
-**Codename**: TIDOS Platform
+**Codename**: Federated Cognitive Operating System
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

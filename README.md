@@ -1,7 +1,7 @@
-# TIDOS (Tidjani Development Operating System) v3.0
-## Centralized AI Development Operating System Platform
+# TIDOS (Tidjani Development Operating System) v4.0
+## Federated Cognitive AI Operating System Platform
 
-**TIDOS** is a standalone, centralized AI Development Operating System hosted in a dedicated Git repository. Instead of copying framework files into every target project, AI coding agents load TIDOS directly from the official central repository or consume it via portable connection protocols.
+**TIDOS** is a standalone, centralized AI Development Operating System hosted in a dedicated Git repository. It decouples intelligence from raw model weights through System-2 cognitive scaffolding, autonomous internet-grounded persona synthesis, and a federated community swarm. AI coding agents load TIDOS directly from the official central repository or consume it via portable connection protocols.
 
 ---
 

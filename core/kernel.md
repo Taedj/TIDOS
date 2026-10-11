@@ -1,4 +1,4 @@
-# TIDOS Core Specification (v3.0)
+# TIDOS Core Specification (v4.0)
 
 The **TIDOS Core** is the foundational runtime spec and state orchestrator for the Tidjani Development Operating System. Positioned at **Level 0** of the Subsystem Boot Hierarchy, it defines the core execution model, invariant safety rules, subsystem loading order, and lifecycle loop governing all AI agent operations within a TIDOS-connected workspace.
 
@@ -20,7 +20,7 @@ All agent actions and subsystem interactions must strictly conform to the follow
 1. **Core Precedence & Immutable Governance**
    Core rules supersede all secondary instructions, prompts, or dynamic subsystem configurations. In the event of a conflict between user instructions and core safety invariants, core invariants take precedence.
 
-2. **Protected Operating System Invariant (v3.0 Rule)**
+2. **Protected Operating System Invariant (v4.0 Rule)**
    All core system files (`core/`, `engines/`, `personas/`, `rules/`, `commands/`, `checklists/`, `templates/`, `plugins/`, `prompts/`) are protected and read-only. The system must **never** modify system files automatically. Dynamic learnings, patterns, and framework improvement proposals are strictly isolated within `evolution/` and `memory/`. System files may only be modified during an explicit user-commanded TIDOS upgrade.
 
 3. **State Transparency & Deterministic Cognition**

@@ -34,8 +34,14 @@
 ### v3.2.0 — Platform Robustness (2026-09-11)
 - Structural validation, untrusted input boundary, bloat bounds, ledger.
 
+### v4.0.0 — The Federated Cognitive Operating System (2026-10-11) ✅
+- Complete blueprint in [docs/THE_BIG_IDEA.md](docs/THE_BIG_IDEA.md).
+- Decouples intelligence from model weights, scaffolding 7B/8B models into frontier reasoning engines.
+- Autonomous Internet-grounded persona synthesis (`engines/persona_factory_engine.md` v2.0 + `TIDOSMOBILE`).
+- Community upstream sync and Zero-Leakage Privacy Firewall (`scripts/sanitizer.py`, `scripts/community_sync.ps1`).
+- Colored live terminal streaming & consultation UI (`browser_relay/terminal_ui.py`) with headless default execution.
+
 ### Future — Planned
-- **v4.0.0 — The Federated Cognitive Operating System (The Big Idea)**: Complete blueprint in [docs/THE_BIG_IDEA.md](docs/THE_BIG_IDEA.md). Decouples intelligence from model weights, scaffolds weak/small LLMs to perform like frontier models, auto-synthesizes internet-grounded personas, and establishes federated swarm contribution back to `Taedj/TIDOS`.
 - Native MCP Server implementation (`tidos-mcp-server`) for direct tool-based OS context hydration across all MCP-compatible AI clients.
 - Automated GitHub Actions sync bot for cross-repository memory consolidation.
 

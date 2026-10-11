@@ -4,6 +4,20 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [4.0.0] - 2026-10-11
+
+### Added
+- **The Big Idea Cognitive Architecture**: Complete architecture decoupling cognitive excellence from raw model weights, enabling smaller/local 7B-8B models to match frontier performance (Claude 3.7 / Gemini 2.5 Pro).
+- **Model Equalizer System-2 Layer**: Mandatory 6-stage railway (`Ingest -> Ground -> Plan -> Atomic Edit -> Verify -> Sign-off`) preventing premature completion, context bleed, and hallucinations.
+- **Autonomous Internet-Grounded Persona Synthesizer**: Upgraded Persona Factory (`engines/persona_factory_engine.md` v2.0) with real-time web research, negative constraints, and domain checklists.
+- **`TIDOSMOBILE` Persona**: First autonomously synthesized specialist persona targeting modern mobile development (Flutter 3.x, Android 15/API 35, Gradle 8.5+, Java 21).
+- **Privacy Firewall (`scripts/sanitizer.py`)**: Zero-Leakage audit engine detecting and redacting secrets, API keys, credentials, local paths, and user PII.
+- **Federated Community Swarm Sync**: Automated upstream sync pipelines (`scripts/community_sync.ps1`, `scripts/community_sync.sh`) allowing distributed TIDOS clones to contribute sanitized patterns back to `Taedj/TIDOS`.
+- **Colored Terminal Chat & Consultation Stream (`browser_relay/terminal_ui.py`)**: Rich live console UI featuring Neon Cyan for TIDOS and Emerald Green for ChatGPT with Virtual Terminal Processing support.
+- **Headless Background Relay**: Browser relay defaults to headless execution without popping visible browser windows during routine CLI tasks.
+
+---
+
 ## [3.2.0] - 2026-09-11
 
 ### Added
