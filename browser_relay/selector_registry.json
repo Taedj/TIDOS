@@ -1,5 +1,5 @@
 {
-  "version": "1.0.0",
+  "version": "1.0.2",
   "note": "Central DOM abstraction for chatgpt.com. Update ONLY this file when the ChatGPT UI changes. Never hardcode selectors elsewhere.",
   "page": {
     "url_patterns": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
@@ -34,11 +34,21 @@
     ]
   },
   "assistant_messages": {
-    "description": "Assistant response bubbles, last = newest (verified 2026-10-10: data-role/markdown hooks dead; whitespace-pre-wrap live)",
+    "description": "Assistant response bubbles, last = newest (verified 2026-10-11: modern ChatGPT uses article + markdown/prose containers + action buttons; user bubbles never match)",
     "fallback_chain": [
-      "[class*='whitespace-pre-wrap']",
-      "div[class*='turn'] p",
+      "article:has(button[aria-label*='Copy']) .markdown",
+      "article:has(button[aria-label*='Copier']) .markdown",
+      "article:has(button[aria-label*='Copy'])",
+      "article:has(button[aria-label*='Copier'])",
+      "article div.markdown",
+      "article [class*='markdown']",
+      "div.markdown",
+      "[class*='markdown']",
+      ".markdown",
+      "article .prose",
       "[data-message-author-role='assistant']",
+      "div[data-message-author-role='assistant']",
+      "div[data-testid*='conversation-turn']:has(button[aria-label*='Copy'])",
       "div[data-testid='conversation-turn-assistant']",
       ".markdown.prose"
     ]
@@ -47,7 +57,10 @@
     "description": "Visible while ChatGPT is generating; disappearance ~= completion (heuristic only; no hook 2026-10-10, completion falls back to text-stability)",
     "fallback_chain": [
       "[data-testid='stop-button']",
-      "button[aria-label='Stop generating']"
+      "button[aria-label='Stop generating']",
+      "button[aria-label='Stop streaming']",
+      "button[aria-label*='Stop']",
+      "button[data-testid*='stop']"
     ]
   },
   "new_chat": {

@@ -188,3 +188,19 @@ This file tracks non-invasive improvement proposals for TIDOS. All suggestions a
 - **Priority**: High
 - **Recommended Version**: 4.0.0
 - **Status**: Implemented & Registered 2026-10-11 via Persona Factory v2.0.
+
+---
+
+### Title: GPTID follow-up — extractor captures SENT echo instead of assistant reply (RESOLVED)
+
+- **Date**: 2026-10-11
+- **Observed**: With relay `CHATGPT_READY`, two bounded `ask --mode UIUX` round-trips (`gtask-8b41d8347d3d` 346 chars, `gtask-8d3358c213e2` 695 chars, correlation=True both) returned the `[TIDOS via GPTID]` SENT task template verbatim instead of an assistant review — completion detector appears to fire on the SENT bubble rendering (stop-button-gone + stable text) before any assistant message streams.
+- **Root Cause**: Selector chain relied on bare `[class*='whitespace-pre-wrap']` which matched user bubbles (including our sent prompt). Scoping by `data-message-author-role` failed because modern ChatGPT removed that attribute.
+- **Resolution (v4.0.1)**:
+  1. Updated `selector_registry.json` (v1.0.2) with modern ChatGPT assistant selectors: `article:has(button[aria-label*='Copy']) .markdown`, `article div.markdown`, `article [class*='markdown']`, `div.markdown`, `.markdown`, and `article .prose`. Removed bare `[class*='whitespace-pre-wrap']`.
+  2. Updated `chatgpt_adapter.py` so `_assistant_count()` iterates through the entire fallback chain instead of hardcoded index 0.
+  3. Updated `_last_assistant_text()` to scan elements backwards and reject any element starting with `SENT_ECHO_PREFIX` (`[TIDOS via GPTID`).
+  4. Updated `wait_completion()` and `extract_response()` to guard against echoes and treat them as invalid.
+- **Priority**: High
+- **Affected Modules**: `browser_relay/chatgpt_adapter.py`, `browser_relay/selector_registry.json`
+- **Status**: Implemented & Verified 2026-10-11 (v4.0.1).
