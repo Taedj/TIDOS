@@ -413,17 +413,22 @@ def ensure_relay_running(port=8765, driver="auto", browser="chrome", headed=True
     """Ensure local relay is up and healthy.
 
     If stopped: automatically opens Chrome headed to ChatGPT so user can see it and log in.
-    If running but dead or degraded (e.g. tabs closed, browser crashed, state ERROR):
-    automatically terminates the dead session and re-launches Chrome.
+    If running but dead, degraded, or stuck in AUTH_REQUIRED:
+    automatically restarts Chrome so the user can see and complete sign-in.
     """
     ok, data = _get(port, "/health", timeout=2)
     if ok and isinstance(data, dict):
         state = data.get("state")
         tabs = data.get("tabs", 1)
-        if state != "ERROR" and (driver != "auto" or tabs > 0):
+        s_ok, s_data = _get(port, "/status", timeout=2)
+        chatgpt_state = s_data.get("chatgpt") if s_ok and isinstance(s_data, dict) else ""
+        if state != "ERROR" and (driver != "auto" or tabs > 0) and chatgpt_state != "AUTHENTICATION_REQUIRED":
             return True
-        print_relay_badge("GPTID", "Relay is in degraded/dead state (state=%s, tabs=%s). "
-                          "Auto-restarting Chrome to ChatGPT..." % (state, tabs), "WARN")
+        if chatgpt_state == "AUTHENTICATION_REQUIRED":
+            print_relay_badge("GPTID", "ChatGPT requires login. Opening visible Chrome window for sign-in...", "WARN")
+        else:
+            print_relay_badge("GPTID", "Relay is in degraded/dead state (state=%s, tabs=%s). "
+                              "Auto-restarting Chrome to ChatGPT..." % (state, tabs), "WARN")
         cmd_stop(port)
         time.sleep(1)
 
