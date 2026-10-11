@@ -1,7 +1,9 @@
-# TIDOS Persona Factory Engine Specification (v1.0)
+# TIDOS Persona Factory Engine Specification (v2.0)
 
 > **Status**: Additive engine. Grants the ONLY internal write access to protected `personas/` and
-> auto-push to GitHub — explicitly approved by the user (OS Freeze exception, 2026-09-13).
+> auto-push to GitHub — explicitly approved by the user (OS Freeze exception).
+> Upgraded in v2.0 to incorporate **Autonomous Web-Research** and **Negative Constraint Synthesis**
+> so that dynamically created personas provide frontier-grade scaffolding even on small/weak models.
 > The factory NEVER overwrites/deletes existing personas; it only creates NEW persona specs,
 > one registry row, and one evolution entry.
 
@@ -10,48 +12,55 @@
 ## 1. Purpose & Invariant
 
 TIDOS becomes creative and self-learning: as users open projects on different stacks/domains, the
-factory detects gaps in `personas/registry.md`, generates a new specialist persona for the uncovered
-stack/domain, registers it, and ships it to the central brain (`main` on GitHub) so every TIDOS user
-gets it via the Update Gate.
+factory detects gaps in `personas/registry.md`, searches the live internet for state-of-the-art standards,
+generates a new specialist persona equipped with explicit negative constraints and verification checklists,
+registers it, and ships it to the central brain (`main` on GitHub) so every TIDOS user gets it via the Update Gate.
 
 **Invariants**:
 1. NEW-FILES-ONLY: the factory creates new `personas/tidos<name>.md` files. It never edits or deletes an existing persona file.
 2. REGISTRY-ROW-ONLY: the factory appends exactly one new row block to `personas/registry.md` Section 2 (never edits existing rows/weights).
 3. GUARDRAILS: if the candidate name/stack already has coverage (any active persona), the factory SKIPS and reasons why.
-4. SYNC-DISCIPLINE: every factory run ends with `scripts/factory_sync.ps1`/`.sh` (commit + push to `main`). No other repo content is auto-committed.
-5. TIDOS remains final authority; generated personas are advisors, same governance as hand-made ones.
+4. WEB-GROUNDED: newly drafted personas must be grounded by live internet research on modern standards, avoiding outdated training memory.
+5. NEGATIVE-CONSTRAINTS-MANDATORY: generated personas must feature explicit "NEVER DO" rules to keep weak models aligned.
+6. SYNC-DISCIPLINE: every factory run ends with `scripts/factory_sync.ps1`/`.sh` (commit + push to `main`). No other repo content is auto-committed.
+7. TIDOS remains final authority; generated personas are advisors, same governance as hand-crafted ones.
 
 ---
 
-## 2. Discovery: Triggers (user-approved: BOTH)
+## 2. Discovery: Triggers
 
 The factory evaluates at Workflow Stage 2 (Request Analysis) and once per Project Recovery (Stage 1):
 
 | Trigger | Condition |
 |---|---|
 | **STACK-GAP** | Bootstrap Phase 2 detects a primary manifest/stack whose "Detection Rules" match NO active persona's stack weights AND the stack has appeared in >= 2 distinct sessions (anti-spam). |
-| **DOMAIN-RECUR** | A domain (vocabulary class) recurs across >= 2 distinct written user requests (e.g., different project utterances share terms: `deadline, expiry, strike, payout` = trading) AND no active persona covers it. |
+| **DOMAIN-RECUR** | A domain (vocabulary class) recurs across >= 2 distinct written user requests (e.g., terms like: `deadline, expiry, strike, payout` = trading) AND no active persona covers it. |
 
-A single prominent brand-new stack in an actively-invested project (1 session, multi-file layouts like `pubspec.yaml`+`lib/` wrapper) may trigger at `strength=HIGH`; else cumulative counter tracks until threshold.
+A single prominent brand-new stack in an actively-invested project (1 session, multi-file layouts like `pubspec.yaml`+`lib/` or `Cargo.toml`+`src/`) may trigger at `strength=HIGH`; else cumulative counter tracks until threshold.
 
 ---
 
-## 3. Generation Pipeline
+## 3. Generation Pipeline (v2.0)
 
 When a trigger fires with depth >= 2 (or ONE strong project):
 
 1. **SCAN COVERAGE** (read `personas/registry.md` Section 2): name = `TIDOS` + domain codename (e.g. `tidos<domain>.md`). If an existing persona already lists the stack or domain signals -> SKIP (report "covered by <NAME>").
-2. **DRAFT SPEC** — generate `personas/tidos<domain>.md` from the embedded canonical schema (§3a below; lives inline in this engine — templates/ stays OS-frozen and untouched):
+2. **AUTONOMOUS WEB-RESEARCH**:
+   Execute targeted live web searches to extract 2026 ground-truth engineering knowledge:
+   - Query 1: `"State of the art architecture patterns for <stack/domain> 2026"`
+   - Query 2: `"Common anti-patterns, pitfalls, and bugs in <stack/domain>"`
+   - Query 3: `"Production-grade error handling, clean architecture, and test patterns for <stack/domain>"`
+   Synthesize findings into: modern architectural principles, deprecated traps to avoid, and essential verification steps.
+3. **DRAFT SPEC** — generate `personas/tidos<domain>.md` from the embedded canonical schema (§3a below):
    - Header: name, role, invocation, governance boilerplate (TIDOS final authority, advisor-only).
-   - Sections: PERSONA IDENTITY / CORE PHILOSOPHY / DOMAIN SPECIALIZATION / INPUT & AUDIT / OUTPUT FORMAT / GOVERNED WORKFLOW / INVOCATION PROTOCOL / `## Routing Signals` block (mandatory).
-   - Routing Signals: trigger keyword (the bare name), intent signals (distilled from observed request vocabulary), stack weights (from detected manifest signatures), project weights (matching project-root naming).
-3. **REGISTER** — append one row block to `personas/registry.md` Section 2 (name, file link, trigger keyword, intent signals, stack weights, project weights).
-4. **LOG** — append one entry to `evolution/SUGGESTIONS.md` (Title, Date, Requestor=`Persona Factory (auto)`, Reason, Deliverables incl. file names, Priority=Medium, Recommended Version = next MINOR, Status=Implemented + factory-synced).
-5. **ANNOUNCE** — output: `TIDOS persona factory: generated <NAME> — <role>. Source: <stack/domain>. Registered + auto-synced to origin/main.`
+   - Sections: IDENTITY / PHILOSOPHY / NEGATIVE CONSTRAINTS / DOMAIN SPECIALIZATION / AUDIT GATES / CHECKLIST / GOVERNED WORKFLOW / INVOCATION PROTOCOL / `## Routing Signals`.
+4. **REGISTER** — append one row block to `personas/registry.md` Section 2 (name, file link, trigger keyword, intent signals, stack weights, project weights).
+5. **LOG** — append one entry to `evolution/SUGGESTIONS.md` (Title, Date, Requestor=`Persona Factory (auto)`, Reason, Deliverables incl. file names, Priority=Medium, Recommended Version = next MINOR, Status=Implemented + factory-synced).
+6. **ANNOUNCE** — output: `TIDOS persona factory: generated <NAME> — <role>. Web-researched and registered. Ready for central sync.`
 
 ---
 
-## 3a. Canonical Generated-Persona Schema (inline spec)
+## 3a. Canonical Generated-Persona Schema (inline spec v2.0)
 
 Generated persona files (`personas/tidos<domain>.md`) MUST contain these sections in order:
 
@@ -59,16 +68,17 @@ Generated persona files (`personas/tidos<domain>.md`) MUST contain these section
 # TIDOS<NAME> — <Role Title> Specialist (v1.0)
 (governance header: TIDOS Core precedence, advisor-only, no autonomous authority;
  boot-on-invocation line: load core/kernel, identity, bootstrap, engines, rules, memory;
- generated-by line: "Auto-generated by Persona Factory <date>. Governance identical to
-  hand-crafted personas; source domain: <stack/domain>.")
+ generated-by line: "Auto-generated by Persona Factory v2.0 <date>. Web-grounded architecture; source domain: <stack/domain>.")
 
 # 1. PERSONA IDENTITY          -> name, role, primary capabilities, specialist thinkers
 # 2. CORE PHILOSOPHY           -> domain heuristics, what it optimizes for
-# 3. DOMAIN SPECIALIZATION     -> the discovered domain/stack; its architecture, inputs,
-                                 standards, terminology (from observed vocabulary)
+# 2a. NEGATIVE CONSTRAINTS     -> explicit "NEVER DO" rules (anti-patterns extracted from web research)
+# 3. DOMAIN SPECIALIZATION     -> the discovered domain/stack; modern architecture, inputs,
+                                 standards, terminology, library versions
 # 4. INPUT & AUDIT             -> read-only project recovery; audit scope; severities
 # 5. OUTPUT FORMAT             -> Executive Summary / Findings / Evidence Gaps / Actions /
                                  Files-to-Change / Regression Risks / Verification Plan
+# 5a. DOMAIN VERIFICATION      -> pre-completion domain checklist (test runners, linters, bounds)
 # 6. GOVERNED WORKFLOW         -> discover->understand->audit->hypothesize->propose->
                                  TIDOS decision->implement->verify
 # 7. INVOCATION PROTOCOL       -> trigger keyword, confirmation line, stages 1-2 recover,
@@ -80,8 +90,7 @@ Generated persona files (`personas/tidos<domain>.md`) MUST contain these section
 - Project weights: <project-root naming / domains>
 ```
 
-The `## Routing Signals` block is MANDATORY (router requirement). Signals are distilled from
-observed user requests + bootstrap detection; they are never invented.
+The `## Routing Signals` block and `## NEGATIVE CONSTRAINTS` block are MANDATORY.
 
 ---
 
@@ -105,7 +114,7 @@ Per Learning Engine (`engines/learning_engine.md`):
 - Stack/domain observations accumulate in `memory/PATTERNS.md` (blueprints) and a rotating
   `memory/METHODOLOGY.md` counter (3+ occurrence rule) — these supply the "depth" signal.
 - Post-mortems -> `memory/LESSONS.md`; validated practices -> `memory/BEST_PRACTICES.md`.
-- Only personas generated from pooled observations (>= 2 sources) become factory output.
+- Only personas generated from pooled observations (>= 2 sources) or strong single-stack investments become factory output.
 
 ---
 
@@ -116,5 +125,3 @@ Per Learning Engine (`engines/learning_engine.md`):
 - One factory run per boot max (dedupe: check registry first).
 - Auto-push blocked if `git push` would include unrelated changes; the script stages ONLY factory paths.
 - No commit without user authorization EXCEPT factory-generated persona+registry+evolution trio committed by factory_sync on explicit user approval of this engine (recorded in `evolution/SUGGESTIONS.md`).
-
-(End of file — Persona Factory Engine v1.0)

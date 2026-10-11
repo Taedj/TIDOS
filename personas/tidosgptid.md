@@ -234,6 +234,17 @@ Trigger keyword: `GPTID` (explicit keyword always overrides the router). Sub-for
 `TIDOS GPTID start|stop|status|connect|reconnect|new-session|reset|test|ask|review|audit`.
 On trigger: confirm activation (`TIDOS persona active: GPTID — <reason>.`), recover project
 context read-only, open/check the relay, run the handshake, then serve the requested mode.
+
+### Execution Invariant (Zero Simulation)
+The agent must **NEVER simulate, imagine, or fabricate** a GPTID/ChatGPT conversation internally.
+When GPTID is requested, the agent MUST run the actual relay command via the environment:
+`python browser_relay/gptid_cli.py ask --mode <MODE> --objective "<OBJECTIVE>" --context "<CONTEXT>"`
+(or `chat` / `test` / `review-auto`).
+
+`gptid_cli.py` automatically checks relay health, starts the Chrome browser headed to `chatgpt.com`,
+and auto-heals dead/degraded sessions. If authentication or CAPTCHA is required, report
+`CHATGPT_AUTHENTICATION_REQUIRED` to the user and prompt them to solve it in the visible Chrome window.
+
 Output format: task envelope (`templates/gptid_task.md`) → ChatGPT round-trip →
 response envelope (`templates/gptid_response.md`) with `source: chatgpt-untrusted` +
 TIDOS evaluation block (verified / rejected / follow-ups).

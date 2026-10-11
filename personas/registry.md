@@ -47,6 +47,13 @@
 - **Stack weights (+1)**: none (transport persona — scores on intent only, works in any project)
 - **Project weights (+1)**: none (domain-agnostic by design)
 
+### TIDOSMOBILE — Mobile & Flutter Systems Architecture Specialist (`personas/tidosmobile.md`)
+
+- **Trigger keyword**: `TIDOSMOBILE`
+- **Intent signals**: flutter, dart, android, ios, mobile, apk, aab, gradle, agp, riverpod, bloc, widget, statefulwidget, pubspec, methodchannel, platform channel, proguard, targetsdk
+- **Stack weights (+1)**: `pubspec.yaml`, `android/build.gradle`, `ios/Podfile`, `lib/main.dart`
+- **Project weights (+1)**: Mobile or Flutter projects (`Proflimit`, `SMARTRAD`, `ZTAP`, `CrownVerse`, `MaYdi3ch`, `dentaltid`)
+
 ---
 
 ## 3. Threshold & Tie Rules

@@ -175,3 +175,16 @@ This file tracks non-invasive improvement proposals for TIDOS. All suggestions a
 - **Priority**: Low
 - **Affected Modules**: `browser_relay/gptid_cli.py` (`cmd_start`, `cmd_stop`), `docs/gptid.md`
 - **Status**: TRACKED 2026-09-22 — do NOT implement without explicit authorization.
+
+---
+
+### Title: TIDOSMOBILE Persona (Mobile & Flutter Systems Architecture Specialist)
+
+- **Date**: 2026-10-11
+- **Requestor**: Persona Factory v2.0 (auto-synthesized via live web-research)
+- **Reason**: Detected prominent multi-project Flutter / Android footprint across workspace (`Proflimit`, `SMARTRAD`, `ZTAP`, `CrownVerse`, `MaYdi3ch`, `dentaltid`). Uncovered stack gap in `personas/registry.md`.
+- **Benefits**: Specialized expert scaffolding for Flutter 3+, Dart, Android API 35, Gradle 8.5+, Java 21, and iOS. Includes explicit negative constraints to prevent memory leaks (controller disposal) and build mismatches (AGP / Gradle matrix).
+- **Deliverables**: `personas/tidosmobile.md`, `personas/registry.md`, `personas/README.md`.
+- **Priority**: High
+- **Recommended Version**: 4.0.0
+- **Status**: Implemented & Registered 2026-10-11 via Persona Factory v2.0.

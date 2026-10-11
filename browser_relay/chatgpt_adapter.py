@@ -748,16 +748,27 @@ class AutoDriver:
                 send_btn = self._find_first(self.selectors["send_button"]["fallback_chain"],
                                             timeout_ms=5000)
                 if send_btn is not None:
-                    send_btn.click(timeout=8000)
+                    try:
+                        send_btn.click(timeout=8000)
+                    except Exception:
+                        self._page.keyboard.press("Enter")
                 else:
                     self._page.keyboard.press("Enter")
-                self._page.wait_for_timeout(2500)
-                # Submit ACK: ChatGPT clears the composer on send. Text still
-                # present => nothing was sent (button disabled / Enter ignored).
+                self._page.wait_for_timeout(2000)
+                # Submit ACK: Check if text cleared
                 try:
-                    leftover = (composer.inner_text(timeout=5000) or "").strip()
+                    leftover = (composer.inner_text(timeout=3000) or "").strip()
                 except Exception:
                     leftover = ""
+                if leftover and prompt_text[:48] in leftover:
+                    # If button click didn't send (e.g. clicked wrong element), press Enter on composer directly
+                    try:
+                        composer.click(timeout=2000)
+                        self._page.keyboard.press("Enter")
+                        self._page.wait_for_timeout(2500)
+                        leftover = (composer.inner_text(timeout=3000) or "").strip()
+                    except Exception:
+                        pass
                 if leftover and prompt_text[:48] in leftover:
                     raise RuntimeError("submit not acknowledged (composer still full)")
                 return True, "OK", "message submitted (assistant turns before=%d)" % before

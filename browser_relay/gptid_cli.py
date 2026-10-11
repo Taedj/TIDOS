@@ -27,6 +27,10 @@ from gptid_review import (  # noqa: E402
     ReviewLedger, build_review_task, decide_review, readiness_ok,
     untrusted_envelope, verification_checklist,
 )
+from terminal_ui import (  # noqa: E402
+    Ansi, init_colors, print_chat_turn, print_chatgpt_response,
+    print_relay_badge, print_tidos_banner, style,
+)
 
 PID_FILE = os.path.join(os.path.expanduser("~"), ".tidos", "gptid-relay.pid")
 
@@ -385,7 +389,11 @@ def cmd_test(port, response_timeout=240):
         print("[GPTID] Response received (AUTO, %d chars, correlation=%s)"
               % (len(resp.get("chatgpt_response", "")), corr))
         print("[GPTID] Task completed: %s" % task["task_id"])
-        print(redact_secrets(resp.get("chatgpt_response", ""))[:2000])
+        print_tidos_banner("TEST", task_id=task["task_id"], session_id=task["session_id"],
+                           objective=task["objective"])
+        print_chatgpt_response(redact_secrets(resp.get("chatgpt_response", ""))[:2000],
+                               task_id=task["task_id"], session_id=task["session_id"],
+                               correlated=corr)
         return 0 if (corr and resp.get("status") == "OK") else 1
     if not sent.get("ok", True):
         print("[GPTID] STATUS=%s (reason=%s)" % (sent.get("status"), redact_secrets(sent.get("reason", ""))))
@@ -400,20 +408,33 @@ def cmd_test(port, response_timeout=240):
     return 0
 
 
-def ensure_relay_running(port=8765, driver="auto", browser="chrome", headed=True,
+def ensure_relay_running(port=8765, driver="auto", browser="chrome", headed=False,
                          response_timeout=180, startup_timeout=DEFAULT_STARTUP_TIMEOUT):
-    """Ensure local relay is up. If down, automatically start Chrome headed to ChatGPT."""
-    ok, _ = _get(port, "/health", timeout=2)
-    if ok:
-        return True
-    print("[GPTID] Relay not running on port %d. Automatically opening Chrome to ChatGPT..." % port)
+    """Ensure local relay is up and healthy.
+
+    If stopped: automatically starts Chrome in background to ChatGPT.
+    If running but dead or degraded (e.g. tabs closed, browser crashed, state ERROR):
+    automatically terminates the dead session and re-launches Chrome.
+    """
+    ok, data = _get(port, "/health", timeout=2)
+    if ok and isinstance(data, dict):
+        state = data.get("state")
+        tabs = data.get("tabs", 1)
+        if state != "ERROR" and (driver != "auto" or tabs > 0):
+            return True
+        print_relay_badge("GPTID", "Relay is in degraded/dead state (state=%s, tabs=%s). "
+                          "Auto-restarting browser to ChatGPT..." % (state, tabs), "WARN")
+        cmd_stop(port)
+        time.sleep(1)
+
+    print_relay_badge("GPTID", "Relay not running on port %d. Automatically starting browser to ChatGPT..." % port, "INFO")
     res = cmd_start(port, driver=driver, headed=headed, response_timeout=response_timeout,
                     browser_name=browser, startup_timeout=startup_timeout)
     return (res == 0)
 
 
 def cmd_ask(port, mode, objective, context_parts, response_timeout=240,
-            driver="auto", browser_name="chrome", headed=True, session_id=None):
+            driver="auto", browser_name="chrome", headed=False, session_id=None):
     ensure_relay_running(port, driver=driver, browser=browser_name, headed=headed,
                          response_timeout=response_timeout)
     mode = normalize_mode(mode)
@@ -421,17 +442,17 @@ def cmd_ask(port, mode, objective, context_parts, response_timeout=240,
     task = build_task(objective=objective, mode=mode, context=context, session_id=session_id)
     errs = validate_task(task)
     if errs:
-        print("[GPTID] task invalid: %s" % errs)
+        print_relay_badge("GPTID", "task invalid: %s" % errs, "FAIL")
         return 1
     # Long timeout: AUTO /send blocks for the full browser round-trip
     # (up to response_timeout_seconds). The old 10s default always timed
     # out an AUTO send before the relay could reply.
     ok, sent = _post(port, "/send", task, timeout=response_timeout)
     if not ok:
-        print("[GPTID] STATUS=UNAVAILABLE (reason=%s)" % redact_secrets(sent))
+        print_relay_badge("GPTID", "STATUS=UNAVAILABLE (reason=%s)" % redact_secrets(sent), "FAIL")
         return 1
-    print("[GPTID] Task sent: %s (mode: %s, session: %s, context: %s)" % (
-        task["task_id"], mode, task["session_id"], ",".join(included) or "none"))
+    print_relay_badge("GPTID", "Task sent: %s (mode: %s, session: %s, context: %s)" % (
+        task["task_id"], mode, task["session_id"], ",".join(included) or "none"), "INFO")
     # AUTO captured round-trip: surface the correlated response inline.
     # Exactly one /send attempt — no retry loop, no second submission.
     if isinstance(sent, dict) and sent.get("mode") == "auto" and sent.get("auto_response"):
@@ -441,40 +462,35 @@ def cmd_ask(port, mode, objective, context_parts, response_timeout=240,
         status = resp.get("status", "OK")
         if correlated and status == "OK":
             content = redact_secrets(resp.get("chatgpt_response", ""))
-            print("[GPTID] GPTID %s: CAPTURED (%d chars, correlation=True)" % (
-                mode, len(content)))
-            print("[GPTID] GPTID %s: UNTRUSTED RESULT (source=chatgpt-untrusted, "
-                  "task=%s, session=%s)" % (mode, resp.get("task_id"),
-                                            resp.get("session_id")))
-            print("\n" + "=" * 64)
-            print("[TIDOS -> CHATGPT] Partner Mode: %s" % mode)
-            print("Objective: %s" % objective)
-            print("=" * 64)
-            print("[CHATGPT -> TIDOS] Extracted Response:\n")
-            print(content)
-            print("=" * 64 + "\n")
+            print_relay_badge("GPTID", "GPTID %s: CAPTURED (%d chars, correlation=True)" % (
+                mode, len(content)), "SUCCESS")
+            print_relay_badge("GPTID", "GPTID %s: UNTRUSTED RESULT (source=chatgpt-untrusted, "
+                              "task=%s, session=%s)" % (mode, resp.get("task_id"),
+                                                        resp.get("session_id")), "WARN")
+            print_tidos_banner(mode, task_id=task["task_id"], session_id=task["session_id"],
+                               objective=objective, context_keys=",".join(included) or "none")
+            print_chatgpt_response(content, task_id=resp.get("task_id"), session_id=resp.get("session_id"),
+                                   correlated=correlated, chars=len(content))
             return 0
-        print("[GPTID] STATUS=MALFORMED (reason=correlation mismatch or status=%s)" % status)
+        print_relay_badge("GPTID", "STATUS=MALFORMED (reason=correlation mismatch or status=%s)" % status, "FAIL")
         return 1
     if isinstance(sent, dict) and sent.get("queued"):
-        print("[GPTID] queued (position %s): waiting for ChatGPT READY — "
-              "sign in to ChatGPT in the GPTID browser window; "
-              "the queued task runs automatically, no restart." % sent.get("position"))
+        print_relay_badge("GPTID", "queued (position %s): waiting for ChatGPT READY" % sent.get("position"), "QUEUED")
         return 0
     if isinstance(sent, dict) and not sent.get("ok", True):
-        print("[GPTID] STATUS=%s (reason=%s)" % (sent.get("status"), redact_secrets(sent.get("reason", ""))))
+        print_relay_badge("GPTID", "STATUS=%s (reason=%s)" % (sent.get("status"), redact_secrets(sent.get("reason", ""))), "FAIL")
         return 1
     print(redact_secrets(sent.get("sent_block", "")))
     return 0
 
 
 def cmd_chat(port, objective, context_parts, response_timeout=240,
-             driver="auto", browser_name="chrome", headed=True):
+             driver="auto", browser_name="chrome", headed=False):
     """Interactive multi-turn partnership chat with ChatGPT."""
     ensure_relay_running(port, driver=driver, browser=browser_name, headed=headed,
                          response_timeout=response_timeout)
-    print("\n[GPTID PARTNER] Starting interactive partnership chat with ChatGPT.")
-    print("[GPTID PARTNER] Chrome is open. Type your messages below, or 'exit' to end session.\n")
+    print_relay_badge("GPTID PARTNER", "Starting interactive partnership consultation with ChatGPT.", "SUCCESS")
+    print_relay_badge("GPTID PARTNER", "Relay active in background. Type your message below, or 'exit' to quit.\n", "INFO")
 
     current_objective = objective or "Hello partner! I am working in TIDOS on a project. Let's collaborate."
     parts = dict(context_parts or {})
@@ -485,20 +501,19 @@ def cmd_chat(port, objective, context_parts, response_timeout=240,
         task = build_task(objective=current_objective, mode="CHAT", context=context, session_id=session_id)
         session_id = task["session_id"]
 
+        print_tidos_banner("CHAT", task_id=task["task_id"], session_id=session_id,
+                           objective=current_objective)
+
         ok, sent = _post(port, "/send", task, timeout=response_timeout)
         if not ok:
-            print("[GPTID] STATUS=UNAVAILABLE (reason=%s)" % redact_secrets(sent))
+            print_relay_badge("GPTID", "STATUS=UNAVAILABLE (reason=%s)" % redact_secrets(sent), "FAIL")
             return 1
 
         if isinstance(sent, dict) and sent.get("mode") == "auto" and sent.get("auto_response"):
             resp = sent["auto_response"]
             content = redact_secrets(resp.get("chatgpt_response", ""))
-            print("\n" + "=" * 64)
-            print("[TIDOS -> CHATGPT] %s" % current_objective)
-            print("=" * 64)
-            print("[CHATGPT -> TIDOS]\n")
-            print(content)
-            print("=" * 64 + "\n")
+            print_chatgpt_response(content, task_id=resp.get("task_id"), session_id=resp.get("session_id"),
+                                   correlated=True, chars=len(content))
         else:
             print(redact_secrets(sent.get("sent_block", "")))
 
@@ -506,14 +521,15 @@ def cmd_chat(port, objective, context_parts, response_timeout=240,
         try:
             if not sys.stdin.isatty():
                 break
-            prompt_text = input("TIDOS Partner [You] > ").strip()
+            prompt_label = style("TIDOS Partner [You] > ", Ansi.BOLD, Ansi.CYAN_VIBRANT)
+            prompt_text = input(prompt_label).strip()
             if not prompt_text or prompt_text.lower() in ("exit", "quit", "q"):
-                print("[GPTID PARTNER] Chat session ended.")
+                print_relay_badge("GPTID PARTNER", "Chat session ended.", "INFO")
                 break
             current_objective = prompt_text
             parts = {}
         except (EOFError, KeyboardInterrupt):
-            print("\n[GPTID PARTNER] Chat session ended.")
+            print_relay_badge("GPTID PARTNER", "Chat session ended.", "INFO")
             break
     return 0
 
@@ -594,6 +610,11 @@ def cmd_review_auto(port, change_json, questions_text, context_text,
         print("[GPTID] GPTID REVIEW: UNTRUSTED RESULT (source=%s, task=%s, "
               "session=%s, %s)" % (env["source"], env["task_id"],
                                    env["session_id"], env["timestamp"]))
+        print_tidos_banner("REVIEW-AUTO", task_id=task["task_id"], session_id=task["session_id"],
+                           objective=task.get("objective", "Review requested"),
+                           context_keys="CURRENT_TASK" if context_text else None)
+        print_chatgpt_response(env["chatgpt_response"], task_id=task["task_id"], session_id=task["session_id"],
+                               correlated=correlated, chars=len(env["chatgpt_response"]))
         for line in verification_checklist()[1:]:
             print("[GPTID] verify: %s" % line)
         if change_id:
@@ -614,6 +635,7 @@ def cmd_review_auto(port, change_json, questions_text, context_text,
 
 
 def main(argv=None):
+    init_colors()
     ap = argparse.ArgumentParser(prog="gptid")
     ap.add_argument("command", choices=(
         "status", "start", "stop", "test", "ask", "review", "audit", "reset",
@@ -623,10 +645,10 @@ def main(argv=None):
     ap.add_argument("--driver", default="auto", choices=("manual", "auto"))
     ap.add_argument("--browser", default="chrome",
                     choices=("firefox", "firefox-nightly", "chromium", "chrome"))
-    ap.add_argument("--headed", action="store_true", default=True,
-                    help="AUTO: show the browser window (default True)")
-    ap.add_argument("--headless", action="store_true",
-                    help="AUTO: run browser in background")
+    ap.add_argument("--headed", action="store_true", default=False,
+                    help="AUTO: show the browser window")
+    ap.add_argument("--headless", action="store_true", default=False,
+                    help="AUTO: run browser in background (default)")
     ap.add_argument("--response-timeout", type=int, default=180)
     ap.add_argument("--mode", default="REVIEW")
     ap.add_argument("--objective", default="")
@@ -638,7 +660,7 @@ def main(argv=None):
     ap.add_argument("--startup-timeout", type=int, default=DEFAULT_STARTUP_TIMEOUT)
     args = ap.parse_args(argv)
 
-    is_headed = not args.headless if args.headless else args.headed
+    is_headed = bool(args.headed and not args.headless)
 
     if args.command == "status":
         return cmd_status(args.port)
