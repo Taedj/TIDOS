@@ -478,9 +478,15 @@ def cmd_ask(port, mode, objective, context_parts, response_timeout=240,
         print_relay_badge("GPTID", "queued (position %s): waiting for ChatGPT READY" % sent.get("position"), "QUEUED")
         return 0
     if isinstance(sent, dict) and not sent.get("ok", True):
-        print_relay_badge("GPTID", "STATUS=%s (reason=%s)" % (sent.get("status"), redact_secrets(sent.get("reason", ""))), "FAIL")
+        status = sent.get("status")
+        reason = redact_secrets(sent.get("reason", ""))
+        print_relay_badge("GPTID", "STATUS=%s (reason=%s)" % (status, reason), "FAIL")
+        if status == "UNAVAILABLE" and "AUTHENTICATION_REQUIRED" in reason:
+            print_relay_badge("GPTID", "One-time ChatGPT login required. Run: python browser_relay/gptid_cli.py start --headed", "WARN")
+            print_relay_badge("GPTID", "Once signed in, the persistent profile will execute all queries automatically.", "INFO")
         return 1
-    print(redact_secrets(sent.get("sent_block", "")))
+    if driver == "manual":
+        print(redact_secrets(sent.get("sent_block", "")))
     return 0
 
 

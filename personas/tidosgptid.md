@@ -235,15 +235,20 @@ Trigger keyword: `GPTID` (explicit keyword always overrides the router). Sub-for
 On trigger: confirm activation (`TIDOS persona active: GPTID — <reason>.`), recover project
 context read-only, open/check the relay, run the handshake, then serve the requested mode.
 
-### Execution Invariant (Zero Simulation)
+### Execution Invariant (Zero Simulation & Fully Automated Transport)
 The agent must **NEVER simulate, imagine, or fabricate** a GPTID/ChatGPT conversation internally.
 When GPTID is requested, the agent MUST run the actual relay command via the environment:
 `python browser_relay/gptid_cli.py ask --mode <MODE> --objective "<OBJECTIVE>" --context "<CONTEXT>"`
 (or `chat` / `test` / `review-auto`).
 
-`gptid_cli.py` automatically checks relay health, starts the Chrome browser headed to `chatgpt.com`,
-and auto-heals dead/degraded sessions. If authentication or CAPTCHA is required, report
-`CHATGPT_AUTHENTICATION_REQUIRED` to the user and prompt them to solve it in the visible Chrome window.
+`gptid_cli.py` automatically checks relay health, starts the browser to `chatgpt.com`,
+and auto-heals dead/degraded sessions.
+
+**Zero Manual Copy-Paste Invariant**:
+The agent must **NEVER** instruct the user to manually copy-paste prompt blocks back and forth with ChatGPT.
+GPTID operates as a fully autonomous browser relay. If the browser session is at the login screen (`AUTHENTICATION_REQUIRED`),
+simply notify the user to log into their free ChatGPT account once in the browser (`python browser_relay/gptid_cli.py start --headed`).
+Once authenticated, the browser profile persistently retains the session, and all subsequent tasks execute and extract automatically with zero user intervention.
 
 Output format: task envelope (`templates/gptid_task.md`) → ChatGPT round-trip →
 response envelope (`templates/gptid_response.md`) with `source: chatgpt-untrusted` +
