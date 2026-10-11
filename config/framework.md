@@ -16,9 +16,9 @@ repository:
 
 ```yaml
 version:
-  current: 3.2.0
-  codename: TIDOS Platform
-  release_date: 2026-09-11
+  current: 4.0.0
+  codename: Federated Cognitive Operating System
+  release_date: 2026-10-11
 ```
 
 ## Persona Factory (self-learning persona generation)
