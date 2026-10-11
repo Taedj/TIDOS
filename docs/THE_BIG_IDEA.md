@@ -149,3 +149,6 @@ Track progress step-by-step. Check boxes as each item is implemented and verifie
 | 2026-10-11 | Phase 5 | Task 5.3: Executed dry-run community sync and verified zero-leakage privacy firewall audit | TIDOS Architecture Team |
 | 2026-10-11 | Phase 5 | Task 5.2: Generated and registered `personas/tidosmobile.md` via web research, negative constraints & registry signals | TIDOS Architecture Team |
 | 2026-10-11 | Phase 5 | Task 5.1: Validated complete Model Equalizer cognitive loop with zero defect execution and 80/80 passing checks | TIDOS Architecture Team |
+| 2026-10-11 | Phase 5 | Added ANSI colored terminal stream (`browser_relay/terminal_ui.py`) for live TIDOS/ChatGPT consultations | TIDOS Architecture Team |
+| 2026-10-11 | Phase 5 | Added automated headed browser window launch and reactive polling loop on login | TIDOS Architecture Team |
+
