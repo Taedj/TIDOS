@@ -20,15 +20,16 @@ graph TD
     S8 --> S9["9. Await User Prompt Instructions"]
 ```
 
-### Step 0: Mandatory Force-Update Gate (Runs First on "START TIDOS")
+### Step 0: Update Gate (reports first, installs only when approved)
 
-Whenever the user or session prompts `START TIDOS`, the system or AI Agent **must first force-update TIDOS** from GitHub:
-- Run `scripts/update.ps1` (Windows) or `scripts/update.sh` (Linux/macOS) (or execute `.\start_tidos.ps1` / `./start_tidos.sh`).
-- **Resilient Multi-Location Detection**: Auto-detects the TIDOS checkout across `.tidos/`, `TIDOS/`, `tidos/`, `.`, and parent paths.
-- **Universal Force Sync**: Even if an old version of TIDOS is cloned to the project, or detached in a submodule, or missing a `.git` folder, the update gate reconnects to `https://github.com/Taedj/TIDOS.git`, fetches `origin/main`, and executes a memory-safe **force-sync** (`git reset --hard origin/main` and `git clean -fd`).
-- **Memory Safety**: User institutional memory in `memory/` and `evolution/` is non-destructively preserved and re-applied, while all OS core, engines, personas, rules, and scripts are force-aligned to the latest GitHub push.
-- **Offline Resilient**: If GitHub or network is unreachable, it logs a warning and cleanly continues on the local version without crashing.
-- Record the before→after version revision in the Startup Report.
+`START TIDOS` checks GitHub for a newer TIDOS (`scripts/update.ps1` / `update.sh`, also run by `start_tidos`):
+- **Channel `release` (default)** follows the newest `vX.Y.Z` tag; `-Channel main` follows `main` (maintainers).
+- It **reports** the update (commits, files changed, tag signature) and **does not install it** until the user approves:
+  re-run with `-ApplyUpdate` (PowerShell) or `--apply-update` (bash). Tell the user what the update contains and ask.
+- `TIDOS_REQUIRE_SIGNED=1` refuses unsigned releases.
+- Safety: never touches a project that merely contains TIDOS files, never rewrites a fork's remote, never discards
+  local edits or unpushed commits, never deletes untracked files, and backs up `memory/` + `evolution/`.
+- Offline: continues on the local version.
 
 ### Step 0.5: Authentication Gate (MANDATORY STRICT LOCK — Firebase Google Sign-In)
 

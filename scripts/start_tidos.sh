@@ -9,12 +9,14 @@
 set -e
 
 PROJECT_DIR="$(pwd)"   # the user's project: where START TIDOS was run
-TOOL="auto"; MODEL="auto"; SKIP_ARG=""
+TOOL="auto"; MODEL="auto"; SKIP_ARG=""; UPDATE_ARGS=""
 for arg in "$@"; do
     case "$arg" in
         --tool=*) TOOL="${arg#--tool=}" ;;
         --model=*) MODEL="${arg#--model=}" ;;
         --skip-update) SKIP_ARG="--skip-update" ;;
+        --apply-update) UPDATE_ARGS="$UPDATE_ARGS --apply" ;;
+        --channel=*) UPDATE_ARGS="$UPDATE_ARGS --channel ${arg#--channel=}" ;;
     esac
 done
 set -- $SKIP_ARG
@@ -41,7 +43,7 @@ fi
 if [ "$SKIP_UPDATE" = 0 ]; then
     echo ">>> [STEP 0] Checking for TIDOS updates on GitHub..."
     if [ -f "$SCRIPT_DIR/update.sh" ]; then
-        bash "$SCRIPT_DIR/update.sh" "$TIDOS_ROOT" || echo "WARNING: Update check completed with non-zero exit. Continuing."
+        bash "$SCRIPT_DIR/update.sh" "$TIDOS_ROOT" $UPDATE_ARGS || echo "WARNING: Update check completed with non-zero exit. Continuing."
     fi
 fi
 

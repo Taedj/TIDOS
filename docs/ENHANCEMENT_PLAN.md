@@ -54,7 +54,7 @@
 - [x] **1.9** `scripts/update.ps1` — stop silencing errors (`2>$null`) on backup/restore of `memory/` and `evolution/`; abort if backup fails — done 2026-10-24 (both `.ps1` and `.sh`; a restore failure keeps the backup and prints its path). Verified by `tests/update_gate_scenarios.sh`: sh 8/8, ps1 8/8
 
 ### 1B. Security
-- [ ] **1.10** Update gate: pin to **signed release tags** instead of `main`; show a diff and require user approval before applying
+- [x] **1.10** Update gate: pin to **signed release tags** instead of `main`; show a diff and require user approval before applying — done 2026-10-24 (channel `release` = newest vX.Y.Z tag by default, `main` for maintainers; update is REPORTED (commits, diffstat, tag signature) and installed only with `-Apply`/`-ApplyUpdate`; `TIDOS_REQUIRE_SIGNED=1` refuses unsigned tags; never downgrades a newer checkout; scenarios sh 12/12, ps1 12/12)
 - [ ] **1.11** `scripts/factory_sync.ps1` / `.sh` — stop auto-pushing to `main`; open a PR instead
 - [ ] **1.12** `scripts/google_auth_server.py` — add `state` nonce to `/callback`, verify the ID token server-side, reject unexpected origins
 - [ ] **1.13** Store the refresh token securely (OS keyring via `keyring`, or at least restricted file permissions)

@@ -10,9 +10,13 @@ pass=0; failn=0
 ok()  { echo "  PASS: $1"; pass=$((pass+1)); }
 bad() { echo "  FAIL: $1"; failn=$((failn+1)); }
 
+CHANNEL=main   # scenario defaults: follow main and apply (A-G); H-J test the release channel
+APPLY=1
 run_update() { # $1 = cwd, $2 = optional dir arg
-  if [ "$KIND" = sh ]; then (cd "$1" && bash "$SRC/update.sh" ${2:+"$2"}) >"$W/out.txt" 2>&1
-  else (cd "$1" && powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$SRC/update.ps1")" ${2:+-TidosDir "$2"}) >"$W/out.txt" 2>&1
+  local sh_args=(--channel "$CHANNEL") ps_args=(-Channel "$CHANNEL")
+  [ "$APPLY" = 1 ] && sh_args+=(--apply) && ps_args+=(-Apply)
+  if [ "$KIND" = sh ]; then (cd "$1" && bash "$SRC/update.sh" ${2:+"$2"} "${sh_args[@]}") >"$W/out.txt" 2>&1
+  else (cd "$1" && powershell -NoProfile -ExecutionPolicy Bypass -File "$(cygpath -w "$SRC/update.ps1")" ${2:+-TidosDir "$2"} "${ps_args[@]}") >"$W/out.txt" 2>&1
   fi
   echo $?
 }
@@ -59,7 +63,7 @@ echo "== [$KIND] F: unpushed local commit blocks update"
 cd "$W/client" && echo "local feature" > core/feature.md && git add -A && git commit -qm local
 push_v2 3
 rc=$(run_update "$W" "$W/client")
-[ "$rc" = 0 ] && git -C "$W/client" log --oneline | grep -q local && grep -q "not on origin" "$W/out.txt" \
+[ "$rc" = 0 ] && git -C "$W/client" log --oneline | grep -q local && grep -q "are not in" "$W/out.txt" \
   && ok "unpushed commit protected" || { bad "ahead rc=$rc"; cat "$W/out.txt"; }
 
 echo "== [$KIND] G: .tidos local copy (no .git) inside a project repo"
@@ -70,6 +74,30 @@ rc=$(run_update "$W/proj2")
 [ "$rc" = 0 ] && grep -q v3 "$W/proj2/.tidos/TIDSTART.md" && [ "$(git -C "$W/proj2" remote get-url origin)" = https://example.com/my/project2.git ] \
   && [ -f "$W/proj2/app.txt" ] && [ "$(git -C "$W/proj2" log --oneline | wc -l)" = 1 ] \
   && ok ".tidos updated, parent project untouched" || { bad "local copy rc=$rc"; cat "$W/out.txt"; }
+
+echo "== [$KIND] H: release channel reports, installs only with approval"
+cd "$W/seed" && git tag -a v1.0.0 -m "release 1" && git push -q origin v1.0.0
+git clone -q "$W/upstream.git" "$W/rel" 2>/dev/null && git -C "$W/rel" checkout -q --detach v1.0.0
+push_v2 4
+cd "$W/seed" && git tag -a v1.1.0 -m "release 1.1" && git push -q origin v1.1.0
+push_v2 5                                   # newer main commit that is NOT released
+CHANNEL=release; APPLY=0
+rc=$(run_update "$W" "$W/rel")
+[ "$rc" = 0 ] && grep -q "Update available" "$W/out.txt" && grep -q "NOT installed" "$W/out.txt" && grep -q v3 "$W/rel/TIDSTART.md"   && ok "update reported, nothing installed without approval" || { bad "report rc=$rc"; cat "$W/out.txt"; }
+APPLY=1
+rc=$(run_update "$W" "$W/rel")
+[ "$rc" = 0 ] && grep -q v4 "$W/rel/TIDSTART.md" && ok "approved: installed release v1.1.0 (not unreleased main)"   || { bad "apply rc=$rc"; cat "$W/out.txt"; }
+
+echo "== [$KIND] I: TIDOS_REQUIRE_SIGNED refuses an unsigned release"
+cd "$W/seed" && git tag -a v1.2.0 -m "release 1.2" && git push -q origin v1.2.0
+rc=$(TIDOS_REQUIRE_SIGNED=1 run_update "$W" "$W/rel")
+[ "$rc" = 2 ] && grep -q "unsigned" "$W/out.txt" && grep -q v4 "$W/rel/TIDSTART.md"   && ok "unsigned release refused" || { bad "signed rc=$rc"; cat "$W/out.txt"; }
+
+echo "== [$KIND] J: a checkout newer than the latest release is never moved backwards"
+push_v2 6                                   # main moves past the latest release v1.2.0
+fresh_clone "$W/newer"
+rc=$(run_update "$W" "$W/newer")
+[ "$rc" = 0 ] && grep -q "already contains" "$W/out.txt" && grep -q v6 "$W/newer/TIDSTART.md"   && ok "no downgrade" || { bad "downgrade rc=$rc"; cat "$W/out.txt"; }
 
 echo "== [$KIND] result: $pass passed, $failn failed"
 rm -rf "$W"

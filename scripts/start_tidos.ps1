@@ -9,7 +9,9 @@ param(
     [string]$TidosDir = "",
     [switch]$SkipUpdate,
     [string]$Tool = "auto",      # claude-code | opencode | gemini-cli | ... (auto-detected when possible)
-    [string]$Model = "auto"      # exact model id if the agent knows it; otherwise TIDOS detects it
+    [string]$Model = "auto",     # exact model id if the agent knows it; otherwise TIDOS detects it
+    [switch]$ApplyUpdate,        # install the reported update (the user approved it)
+    [ValidateSet("release", "main")][string]$Channel = "release"
 )
 
 $projectDir = (Get-Location).Path   # the user's project: where START TIDOS was run
@@ -37,10 +39,12 @@ if (-not $SkipUpdate -and (Test-Path $ctl)) {
 
 # Step 0: Force-Update Gate against GitHub origin/main
 if (-not $SkipUpdate) {
-    Write-Host ">>> [STEP 0] Checking for TIDOS updates on GitHub..." -ForegroundColor Yellow
+    Write-Host ">>> [STEP 0] Checking for TIDOS updates on GitHub (installed only when approved)..." -ForegroundColor Yellow
     $updateScript = Join-Path $scriptDir "update.ps1"
     if (Test-Path $updateScript) {
-        & powershell -NoProfile -ExecutionPolicy Bypass -File $updateScript -TidosDir $tidosRoot
+        $updateArgs = @("-TidosDir", $tidosRoot, "-Channel", $Channel)
+        if ($ApplyUpdate) { $updateArgs += "-Apply" }
+        & powershell -NoProfile -ExecutionPolicy Bypass -File $updateScript @updateArgs
         if ($LASTEXITCODE -ne 0) {
             Write-Host "WARNING: Update check completed with non-zero exit ($LASTEXITCODE). Proceeding with local version." -ForegroundColor Yellow
         }

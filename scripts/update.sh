@@ -1,28 +1,39 @@
 # ============================================================================
 # TIDOS Update Gate (Linux/macOS Bash)
 # ============================================================================
-# Step 0 of START TIDOS: sync TIDOS with GitHub BEFORE any session work.
-# Updates an old or detached TIDOS clone to the latest GitHub version, with
-# safety guards (v4.1):
-#   - only touches a genuine TIDOS checkout that is its own git top-level
-#     (never the project that contains it)
-#   - never rewrites a custom/fork 'origin' remote
-#   - never discards local edits or unpushed commits to system files
-#   - never deletes untracked files (generated personas, new work)
-#   - memory/ and evolution/ are backed up and restored; any backup or
-#     restore failure aborts loudly and keeps the backup
+# Step 0 of START TIDOS. Checks GitHub for a newer TIDOS and installs it ONLY when
+# approved (--apply). Default channel "release" follows the newest vX.Y.Z tag;
+# "main" follows the main branch (maintainers). TIDOS_REQUIRE_SIGNED=1 refuses
+# tags that are unsigned or fail `git verify-tag`.
 #
-# Usage: ./scripts/update.sh [tidos_dir] [branch]
-# Exit codes: 0 = ready (updated / already current / offline-continue)
+# Safety guards (v4.1):
+#   - only touches a genuine TIDOS checkout that is its own git top-level
+#   - never rewrites a custom/fork 'origin' remote
+#   - never discards local edits or commits that are not in the target version
+#   - never deletes untracked files (generated personas, new work)
+#   - memory/ and evolution/ are backed up and restored; failures abort loudly
+#
+# Usage: ./scripts/update.sh [tidos_dir] [--channel release|main] [--apply]
+# Exit codes: 0 = ready (up to date / update reported / applied / offline)
 #             2 = ERROR or refused (nothing was changed)
 # ============================================================================
 
-TIDOS_DIR="${1:-}"
-BRANCH="${2:-main}"
+TIDOS_DIR=""
+CHANNEL="release"
+APPLY=0
+while [ $# -gt 0 ]; do
+  case "$1" in
+    --channel) CHANNEL="$2"; shift 2 ;;
+    --channel=*) CHANNEL="${1#--channel=}"; shift ;;
+    --apply) APPLY=1; shift ;;
+    *) [ -z "$TIDOS_DIR" ] && TIDOS_DIR="$1"; shift ;;
+  esac
+done
 CANONICAL_URL="${TIDOS_UPDATE_TEST_URL:-https://github.com/Taedj/TIDOS.git}"  # override is for the test harness only
 USER_DIRS="memory evolution"
 
 fail() { echo "ERROR: $1" >&2; exit 2; }
+case "$CHANNEL" in release|main) ;; *) fail "channel must be release or main" ;; esac
 
 is_tidos_checkout() {
   [ -f "$1/TIDSTART.md" ] && [ -f "$1/core/kernel.md" ] && [ -f "$1/config/framework.md" ]
@@ -39,9 +50,7 @@ if [ -z "$TIDOS_DIR" ]; then
     fi
   done
 fi
-
 [ -n "$TIDOS_DIR" ] && is_tidos_checkout "$TIDOS_DIR" || fail "No TIDOS checkout found (needs TIDSTART.md, core/kernel.md, config/framework.md). Pass tidos_dir explicitly."
-
 cd "$TIDOS_DIR" || fail "Cannot enter '$TIDOS_DIR'."
 TIDOS_DIR=$(pwd -P)
 echo "[1/5] TIDOS directory located: $TIDOS_DIR"
@@ -52,13 +61,9 @@ if [ ! -d ".git" ] && [ ! -f ".git" ]; then
   git init -q || fail "git init failed in '$TIDOS_DIR'."
   git remote add origin "$CANONICAL_URL"
 fi
-
-# Guard: git must resolve to THIS directory, never to a parent project repo
 # (--show-prefix is empty only at the top-level; avoids symlink / path-form comparisons)
 PREFIX=$(git rev-parse --show-prefix 2>/dev/null) && [ -z "$PREFIX" ] \
   || fail "Git top-level is '$(git rev-parse --show-toplevel 2>/dev/null)', not '$TIDOS_DIR'. Refusing to touch another repository."
-
-# Guard: never rewrite a custom origin (forks, mirrors, user projects)
 EXISTING_ORIGIN=$(git remote get-url origin 2>/dev/null)
 if [ -z "$EXISTING_ORIGIN" ]; then
   git remote add origin "$CANONICAL_URL"
@@ -68,22 +73,58 @@ fi
 
 OLD_REV=$(git rev-parse --short HEAD 2>/dev/null || echo "(uninitialized)")
 
-# Step 3: Fetch latest from GitHub
-echo "[3/5] Fetching origin/$BRANCH from GitHub... (current: $OLD_REV)"
-if ! git fetch origin "$BRANCH" --prune --tags 2>/dev/null; then
+# Step 3: Fetch and pick the target version
+echo "[3/5] Checking GitHub ($CHANNEL channel, current: $OLD_REV)..."
+if ! git fetch origin main --prune --tags --force 2>/dev/null; then
   echo "  -> WARNING: GitHub unreachable or offline. Continuing on local version ($OLD_REV)."
   exit 0
 fi
-
-NEW_REV=$(git rev-parse --short "origin/$BRANCH" 2>/dev/null) || fail "Remote branch 'origin/$BRANCH' could not be resolved from $CANONICAL_URL."
-
-if [ "$OLD_REV" = "$NEW_REV" ]; then
-  echo "[4/5] Already up-to-date with GitHub ($NEW_REV). No update needed."
+if [ "$CHANNEL" = "release" ]; then
+  TARGET=$(git tag -l 'v*' --sort=-v:refname | head -n 1)
+  if [ -z "$TARGET" ]; then
+    echo "  -> No release tag published yet. Staying on $OLD_REV (use --channel main to follow main)."
+    exit 0
+  fi
+else
+  TARGET="origin/main"
+fi
+TARGET_FULL=$(git rev-parse "$TARGET^{commit}" 2>/dev/null) || fail "Cannot resolve '$TARGET'."
+NEW_REV=$(git rev-parse --short "$TARGET_FULL")
+if [ "$(git rev-parse HEAD 2>/dev/null)" = "$TARGET_FULL" ]; then
+  echo "[4/5] Already on $TARGET ($NEW_REV). No update needed."
   echo "[5/5] TIDOS is ready."
   exit 0
 fi
+if git merge-base --is-ancestor "$TARGET_FULL" HEAD 2>/dev/null; then
+  echo "[4/5] Local version ($OLD_REV) already contains $TARGET. No update needed."
+  exit 0
+fi
 
-# Guard: never discard local work on system files (maintainer / developer mode)
+SIGNATURE="not a tag"
+if [ "$CHANNEL" = "release" ]; then
+  if git verify-tag "$TARGET" >/dev/null 2>&1; then
+    SIGNATURE="valid signature"
+  elif [ "$(git cat-file -t "$TARGET" 2>/dev/null)" = "tag" ] && git cat-file -p "$TARGET" | grep -qE "BEGIN (PGP|SSH) SIGNATURE"; then
+    SIGNATURE="INVALID or untrusted signature"
+  else
+    SIGNATURE="unsigned"
+  fi
+  if [ "${TIDOS_REQUIRE_SIGNED:-0}" = "1" ] && [ "$SIGNATURE" != "valid signature" ]; then
+    fail "Release $TARGET is $SIGNATURE and TIDOS_REQUIRE_SIGNED=1. Not updating."
+  fi
+fi
+
+# Step 4: Report the update (always) and stop unless approved
+COUNT=$(git rev-list --count "HEAD..$TARGET_FULL" 2>/dev/null || echo "?")
+echo "[4/5] Update available: $OLD_REV -> $TARGET ($NEW_REV), tag: $SIGNATURE"
+echo "      $COUNT commit(s);$(git diff --shortstat HEAD "$TARGET_FULL" 2>/dev/null)"
+git log --oneline "HEAD..$TARGET_FULL" 2>/dev/null | head -n 15 | sed 's/^/        /'
+if [ "$APPLY" != 1 ]; then
+  echo "  -> NOT installed. Review the changes above, then approve with: START TIDOS --apply-update (or scripts/update.sh --apply)."
+  exit 0
+fi
+
+# Guard: never discard local work that is not part of the target version
 if [ "$OLD_REV" != "(uninitialized)" ]; then
   DIRTY=$(git status --porcelain --untracked-files=no | grep -Ev '^.. "?(memory|evolution)/')
   if [ -n "$DIRTY" ]; then
@@ -92,16 +133,14 @@ if [ "$OLD_REV" != "(uninitialized)" ]; then
     echo "  -> WARNING: update skipped to protect your work. Commit/push or stash, then rerun. Continuing on local version ($OLD_REV)."
     exit 0
   fi
-  AHEAD=$(git rev-list --count "origin/$BRANCH..HEAD" 2>/dev/null || echo 0)
+  AHEAD=$(git rev-list --count "$TARGET_FULL..HEAD" 2>/dev/null || echo 0)
   if [ "$AHEAD" -gt 0 ]; then
-    echo "  -> WARNING: $AHEAD local commit(s) not on origin/$BRANCH. Update skipped - push them first. Continuing on local version ($OLD_REV)."
+    echo "  -> WARNING: $AHEAD local commit(s) are not in $TARGET. Update skipped - push or merge them first. Continuing on local version ($OLD_REV)."
     exit 0
   fi
 fi
 
-echo "[4/5] Update found: $OLD_REV -> $NEW_REV. Force-updating TIDOS..."
-
-# Step 4: Back up user memory before the reset - abort on any failure
+# Step 5: Back up user memory, move to the target, restore memory
 TEMP_BACKUP=$(mktemp -d "${TMPDIR:-/tmp}/tidos_mem_backup_XXXXXX") || fail "Cannot create backup directory. Nothing was changed."
 BACKED_UP=""
 for d in $USER_DIRS; do
@@ -111,20 +150,20 @@ for d in $USER_DIRS; do
   fi
 done
 
-# Step 5: Sync system files to origin/$BRANCH (heals detached HEAD in submodules).
 # No 'git clean': untracked files are user work (e.g. generated personas), never upstream files.
-git checkout -B "$BRANCH" "origin/$BRANCH" --force 2>/dev/null
-git reset --hard "origin/$BRANCH" 2>/dev/null
+if [ "$CHANNEL" = "main" ]; then
+  git checkout -B main "$TARGET_FULL" --force 2>/dev/null
+else
+  git checkout --detach "$TARGET_FULL" --force 2>/dev/null
+fi
+git reset --hard "$TARGET_FULL" 2>/dev/null
 RESET_RC=$?
 
-# Restore preserved user memory files (also after a failed reset)
 for d in $BACKED_UP; do
   mkdir -p "$d" && cp -R "$TEMP_BACKUP/$d/." "$d/" || fail "Memory restore of '$d' failed. Your backup is kept at: $TEMP_BACKUP"
 done
 rm -rf "$TEMP_BACKUP"
+[ "$RESET_RC" -eq 0 ] || fail "git reset --hard $TARGET failed (memory restored)."
 
-[ "$RESET_RC" -eq 0 ] || fail "git reset --hard origin/$BRANCH failed (memory restored)."
-
-FINAL_REV=$(git rev-parse --short HEAD 2>/dev/null)
-echo "[5/5] Force update successful: $OLD_REV -> $FINAL_REV"
+echo "[5/5] Updated: $OLD_REV -> $TARGET ($(git rev-parse --short HEAD 2>/dev/null))"
 exit 0
