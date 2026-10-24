@@ -16,10 +16,13 @@ param(
 $root = Split-Path -Parent $PSScriptRoot
 $main = Join-Path $root "tidos_dashboard\__main__.py"
 $url = "http://localhost:$Port/"
+# Health check on IPv4: the server binds 127.0.0.1 only, and "localhost" tries ::1 first,
+# which Windows retries for ~2 s before falling back (longer than the check timeout).
+$checkUrl = "http://127.0.0.1:$Port/"
 $pidFile = Join-Path (Join-Path $HOME ".tidos") "tidoszit.pid"
 
 function Test-Running {
-    try { Invoke-RestMethod -Uri "$($url)api/boot" -TimeoutSec 2 | Out-Null; return $true } catch { return $false }
+    try { Invoke-RestMethod -Uri "$($checkUrl)api/boot" -TimeoutSec 2 | Out-Null; return $true } catch { return $false }
 }
 
 if ($Stop) {

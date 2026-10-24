@@ -22,7 +22,8 @@ URL="http://localhost:$PORT/"
 PIDFILE="$HOME/.tidos/tidoszit.pid"
 PY="$(command -v python3 || command -v python)"   # Git Bash on Windows has no python3
 
-running() { "$PY" -c "import urllib.request,sys; urllib.request.urlopen(sys.argv[1]+'api/boot', timeout=2)" "$URL" 2>/dev/null; }
+# Health check on IPv4: the server binds 127.0.0.1 only, and "localhost" may try ::1 first (slow on Windows).
+running() { "$PY" -c "import urllib.request,sys; urllib.request.urlopen(sys.argv[1]+'api/boot', timeout=2)" "http://127.0.0.1:$PORT/" 2>/dev/null; }
 
 if [ "$STOP" = 1 ]; then
   if [ -f "$PIDFILE" ]; then kill "$(cat "$PIDFILE")" 2>/dev/null; rm -f "$PIDFILE"; echo "[TIDOSZIT] Control center stopped."
