@@ -4,6 +4,35 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [5.0.0] - 2026-10-24
+
+TIDOS becomes a runtime: it learns automatically from strong-model work and **enforces** guidance for weak models
+(hooks, MCP tools) instead of only describing it.
+
+### Added
+- **MCP server** (`tidos_mcp/`): `tidos_start`, `tidos_guide`, `tidos_verify` (only real check subcommands),
+  `tidos_recall`, `tidos_note`, `tidos_propose` — for Claude Code, OpenCode, Cursor and any MCP client.
+- **Claude Code plugin** (`plugin/`, marketplace in `.claude-plugin/`): 7 subagents (architect, reviewer, tester,
+  security, researcher, uiux, mobile), `/tidos` orchestrator, `/TIDOSZIT`, hooks for all events, MCP server.
+- **GUIDE mode, per request**: `tidos_session guide` / hook injection returns only the matching playbook, a
+  checks-first step and the project's notes (≤ 1.6 KB).
+- **Enforcement in GUIDE mode** (Claude Code hooks): read before edit, no "done" without a passing check, stop after
+  the same check fails 3 times.
+- **Automatic learning**: background strong-model session summaries (`auto_summarize`), learned standing rules from
+  recurring user directives, playbook decay, usage tracking, disable switch, Playbook Library tab.
+- **OpenCode collector**: free-model sessions are traced too; `tidos_session effect` compares guided vs unguided work.
+- **Second opinion** from a different model (`tidos_session review`), replacing the GPTID browser relay.
+- **AGENTS.md generator** (`tidos_session agents-md`).
+
+### Fixed
+- Checker failures without the word "failed" (flutter "N issues found", jest `FAIL`, `npm ERR!`, tsc, TAP) were
+  counted as passes — found by the TIDOS reviewer subagent.
+- Task classification: spec wording ("pre-release", "compared", "plan") no longer misroutes requests; opening verbs
+  and questions are understood.
+- Sessions started in a parent folder are credited to the sub-repository they worked in.
+
+---
+
 ## [4.1.0] - 2026-10-24
 
 TIDOS now **learns** from strong-model sessions and **guides** weak/free models, and the v4.0 safety problems are fixed.

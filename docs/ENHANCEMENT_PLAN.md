@@ -17,8 +17,8 @@
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🟢 Built (13/15) - 3.2 deploy + 3.15 first login need the user |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | ✅ Done (9/9) |
-| 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🔄 In progress (2/9) |
-| 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ⬜ Not started |
+| 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 measurement running |
+| 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ✅ Done (10/10) |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ⬜ Not started |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | ⬜ Not started |
 | 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | ⬜ Not started |
@@ -182,7 +182,7 @@
 - [x] **7.7** Second-opinion reviewer subagent using a different model via API (replaces GPTID browser automation) — done 2026-10-24 (tidos_session review --with claude:<model>|opencode:<provider/model>: sanitized git diff to a different model via its official CLI, reviewer has no edit/shell/web access; warns when the reviewer is the same model family as the session; replaces GPTID; real run with Haiku produced 4 valid findings, 3 fixed (0 issues found, case-insensitive FAIL, unanchored exit code))
 - [x] **7.8** Package as a **Claude Code plugin** (skills + subagents + hooks + MCP) — done 2026-10-24 (plugin/ = Claude Code plugin (7 subagents, /tidos + /TIDOSZIT, hooks for all 6 events, MCP server) with a launcher that finds the TIDOS checkout (TIDOS_REPO or ~/.tidos/repo_path written by START TIDOS) because installed plugins live in a cache; .claude-plugin/marketplace.json for /plugin marketplace add Taedj/TIDOS; built by scripts/build_plugin.py (CI checks sync); claude plugin validate: plugin + marketplace pass with no warnings; launcher hook + MCP verified)
 - [x] **7.9** `AGENTS.md` generator for Codex / Cursor / OpenCode / others — done 2026-10-24 (tidos_session agents-md [--write]: inserts or replaces a marked TIDOS block in the project's AGENTS.md (other content kept, idempotent): START TIDOS, MCP workflow, detected check commands; never contains private playbooks, rules or notes; tests)
-- [ ] **7.10** Release v5.0.0
+- [x] **7.10** Release v5.0.0 — done 2026-10-24 (VERSION + config 5.0.0 (beta), CHANGELOG + ROADMAP, plugin rebuilt and validated, annotated tag v5.0.0 created locally (not pushed))
 
 ---
 

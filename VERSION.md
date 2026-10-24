@@ -1,10 +1,10 @@
 # Version
 
-**Current Version**: 4.1.0
+**Current Version**: 5.0.0
 **Release Date**: 2026-10-24
 **Status**: Beta — learn/guide modes are new; open items in docs/ENHANCEMENT_PLAN.md
 
-**Codename**: Learn & Guide
+**Codename**: Runtime
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

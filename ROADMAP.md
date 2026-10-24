@@ -46,6 +46,9 @@
 - Private brain and playbooks in `~/.tidos/`, /TIDOSZIT control center, 30 verified dungeons, CI.
 - Safety fixes: update gate, privacy firewall, opt-in auth, PR-based persona sync, memory out of the repository.
 
+### v5.0.0 — Runtime (2026-10-24, beta)
+- MCP server, Claude Code plugin (subagents, /tidos, hooks), enforced GUIDE mode, automatic learning, OpenCode traces.
+
 ### Future — Planned
 - Native MCP Server implementation (`tidos-mcp-server`) for direct tool-based OS context hydration across all MCP-compatible AI clients.
 - Automated GitHub Actions sync bot for cross-repository memory consolidation.

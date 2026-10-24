@@ -16,8 +16,8 @@ repository:
 
 ```yaml
 version:
-  current: 4.1.0
-  codename: Learn & Guide
+  current: 5.0.0
+  codename: Runtime
   release_date: 2026-10-24
 ```
 
