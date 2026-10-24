@@ -64,9 +64,9 @@
 - [x] **1.17** `personas/tidostrade.md` — add risk disclaimer and "paper-trading only / never execute real trades" constraint — done 2026-10-24 (risk notice + hard constraints at the top of `personas/tidostrade.md`: never trade real money or change credentials/limits, research/backtest/paper mode only, explicit written OK per live action, no guaranteed-profit claims)
 
 ### 1C. Privacy
-- [ ] **1.18** Remove personal project data from the public repo (`memory/LESSONS.md`, `memory/PROJECT_HISTORY.md`, `memory/USER_PROFILE.md`, etc.); ship only empty templates
-- [ ] **1.19** Move user memory to `~/.tidos/memory/` (outside repo); add `memory/*` user files to `.gitignore`
-- [ ] **1.20** Purge personal data from git history (optional, `git filter-repo`) — needs user approval
+- [x] **1.18** Remove personal project data from the public repo (`memory/LESSONS.md`, `memory/PROJECT_HISTORY.md`, `memory/USER_PROFILE.md`, etc.); ship only empty templates — done 2026-10-24 (repo memory/ holds templates only; ULTIDOS_persona.md (jailbreak-style prompt with a plain-text password) removed from the repo and kept only privately - treat that password as public)
+- [x] **1.19** Move user memory to `~/.tidos/memory/` (outside repo); add `memory/*` user files to `.gitignore` — done 2026-10-24 (tidos_session/memory.py: START TIDOS migrates personal memory to ~/.tidos/memory/ without overwriting; rule memory/X.md = ~/.tidos/memory/X.md in TIDSTART + memory/README; uncommitted edits preserved (37/37 lines); test added)
+- [ ] **1.20** *(waiting for the user: needs git filter-repo + force-push of the public repo; personal files and the ULTIDOS password stay in git history until then)* Purge personal data from git history (optional, `git filter-repo`) — needs user approval
 
 ### 1D. Consistency & cleanup
 - [ ] **1.21** Unify version numbers everywhere (README, TIDSTART, VERSION, engines, start banners) — single source in `config/framework.md`
