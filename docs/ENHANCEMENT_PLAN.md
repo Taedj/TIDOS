@@ -14,8 +14,8 @@
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.4 local gitleaks, 1.20 history purge, 1.27 first CI run on push) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.3 install, 2.5 Gemini, 2.7 router) |
-| 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
-| 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
+| 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🟢 Built (13/15) - 3.2 deploy + 3.15 first login need the user |
+| 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | 🔄 In progress (5/9) |
 | 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🔄 In progress (2/9) |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ⬜ Not started |
@@ -104,7 +104,7 @@
 
 ### 3A. Security gate
 - [x] **3.1** Firestore document `admin/tidoszit` = `{ hash, salt, algo, iterations, updatedAt }` (never the plaintext password) — done 2026-10-24 (format implemented + tested; the document itself is created by the first-run setup in the browser)
-- [ ] **3.2** *(partial 2026-10-24: `firebase/firestore.rules` (owner-only `admin/*`, deny everything else) + `firebase/firebase.json` written. **Deploy blocked for the agent (production deploy) — user runs it.**)* Firestore security rules: `admin/*` readable/writable **only** by the owner UID; deploy to `tidos-framework`
+- [ ] **3.2** *(rules written; deploy needs the user (Claude Code blocks agent production deploys): firebase deploy --only firestore:rules --project tidos-framework --config firebase/firebase.json)* Firestore security rules: `admin/*` readable/writable **only** by the owner UID; deploy to `tidos-framework`
 - [x] **3.3** `scripts/tidoszit_setpass.py` — set/change password locally (PBKDF2-SHA256 or argon2), writes only the hash — done 2026-10-24 (design change: no CLI script (a password typed in a terminal can end up in AI transcripts) — first-run setup + "Change password" happen in the browser; PBKDF2-SHA256 600k iterations)
 - [x] **3.4** Login step 1: Google sign-in, must match owner UID — done 2026-10-24 (server verifies the ID token with Google (Identity Toolkit) and requires uid == owner_uid)
 - [x] **3.5** Login step 2: password typed **in the browser** (never through the AI chat/terminal) and verified against the Firestore hash — done 2026-10-24 (hash read from Firestore with the owner token, constant-time compare)
@@ -119,7 +119,7 @@
 - [x] **3.12** Panel: 🜲 **Status Window** (level, XP bar, rank, today's quests, recent level-ups) — done 2026-10-24 (level / XP / E-S rank, 5 stats (INT PRE DIS WIS AGI), daily quests, domains, models, quest log — provisional XP from task scores until Phase 9)
 - [x] **3.13** Panel: 📡 **Live Monitor** (running sessions, current step, active model, gates, live log; pause/kill) — done 2026-10-24 (active sessions, live SSE event stream, recent tasks table; "kill session" replaced by the tracing pause switch (a running Claude Code session cannot be killed safely from outside))
 - [x] **3.14** Panel: 🛡 **Security** + kill switches (auto-update, persona factory, auto-sync, GPTID) — done 2026-10-24 (switches in `~/.tidos/control.json` ENFORCED by code: hook (tracing), start_tidos (auto_update), factory_sync, community_sync, gptid scripts; security log + lock status + change password)
-- [ ] **3.15** *(pending: needs hooks installed (2.3) + rules deployed (3.2) + one real Google login by the owner)* End-to-end test: `/TIDOSZIT` → login → see live trace from a real Claude Code session
+- [ ] **3.15** *(needs the user: hooks installed (2.3), rules deployed (3.2), one real Google login)* End-to-end test: `/TIDOSZIT` → login → see live trace from a real Claude Code session
 
 ---
 
@@ -128,9 +128,9 @@
 - [x] **4.1** Eval task format (task prompt, repo fixture, verify command, expected outcome) — done 2026-10-24 (`evals/dungeons/<suite>/<name>/` = `task.json` + `fixture/` + `hidden/` (tests copied in only AFTER the agent finishes, so they cannot be read or gamed) + `solution/`)
 - [x] **4.2** Write 30–50 golden tasks across user stacks — done 2026-10-24 (30 tasks E..S: python 17, teaching 4, javascript 3, sql 2, powershell 2, dart 2; all validated fail-untouched / pass-with-solution)
 - [x] **4.3** Eval runner (sandboxed worktree/Docker, runs any model through the router, records results in brain.db) — done 2026-10-24 (`tidos_evals/`: isolated workdirs in `~/.tidos/eval-runs/`, agents `claude:<model>` (restricted tools, budget cap) and `opencode:<provider/model>` (per-run sandbox config, `--dir` + pinned PWD), results in `brain.evals` (schema v2) + per-run logs; `validate` proves every task fails untouched and passes with its reference solution (17/17 valid))
-- [ ] **4.4** *(partial 2026-10-24: Claude Haiku 32/32 without TIDOS; Opus/Sonnet/Gemini still to run)* Baseline: strong models (Claude, Gemini, Grok, GPT) **without** TIDOS
-- [ ] **4.5** *(in progress 2026-10-24: free `opencode/glm-5.3-flash-free` clean run on 30 tasks; no local Ollama installed)* Baseline: weak/local models (Ollama 7B/8B) **without** TIDOS
-- [ ] **4.6** *(partial 2026-10-24: Haiku with TIDOS 31/32 vs 32/32 without, +55% cost, +60% time — no measurable gain from the v4 prose protocol; needs --repeat 3 for significance)* Baseline: same models **with** current TIDOS v4.1 — real answer to the "Big Idea" claim
+- [ ] **4.4** *(superseded by the 2026-10-24 realignment (goal = develop TIDOS, not benchmark models): Claude Haiku 32/32 recorded; strong-model baselines not needed)* Baseline: strong models (Claude, Gemini, Grok, GPT) **without** TIDOS
+- [ ] **4.5** *(superseded: free GLM ran at ceiling; weak-model measurement moves to 6.8 (free model with vs without the TIDOS GUIDE brief))* Baseline: weak/local models (Ollama 7B/8B) **without** TIDOS
+- [ ] **4.6** *(superseded by 6.8: v4 prose protocol gave no gain on Haiku (31/32 vs 32/32, +55% cost) - the reason GUIDE mode is short and task-specific)* Baseline: same models **with** current TIDOS v4.1 — real answer to the "Big Idea" claim
 - [x] **4.7** "Turn a fixed bug into a golden task" helper (every real bug grows the dungeon) — done 2026-10-24 (`tidos_evals new --suite S --name N --source <buggy project>` scaffolds a task (copies the project without .git/node_modules/.env), then `validate`)
 - [x] **4.8** Panel: 🏰 **Dungeons** (suites, pass/fail history, regressions, "Run" button) — done 2026-10-24 (Dungeons tab: Arena leaderboard (pass rate without / with TIDOS, lift, cost) + Dungeon map (task x agent matrix); verified with Playwright, no overflow, 0 console errors)
 
