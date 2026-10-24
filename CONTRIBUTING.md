@@ -1,4 +1,4 @@
-# Contributing to TIDOS Framework (v3.0)
+# Contributing to TIDOS
 
 Thank you for your interest in contributing to **TIDOS (Tidjani Development Operating System)**! TIDOS is a centralized, version-controlled AI Development Operating System designed to provide consistent, principal-grade AI engineering governance across codebases.
 

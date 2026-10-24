@@ -1,78 +1,77 @@
-# TIDOS (Tidjani Development Operating System) v4.0
-## Federated Cognitive AI Operating System Platform
+# TIDOS — Tidjani Development Operating System
 
-**TIDOS** is a standalone, centralized AI Development Operating System hosted in a dedicated Git repository. It decouples intelligence from raw model weights through System-2 cognitive scaffolding, autonomous internet-grounded persona synthesis, and a federated community swarm. AI coding agents load TIDOS directly from the official central repository or consume it via portable connection protocols.
+TIDOS sits on top of the AI coding agent you already use (Claude Code, OpenCode, Gemini CLI, Cursor, Codex…).
+It **learns** how work is done in your projects while you use a strong model, and it **guides** weak or free
+models with that knowledge so they work better with you.
 
----
-
-## 1. Top-Level Repository Structure
-
-```text
-TIDOS/
-├── README.md                  # Central platform overview & quick start
-├── LICENSE                    # MIT License
-├── CODE_OF_CONDUCT.md         # Community standards
-├── CHANGELOG.md               # Version release log
-├── VERSION.md                 # Active version tag (3.0.0)
-├── ROADMAP.md                 # Platform roadmap & maturity model
-├── CONTRIBUTING.md            # Contribution guidelines & OS Freeze rules
-├── TIDSTART.md                # Central session entry & boot protocol
-│
-├── config/                    # Centralized configuration (repository URL, version)
-├── docs/                      # Installation, Tool Integration Guides & CLI Spec
-├── core/                      # Protected OS Core, Identity & Bootstrap
-├── engines/                   # Specialized Operating Engines (Workflow, Quality, Memory, etc.)
-├── personas/                  # Virtual AI Engineering Company (30+ roles)
-├── rules/                     # Architecture, Security & Coding Standards
-├── commands/                  # Session command definitions & protocols
-├── checklists/                # Quality Gate & DoD verification checklists
-├── templates/                 # 13 Reusable Markdown Document Templates
-├── plugins/                   # 18 Technology Specialization Plugins & Plugin Engine
-├── prompts/                   # System prompt scaffolds
-├── memory/                    # Evolving User Profile, Preferences, Patterns & Learnings
-├── evolution/                 # OS Suggestions, Approved Upgrades & Version History
-├── examples/                  # 9 Integration Blueprints (Flutter, React, Supabase, AI, etc.)
-├── scripts/                   # Framework helper scripts (install.sh, install.ps1)
-├── examples/                  # 10 Integration Blueprints (Flutter, React, Supabase, AI, Starter, etc.)
-└── .github/                   # CI/CD Workflows
-```
+Version: see [`VERSION.md`](VERSION.md) · Plan & progress: [`docs/ENHANCEMENT_PLAN.md`](docs/ENHANCEMENT_PLAN.md)
 
 ---
 
-## 2. Multi-Agent Connection Modes
-
-Because different AI coding agents have different capabilities, TIDOS v3.0 supports four flexible consumption modes. The canonical repository URL is defined in `config/framework.md` — update that single file if the repository moves.
+## How it works
 
 ```
-+-----------------------------------------------------------------------+
-| Mode 1: Git Submodule / Central Reference                             |
-|         git submodule add $(REPO_URL) .tidos                          |
-+-----------------------------------------------------------------------+
-| Mode 2: Multi-Root Workspace / Symlink                                |
-|         Add TIDOS repo folder alongside project in IDE workspace       |
-+-----------------------------------------------------------------------+
-| Mode 3: System Prompt / System Instructions                           |
-|         Inject TIDSTART.md & Kernel URL in AI agent settings          |
-+-----------------------------------------------------------------------+
-| Mode 4: Standalone Local Copy (Fallback)                              |
-|         Copy TIDOS root folder directly into target project           |
-+-----------------------------------------------------------------------+
+START TIDOS ─► detect tool + model ─► tier (config/models.json, ~/.tidos/models.json)
+                     │
+     strong model ───┴─── weak / free model
+     LEARN mode            GUIDE mode
+     work normally;        short brief (≤ 4 KB): rules for weak models, project facts,
+     sessions recorded     how to check work, playbooks learned from strong models
+            │                       │
+            └──► ~/.tidos/  (private, never in a repository)
+                 brain.db      every task: prompt, files, commands, checks, outcome, your corrections
+                 playbooks/    how tasks are solved in each project (+ notes written by strong models)
+                 memory/       your profile, preferences, lessons
 ```
 
-Detailed tool-specific integration guides for **OpenCode**, **Antigravity IDE**, **Claude Code**, **Cursor**, **Windsurf**, **Roo Code**, **Cline**, **Gemini CLI**, and **OpenAI Codex** are located in [docs/](file:///d:/work/Dev/TIDOS/docs).
+## Quick start
 
----
+1. Clone TIDOS next to (or inside) your project.
+2. In your AI agent, say **`START TIDOS`**. The agent runs:
+   - Windows: `.\start_tidos.ps1 -Tool <claude-code|opencode|...> -Model <model id>`
+   - Linux/macOS: `./scripts/start_tidos.sh --tool=<tool> --model=<model id>`
+   Model unknown? Leave it out: TIDOS reads it from the tool (Claude Code transcript, OpenCode state).
+3. The agent follows the brief that START TIDOS prints (LEARN or GUIDE mode).
 
-## 3. Protected Operating System & Evolution Isolation
+Updates: START TIDOS **reports** new releases and installs them only when you approve (`-ApplyUpdate`).
 
-- **Protected System Core**: Directories `core/`, `engines/`, `personas/`, `rules/`, `commands/`, `checklists/`, `templates/`, `plugins/`, and `prompts/` are **read-only system files**.
-- **Evolution Layer**: Non-invasive framework enhancement ideas are written to `evolution/SUGGESTIONS.md` and applied only upon explicit user upgrade commands.
-- **User Memory**: Personal developer preferences and validated engineering patterns accumulate in `memory/`.
+## What is inside
 
----
+| Folder | What it does |
+|---|---|
+| `tidos_session/` | START TIDOS: model detection, tier, LEARN/GUIDE brief, private memory migration |
+| `tidos_brain/` | Local trace store (`~/.tidos/brain.db`), Claude Code importer + hooks, kill switches |
+| `tidos_learn/` | Turns recorded sessions into per-project and general playbooks |
+| `tidos_dashboard/` | `/TIDOSZIT` control center (owner-only, localhost): status, live monitor, dungeons, security |
+| `tidos_evals/` + `evals/` | "Dungeons": 30 verified coding tasks to check that TIDOS guidance really helps |
+| `tidos_driver/` | Experimental external loop (checks first → implement → verify → escalate) |
+| `scripts/` | START TIDOS, update gate, privacy firewall (`sanitizer.py`), persona sync, launchers |
+| `core/`, `engines/`, `rules/`, `personas/`, `plugins/`, `checklists/`, `templates/` | Specs for strong models (LEARN mode) |
+| `memory/` | Templates only — your real memory lives in `~/.tidos/memory/` |
 
-## 4. Quick Start for AI Agents
+Tool-specific setup: [`docs/tools/`](docs/tools/).
 
-1. Load or reference the official TIDOS repository.
-2. Execute the central startup sequence in [TIDSTART.md](file:///d:/work/Dev/TIDOS/TIDSTART.md).
-3. Synchronize core rules, architecture standards, and user profile before responding to user prompts.
+## Control center
+
+`/TIDOSZIT` (or `scripts/tidoszit.ps1` / `.sh`) opens a local dashboard at `http://localhost:8767/`.
+Login = your Google owner account **and** a control password typed in the browser (only its PBKDF2 hash is stored,
+in Firestore, owner-only rules in `firebase/firestore.rules`). Kill switches there are enforced by the scripts.
+
+## Safety and privacy
+
+- Everything learned stays in `~/.tidos/` on your machine. Secrets, user paths, e-mails and IPs are redacted before
+  storage; contributions go through the privacy firewall (`scripts/sanitizer.py`, gitleaks when installed).
+- The update gate never touches a project that merely contains TIDOS files, never rewrites a fork's remote, never
+  discards local work, and installs nothing without approval.
+- Generated personas are proposed as pull requests; nothing reaches `main` without a human merge.
+- Optional features with risk are off by default (GPTID browser relay, Google sign-in gate).
+
+## Development
+
+```bash
+python -m pytest -q tests browser_relay/tests          # unit + security tests
+python -I tidos_evals/__main__.py validate             # every dungeon fails untouched, passes with its solution
+bash tests/update_gate_scenarios.sh sh                 # update-gate safety scenarios (ps1 on Windows)
+```
+
+CI: [`.github/workflows/ci.yml`](.github/workflows/ci.yml). License: [MIT](LICENSE).

@@ -6,7 +6,7 @@ The `commands/` directory contains protected session command definitions and inv
 
 ## Directory Components
 
-- [session_commands.md](file:///d:/work/Dev/TIDOS/commands/session_commands.md): Standard session invocation commands, parameters, and expected agent responses.
+- [session_commands.md](/commands/session_commands.md): Standard session invocation commands, parameters, and expected agent responses.
 
 ---
 

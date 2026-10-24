@@ -1,23 +1,33 @@
-# Using TIDOS with OpenAI Codex
+# Using TIDOS with OpenAI Codex CLI
 
-## Setup
+## 1. Get TIDOS
 
 ```bash
 cd your-project
-git submodule add https://github.com/tidjani/TIDOS.git .tidos
+git clone https://github.com/Taedj/TIDOS.git TIDOS     # or: git submodule add https://github.com/Taedj/TIDOS.git TIDOS
 ```
 
-## Configuration
+## 2. Tell OpenAI Codex CLI how to start TIDOS
 
-Add to Codex system instructions:
+- Put the snippet in `AGENTS.md` at the project root (Codex reads `AGENTS.md`; `~/.codex/AGENTS.md` applies to every project).
+- Pass `-Model` explicitly (e.g. `gpt-5`).
 
+Snippet (Windows):
+
+```markdown
+## TIDOS
+When the user says **START TIDOS**:
+1. Run `.\TIDOS\start_tidos.ps1 -Tool codex -Model <your model id>` from the project root (TIDOS checkout at `TIDOS/`).
+   Pass your exact model id if you know it; otherwise leave `-Model`/`--model` out and TIDOS detects it.
+2. Read the brief it prints and follow it for the whole session (LEARN mode on strong models,
+   GUIDE mode on weak/free models).
+3. If it reports an available TIDOS update, tell the user what it contains; install it only if they approve
+   (re-run with `-ApplyUpdate` / `--apply-update`).
+Never ask for, repeat or store passwords or tokens in the chat.
 ```
-You have access to .tidos/ which contains the TIDOS AI Development Operating System.
-Before responding, read .tidos/TIDSTART.md and follow the startup sequence.
-Apply core rules, architecture standards, and user memory.
-Never modify .tidos/core/, .tidos/engines/, or other protected directories.
-```
 
-## Considerations
+On Linux/macOS use `./TIDOS/scripts/start_tidos.sh --tool=codex --model=<your model id>` instead.
 
-OpenAI Codex benefits from explicit system instructions to load TIDOS context. The `.tidos/` directory should be in the accessible file scope.
+## 3. Use it
+
+Say **START TIDOS** at the beginning of a session. Open the control center with `/TIDOSZIT` (Claude Code) or `TIDOS/scripts/tidoszit.ps1`.

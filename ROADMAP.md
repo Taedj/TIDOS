@@ -1,4 +1,4 @@
-# TIDOS Framework Roadmap (v3.0)
+# TIDOS Framework Roadmap
 
 ---
 

@@ -6,8 +6,8 @@ The `checklists/` directory contains protected verification checklists and quali
 
 ## Directory Components
 
-- [quality_checklists.md](file:///d:/work/Dev/TIDOS/checklists/quality_checklists.md): Operational checklists for Quality Gates 1 through 8 and Master Definition of Done.
-- [model_equalizer.md](file:///d:/work/Dev/TIDOS/checklists/model_equalizer.md): Universal Model Equalizer Checklist (System-2 cognitive scaffolding and weak-model anti-drift rails).
+- [quality_checklists.md](/checklists/quality_checklists.md): Operational checklists for Quality Gates 1 through 8 and Master Definition of Done.
+- [model_equalizer.md](/checklists/model_equalizer.md): Universal Model Equalizer Checklist (System-2 cognitive scaffolding and weak-model anti-drift rails).
 
 ---
 

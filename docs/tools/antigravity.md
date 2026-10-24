@@ -1,18 +1,33 @@
-# Using TIDOS with Antigravity IDE
+# Using TIDOS with Google Antigravity
 
-## Setup
+## 1. Get TIDOS
 
-Add TIDOS as a multi-root workspace folder alongside your project.
+```bash
+cd your-project
+git clone https://github.com/Taedj/TIDOS.git TIDOS     # or: git submodule add https://github.com/Taedj/TIDOS.git TIDOS
+```
 
-## Integration
+## 2. Tell Google Antigravity how to start TIDOS
 
-1. Open Antigravity IDE workspace settings
-2. Add the TIDOS repository directory as a workspace folder
-3. Reference `.tidos/TIDSTART.md` in agent system instructions
-4. Agent automatically loads core, rules, and plugins on session start
+- Put the snippet in the workspace's agent rules/instructions. Antigravity's exact rules file location was not verified for this guide: use its rules settings, and also add the snippet to `AGENTS.md` at the project root, which most agents read.
+- Pass `-Model` explicitly with the model you selected.
 
-## Multi-Root Benefits
+Snippet (Windows):
 
-- TIDOS stays out of project source tree
-- Updates via `git pull` in TIDOS folder
-- No submodule overhead
+```markdown
+## TIDOS
+When the user says **START TIDOS**:
+1. Run `.\TIDOS\start_tidos.ps1 -Tool antigravity -Model <your model id>` from the project root (TIDOS checkout at `TIDOS/`).
+   Pass your exact model id if you know it; otherwise leave `-Model`/`--model` out and TIDOS detects it.
+2. Read the brief it prints and follow it for the whole session (LEARN mode on strong models,
+   GUIDE mode on weak/free models).
+3. If it reports an available TIDOS update, tell the user what it contains; install it only if they approve
+   (re-run with `-ApplyUpdate` / `--apply-update`).
+Never ask for, repeat or store passwords or tokens in the chat.
+```
+
+On Linux/macOS use `./TIDOS/scripts/start_tidos.sh --tool=antigravity --model=<your model id>` instead.
+
+## 3. Use it
+
+Say **START TIDOS** at the beginning of a session. Open the control center with `/TIDOSZIT` (Claude Code) or `TIDOS/scripts/tidoszit.ps1`.

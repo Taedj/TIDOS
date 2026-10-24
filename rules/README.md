@@ -6,9 +6,9 @@ The `rules/` directory contains protected architectural standards, security rule
 
 ## Directory Components
 
-- [architecture_rules.md](file:///d:/work/Dev/TIDOS/rules/architecture_rules.md): Clean Architecture 4-layer model, feature-first directory layout, and SOLID rules.
-- [security_rules.md](file:///d:/work/Dev/TIDOS/rules/security_rules.md): Zero-trust input sanitization, authentication enforcement, secret isolation, and OWASP rules.
-- [coding_standards.md](file:///d:/work/Dev/TIDOS/rules/coding_standards.md): Language-specific clean code standards, naming conventions, and lint compliance.
+- [architecture_rules.md](/rules/architecture_rules.md): Clean Architecture 4-layer model, feature-first directory layout, and SOLID rules.
+- [security_rules.md](/rules/security_rules.md): Zero-trust input sanitization, authentication enforcement, secret isolation, and OWASP rules.
+- [coding_standards.md](/rules/coding_standards.md): Language-specific clean code standards, naming conventions, and lint compliance.
 
 ---
 

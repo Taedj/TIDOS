@@ -19,7 +19,7 @@ $projectDir = (Get-Location).Path   # the user's project: where START TIDOS was 
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================================" -ForegroundColor Cyan
-Write-Host "  TIDOS (Tidjani Development Operating System) v3.0" -ForegroundColor Cyan
+Write-Host "  TIDOS (Tidjani Development Operating System)" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 Write-Host ""
 

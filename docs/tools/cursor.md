@@ -1,24 +1,33 @@
 # Using TIDOS with Cursor
 
-## Setup
+## 1. Get TIDOS
 
-Option A - Submodule:
 ```bash
 cd your-project
-git submodule add https://github.com/tidjani/TIDOS.git .tidos
+git clone https://github.com/Taedj/TIDOS.git TIDOS     # or: git submodule add https://github.com/Taedj/TIDOS.git TIDOS
 ```
 
-Option B - Multi-Root:
-- Add TIDOS directory to Cursor workspace
+## 2. Tell Cursor how to start TIDOS
 
-## Configuration
+- Add a project rule: `.cursor/rules/tidos.mdc` containing the snippet (rule type: always). Recent Cursor versions also read `AGENTS.md` at the project root.
+- Pass `-Model` explicitly with the model selected in Cursor.
 
-Add `.tidos` to Cursor's allowed directories. Configure system prompt in Cursor settings to include TIDSTART.md reference.
+Snippet (Windows):
 
-## Startup
+```markdown
+## TIDOS
+When the user says **START TIDOS**:
+1. Run `.\TIDOS\start_tidos.ps1 -Tool cursor -Model <your model id>` from the project root (TIDOS checkout at `TIDOS/`).
+   Pass your exact model id if you know it; otherwise leave `-Model`/`--model` out and TIDOS detects it.
+2. Read the brief it prints and follow it for the whole session (LEARN mode on strong models,
+   GUIDE mode on weak/free models).
+3. If it reports an available TIDOS update, tell the user what it contains; install it only if they approve
+   (re-run with `-ApplyUpdate` / `--apply-update`).
+Never ask for, repeat or store passwords or tokens in the chat.
+```
 
-Cursor's AI agent will:
-1. Load TIDSTART.md context from `.tidos/`
-2. Mount core, engines, and rules
-3. Apply matching plugins based on project analysis
-4. Recover user memory from `.tidos/memory/`
+On Linux/macOS use `./TIDOS/scripts/start_tidos.sh --tool=cursor --model=<your model id>` instead.
+
+## 3. Use it
+
+Say **START TIDOS** at the beginning of a session. Open the control center with `/TIDOSZIT` (Claude Code) or `TIDOS/scripts/tidoszit.ps1`.

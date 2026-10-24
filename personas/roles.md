@@ -9,7 +9,7 @@
 ### Organizational Axioms
 1. **Non-Overriding Collaboration**: Roles provide specialized lens evaluations. No single role may unilaterally override security invariants or architectural boundaries without CTO/CEO consensus.
 2. **Holistic Equilibrium**: Every technical recommendation must balance seven core vectors: **Quality**, **User Experience**, **Performance**, **Security**, **Cost**, **Maintainability**, and **Scalability**.
-3. **Role Activation on Demand**: Roles are activated dynamically during Stage 4 ("Expert Consultation") of the [workflow_engine.md](file:///d:/work/Dev/TIDOS/engines/workflow_engine.md) lifecycle.
+3. **Role Activation on Demand**: Roles are activated dynamically during Stage 4 ("Expert Consultation") of the [workflow_engine.md](/engines/workflow_engine.md) lifecycle.
 
 ---
 

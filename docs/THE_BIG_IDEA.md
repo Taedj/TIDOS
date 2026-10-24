@@ -128,8 +128,13 @@ Track progress step-by-step. Check boxes as each item is implemented and verifie
 ---
 
 ### Phase 5: Field Testing & Live Validation
-- [x] **5.1. Weak Model Benchmark Test**
-  - Executed complete multi-file, cross-layer TIDOS v4.0 evolution under Model Equalizer scaffolding with 80/80 passing verification checks.
+- [ ] **5.1. Weak Model Benchmark Test** — *corrected 2026-10-24: NOT verified.*
+  - The earlier "80/80 passing checks" came from the agent that made the changes checking its own work on a strong
+    model; no weak model was involved. Real measurements now exist (`evals/`, `docs/ENHANCEMENT_PLAN.md` Phase 4):
+    Claude Haiku cleared 32/32 dungeons without the v4 protocol and 31/32 with it (+55% cost) — the long v4 text did not
+    help. TIDOS v4.1 therefore replaces it with short, task-specific GUIDE mode briefs and playbooks learned from
+    strong-model sessions (Phases 5–6).
+
 - [x] **5.2. New Stack Auto-Creation Test**
   - Synthesize and register `personas/tidosmobile.md` via live web-research (Flutter, Android API 35, Gradle 8.5+, Java 21).
 - [x] **5.3. Sanitization & Dry-Run PR Test**
@@ -148,7 +153,7 @@ Track progress step-by-step. Check boxes as each item is implemented and verifie
 | 2026-10-11 | Phase 4 | Tasks 4.1–4.3: Built `scripts/community_sync.ps1` & `.sh` automated upstream PR pipeline with Privacy Firewall gating | TIDOS Architecture Team |
 | 2026-10-11 | Phase 5 | Task 5.3: Executed dry-run community sync and verified zero-leakage privacy firewall audit | TIDOS Architecture Team |
 | 2026-10-11 | Phase 5 | Task 5.2: Generated and registered `personas/tidosmobile.md` via web research, negative constraints & registry signals | TIDOS Architecture Team |
-| 2026-10-11 | Phase 5 | Task 5.1: Validated complete Model Equalizer cognitive loop with zero defect execution and 80/80 passing checks | TIDOS Architecture Team |
+| 2026-10-11 | Phase 5 | Task 5.1: (claimed) 80/80 checks — corrected on 2026-10-24: self-verified on a strong model, not a weak-model benchmark | TIDOS Architecture Team |
 | 2026-10-11 | Phase 5 | Added ANSI colored terminal stream (`browser_relay/terminal_ui.py`) for live TIDOS/ChatGPT consultations | TIDOS Architecture Team |
 | 2026-10-11 | Phase 5 | Added automated headed browser window launch and reactive polling loop on login | TIDOS Architecture Team |
 

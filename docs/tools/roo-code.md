@@ -1,21 +1,33 @@
 # Using TIDOS with Roo Code
 
-## Setup
+## 1. Get TIDOS
 
 ```bash
 cd your-project
-git submodule add https://github.com/tidjani/TIDOS.git .tidos
+git clone https://github.com/Taedj/TIDOS.git TIDOS     # or: git submodule add https://github.com/Taedj/TIDOS.git TIDOS
 ```
 
-## Configuration
+## 2. Tell Roo Code how to start TIDOS
 
-Add to Roo Code's custom instructions to reference TIDOS:
+- Put the snippet in `.roo/rules/tidos.md` (workspace rules) at the project root.
+- Pass `-Model` explicitly with the model configured in Roo Code.
 
+Snippet (Windows):
+
+```markdown
+## TIDOS
+When the user says **START TIDOS**:
+1. Run `.\TIDOS\start_tidos.ps1 -Tool roo-code -Model <your model id>` from the project root (TIDOS checkout at `TIDOS/`).
+   Pass your exact model id if you know it; otherwise leave `-Model`/`--model` out and TIDOS detects it.
+2. Read the brief it prints and follow it for the whole session (LEARN mode on strong models,
+   GUIDE mode on weak/free models).
+3. If it reports an available TIDOS update, tell the user what it contains; install it only if they approve
+   (re-run with `-ApplyUpdate` / `--apply-update`).
+Never ask for, repeat or store passwords or tokens in the chat.
 ```
-Always load TIDOS operating system from .tidos/ before starting.
-Read .tidos/TIDSTART.md for the startup protocol.
-```
 
-## Mode Support
+On Linux/macOS use `./TIDOS/scripts/start_tidos.sh --tool=roo-code --model=<your model id>` instead.
 
-Roo Code's different modes (Code, Architect, Ask, Debug) all reference the same TIDOS core and rules for consistent governance.
+## 3. Use it
+
+Say **START TIDOS** at the beginning of a session. Open the control center with `/TIDOSZIT` (Claude Code) or `TIDOS/scripts/tidoszit.ps1`.

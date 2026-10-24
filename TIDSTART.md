@@ -1,6 +1,6 @@
-# TIDSTART — TIDOS v3.0 Central Session Entry Protocol
+# TIDSTART — TIDOS Central Session Entry Protocol
 
-Welcome to **TIDOS (Tidjani Development Operating System)** v3.0 Centralized AI Operating System Platform.
+Welcome to **TIDOS (Tidjani Development Operating System)**. The version is in `VERSION.md`.
 
 ---
 
@@ -54,13 +54,13 @@ OpenCode state) and treats unknown models as weak. The model → tier table is `
   long specs listed below: they are written for strong models and measurably do not help weaker ones.
 
 ### Mandatory Subsystem Checklist (LEARN mode / strong models only)
-- [ ] **1. OS Core**: Read [core/kernel.md](file:///d:/work/Dev/TIDOS/core/kernel.md) (Protected OS Freeze invariant).
-- [ ] **2. Identity**: Read [core/identity.md](file:///d:/work/Dev/TIDOS/core/identity.md) (Senior Principal Engineer stance).
-- [ ] **3. Bootstrap**: Read [core/bootstrap.md](file:///d:/work/Dev/TIDOS/core/bootstrap.md) (Non-destructive inspection).
-- [ ] **4. Operating Engines**: Mount [engines/workflow_engine.md](file:///d:/work/Dev/TIDOS/engines/workflow_engine.md), [engines/quality_engine.md](file:///d:/work/Dev/TIDOS/engines/quality_engine.md), [engines/memory_engine.md](file:///d:/work/Dev/TIDOS/engines/memory_engine.md), [engines/learning_engine.md](file:///d:/work/Dev/TIDOS/engines/learning_engine.md), [engines/research_engine.md](file:///d:/work/Dev/TIDOS/engines/research_engine.md), and [engines/plugin_engine.md](file:///d:/work/Dev/TIDOS/engines/plugin_engine.md).
-- [ ] **5. Architecture & Security Rules**: Read [rules/architecture_rules.md](file:///d:/work/Dev/TIDOS/rules/architecture_rules.md), [rules/security_rules.md](file:///d:/work/Dev/TIDOS/rules/security_rules.md), and [rules/coding_standards.md](file:///d:/work/Dev/TIDOS/rules/coding_standards.md).
-- [ ] **6. Personas**: Load Virtual AI Company roles from [personas/roles.md](file:///d:/work/Dev/TIDOS/personas/roles.md).
-- [ ] **7. Technology Plugins**: Load matching plugins from [plugins/](file:///d:/work/Dev/TIDOS/plugins).
+- [ ] **1. OS Core**: Read [core/kernel.md](/core/kernel.md) (Protected OS Freeze invariant).
+- [ ] **2. Identity**: Read [core/identity.md](/core/identity.md) (Senior Principal Engineer stance).
+- [ ] **3. Bootstrap**: Read [core/bootstrap.md](/core/bootstrap.md) (Non-destructive inspection).
+- [ ] **4. Operating Engines**: Mount [engines/workflow_engine.md](/engines/workflow_engine.md), [engines/quality_engine.md](/engines/quality_engine.md), [engines/memory_engine.md](/engines/memory_engine.md), [engines/learning_engine.md](/engines/learning_engine.md), [engines/research_engine.md](/engines/research_engine.md), and [engines/plugin_engine.md](/engines/plugin_engine.md).
+- [ ] **5. Architecture & Security Rules**: Read [rules/architecture_rules.md](/rules/architecture_rules.md), [rules/security_rules.md](/rules/security_rules.md), and [rules/coding_standards.md](/rules/coding_standards.md).
+- [ ] **6. Personas**: Load Virtual AI Company roles from [personas/roles.md](/personas/roles.md).
+- [ ] **7. Technology Plugins**: Load matching plugins from [plugins/](/plugins).
 - [ ] **8. Memory & User Profile**: Hydrate `~/.tidos/memory/` (`USER_PROFILE.md`, `PREFERENCES.md`, `PATTERNS.md`, `LESSONS.md`). User memory is private and lives outside the repository; `memory/X.md` in any spec means `~/.tidos/memory/X.md`.
 - [ ] **9. Target Project Analysis**: Perform read-only scan of target project root, recover context, and output Startup Report.
 
@@ -81,7 +81,7 @@ INVARIANT: System directories (core/, engines/, personas/, rules/, commands/,
 ## 3. Standard Startup Report Format
 
 ```markdown
-# TIDOS v3.0 Startup Report
+# TIDOS Startup Report
 
 - **Target Workspace**: `[Path to target project]`
 - **TIDOS Connection Mode**: `[Submodule / Multi-Root / System Prompt / Local]`

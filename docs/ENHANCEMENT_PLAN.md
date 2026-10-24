@@ -69,12 +69,12 @@
 - [ ] **1.20** *(waiting for the user: needs git filter-repo + force-push of the public repo; personal files and the ULTIDOS password stay in git history until then)* Purge personal data from git history (optional, `git filter-repo`) — needs user approval
 
 ### 1D. Consistency & cleanup
-- [ ] **1.21** Unify version numbers everywhere (README, TIDSTART, VERSION, engines, start banners) — single source in `config/framework.md`
-- [ ] **1.22** Remove or archive the duplicated legacy `.tidos/` tree; reconcile `plugins/` vs `.tidos/plugins/` (keep `figma.md`, `github.md`)
-- [ ] **1.23** Fix `README.md` (duplicate `examples/` line, false CI/CD claim)
-- [ ] **1.24** Fix `docs/tools/claude-code.md` (wrong URL `tidjani/TIDOS`; no `systemPrompt` setting — use `CLAUDE.md` / skills / hooks / plugin)
-- [ ] **1.25** Audit and fix all other `docs/tools/*.md` guides against each tool's real configuration
-- [ ] **1.26** Mark the "80/80 weak model benchmark" in `docs/THE_BIG_IDEA.md` as unverified until Phase 4 produces real numbers
+- [x] **1.21** Unify version numbers everywhere (README, TIDSTART, VERSION, engines, start banners) — single source in `config/framework.md` — done 2026-10-24 (VERSION.md is the single source (config/framework.md mirrors it, checked in CI); README, TIDSTART, ROADMAP, CONTRIBUTING and start banners carry no version; banners read VERSION.md)
+- [x] **1.22** Remove or archive the duplicated legacy `.tidos/` tree; reconcile `plugins/` vs `.tidos/plugins/` (keep `figma.md`, `github.md`) — done 2026-10-24 (legacy .tidos/ tree removed from git; its 3 unique plugins (figma, github, playwright) moved to plugins/)
+- [x] **1.23** Fix `README.md` (duplicate `examples/` line, false CI/CD claim) — done 2026-10-24 (README rewritten: learn/guide model, quick start, components, control center, safety/privacy, dev commands; local file:///d:/... links replaced by repo-relative links in 10 docs)
+- [x] **1.24** Fix `docs/tools/claude-code.md` (wrong URL `tidjani/TIDOS`; no `systemPrompt` setting — use `CLAUDE.md` / skills / hooks / plugin) — done 2026-10-24 (docs/tools/claude-code.md: real URL (Taedj/TIDOS), CLAUDE.md snippet instead of a non-existent systemPrompt setting, hooks install + /TIDOSZIT command)
+- [x] **1.25** Audit and fix all other `docs/tools/*.md` guides against each tool's real configuration — done 2026-10-24 (9 tool guides regenerated with one bootstrap snippet in each tool's real instruction file (CLAUDE.md, AGENTS.md, GEMINI.md, .cursor/rules, .windsurf/rules, .clinerules, .roo/rules); Antigravity's location marked unverified instead of guessed)
+- [x] **1.26** Mark the "80/80 weak model benchmark" in `docs/THE_BIG_IDEA.md` as unverified until Phase 4 produces real numbers — done 2026-10-24 (THE_BIG_IDEA.md 5.1 unchecked and corrected: the 80/80 was self-verification on a strong model; real eval results cited)
 
 ### 1E. CI
 - [x] **1.30** *(found and fixed 2026-10-24)* `scripts/factory_sync.ps1` never parsed on Windows since v4.0 (unclosed `if` block + UTF-8 `✓` read as a smart quote by PowerShell 5.1) — fixed; all `.ps1` files now parse and are ASCII-only. CI should run a PowerShell parse check (see 1.27)

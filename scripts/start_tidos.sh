@@ -25,7 +25,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TIDOS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 echo "=========================================================="
-echo "  TIDOS (Tidjani Development Operating System) v3.0"
+echo "  TIDOS (Tidjani Development Operating System)"
 echo "=========================================================="
 echo ""
 

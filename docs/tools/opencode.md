@@ -1,21 +1,34 @@
 # Using TIDOS with OpenCode
 
-## Setup
-
-Add TIDOS as a submodule in your project. The canonical repository URL is defined in `config/framework.md`.
+## 1. Get TIDOS
 
 ```bash
-# See config/framework.md for the authoritative URL
 cd your-project
-git submodule add https://github.com/tidjani/TIDOS.git .tidos
+git clone https://github.com/Taedj/TIDOS.git TIDOS     # or: git submodule add https://github.com/Taedj/TIDOS.git TIDOS
 ```
 
-## Startup Sequence
+## 2. Tell OpenCode how to start TIDOS
 
-When starting a new session:
+- Put the snippet in `AGENTS.md` at the project root, or in `~/.config/opencode/AGENTS.md` for every project.
+- Model detection: automatic (OpenCode's last used model in `~/.local/state/opencode/model.json`).
+- Free models are rated **weak** by default, so TIDOS runs in GUIDE mode and hands them the playbooks learned from your strong-model sessions. Re-rate a model in `~/.tidos/models.json`.
 
-1. Read `.tidos/config/framework.md` for repository metadata
-2. Reference `TIDSTART.md` to execute the 9-step protocol
-3. Load core, engines, rules, personas, and plugins from `.tidos/`
-4. Recover project context from `.tidos/memory/`
-5. TIDOS provides structured command support via `.tidos/commands/session_commands.md`
+Snippet (Windows):
+
+```markdown
+## TIDOS
+When the user says **START TIDOS**:
+1. Run `.\TIDOS\start_tidos.ps1 -Tool opencode -Model <your model id>` from the project root (TIDOS checkout at `TIDOS/`).
+   Pass your exact model id if you know it; otherwise leave `-Model`/`--model` out and TIDOS detects it.
+2. Read the brief it prints and follow it for the whole session (LEARN mode on strong models,
+   GUIDE mode on weak/free models).
+3. If it reports an available TIDOS update, tell the user what it contains; install it only if they approve
+   (re-run with `-ApplyUpdate` / `--apply-update`).
+Never ask for, repeat or store passwords or tokens in the chat.
+```
+
+On Linux/macOS use `./TIDOS/scripts/start_tidos.sh --tool=opencode --model=<your model id>` instead.
+
+## 3. Use it
+
+Say **START TIDOS** at the beginning of a session. Open the control center with `/TIDOSZIT` (Claude Code) or `TIDOS/scripts/tidoszit.ps1`.
