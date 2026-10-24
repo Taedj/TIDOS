@@ -74,14 +74,24 @@ def attempt(spec, task, workdir, with_tidos, budget_usd=1.0):
         return AgentResult()
     if spec == "noop":
         return AgentResult()
+    if spec.startswith("driver:"):
+        from tidos_driver import Driver  # lazy: the driver itself uses run_agent()
+        student, _, teacher = spec[len("driver:"):].partition("@")
+        result = Driver(student, teacher or None, budget_usd=budget_usd).drive(workdir, timeout=task.timeout)
+        return AgentResult(result.passed, cost_usd=result.cost_usd or None, turns=result.agent_calls,
+                           error=None if result.passed else result.reason, log=result.log())
+    return run_agent(spec, workdir, prompt, task.timeout, budget_usd)
 
+
+def run_agent(spec, workdir, prompt, timeout, budget_usd=1.0):
+    """Run one sandboxed agent session in workdir with a one-line prompt."""
     family, _, model = spec.partition(":")
     if family == "claude":
         argv = ["claude", "-p", prompt, "--output-format", "json", "--permission-mode", "acceptEdits",
                 "--allowedTools", CLAUDE_TOOLS, "--max-budget-usd", str(budget_usd)]
         if model:
             argv += ["--model", model]
-        proc, err = _run(argv, workdir, task.timeout)
+        proc, err = _run(argv, workdir, timeout)
         if err:
             return AgentResult(False, error=err)
         try:
@@ -99,7 +109,7 @@ def attempt(spec, task, workdir, with_tidos, budget_usd=1.0):
             return AgentResult(False, error="opencode needs provider/model, e.g. opencode:opencode/glm-5.3-flash-free")
         with open(os.path.join(workdir, "opencode.json"), "w", encoding="utf-8") as f:
             json.dump(OPENCODE_SANDBOX, f, indent=2)
-        proc, err = _run(["opencode", "run", "--dir", workdir, "-m", model, prompt], workdir, task.timeout)
+        proc, err = _run(["opencode", "run", "--dir", workdir, "-m", model, prompt], workdir, timeout)
         if err:
             return AgentResult(False, error=err)
         return AgentResult(proc.returncode == 0, error=None if proc.returncode == 0 else "exit %d" % proc.returncode,

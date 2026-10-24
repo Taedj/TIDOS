@@ -17,7 +17,7 @@
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
 | 5 | Learn from Strong Models (Distillation) | Turn strong-model traces into playbooks | ⬜ Not started |
-| 6 | Weak-Model Driver | TIDOS drives weak models to strong-model results | ⬜ Not started |
+| 6 | Weak-Model Driver | TIDOS drives weak models to strong-model results | 🔄 In progress (3/10) |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ⬜ Not started |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ⬜ Not started |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | ⬜ Not started |
@@ -153,14 +153,14 @@
 
 ## Phase 6 — Weak-Model Driver
 
-- [ ] **6.1** Model router via LiteLLM (cloud: Claude, Gemini, Grok, OpenRouter; local: Ollama / llama.cpp)
+- [ ] **6.1** *(partial 2026-10-24: agent-level backends `claude:<model>` and `opencode:<provider/model>` (sandboxed); no LiteLLM / API keys on this machine; OpenCode free tier refuses raw-API use outside its agent, so the driver orchestrates agents instead of raw completions)* Model router via LiteLLM (cloud: Claude, Gemini, Grok, OpenRouter; local: Ollama / llama.cpp)
 - [ ] **6.2** Model profiles `models/{small,medium,frontier}.yaml` (context budget, micro-step size, output format, verify depth)
-- [ ] **6.3** Driver loop: classify → fetch playbook → decompose into micro-steps → strict JSON/diff output per step
-- [ ] **6.4** Grounding: TIDOS reads files itself; repo map (tree-sitter), ast-grep, LSP (Serena MCP) — weak model gets only relevant slices
-- [ ] **6.5** Mechanical verify after every step (tests/lint/compile) + repair loop with exact error + playbook fix pattern (max N tries)
-- [ ] **6.6** **Teacher-on-call** escalation: strong model fixes only the stuck step; the fix becomes a new trace
+- [x] **6.3** Driver loop: classify → fetch playbook → decompose into micro-steps → strict JSON/diff output per step — done 2026-10-24 (`tidos_driver/`: code-owned loop DEFINE DONE -> IMPLEMENT -> VERIFY -> REPAIR -> ESCALATE; models only do bounded steps through a step file; checks hash-protected and restored if a model edits them)
+- [ ] **6.4** *(partial 2026-10-24: neutral working-file names (a weak model misspelled a "tidos" path), relative-paths-only rule, language detection + check templates; repo map / ast-grep / LSP still to do)* Grounding: TIDOS reads files itself; repo map (tree-sitter), ast-grep, LSP (Serena MCP) — weak model gets only relevant slices
+- [x] **6.5** Mechanical verify after every step (tests/lint/compile) + repair loop with exact error + playbook fix pattern (max N tries) — done 2026-10-24 (driver runs the checks itself after every step; exact failing output fed back; max 2 repair rounds)
+- [x] **6.6** **Teacher-on-call** escalation: strong model fixes only the stuck step; the fix becomes a new trace — done 2026-10-24 (teacher defines "done" (spec -> executable checks, gated: must fail on untouched code) and takes over a step the student cannot finish)
 - [ ] **6.7** Cost-aware routing: cheap model first, escalate on gate failure; budget limits
-- [ ] **6.8** Measure: weak + TIDOS driver vs weak alone vs strong (Phase 4 suites)
+- [ ] **6.8** *(in progress 2026-10-24: weak `flint-40b-free` plain vs driver (+Haiku teacher) on the 8 hardest dungeons)* Measure: weak + TIDOS driver vs weak alone vs strong (Phase 4 suites)
 - [ ] **6.9** Panel: ⚔ **Model Arena** (leaderboard model × domain, teacher-vs-student chart, routing rules editor)
 - [ ] **6.10** Panel: 💰 **Cost & Tokens**
 
@@ -302,4 +302,6 @@
 | 2026-10-24 | Control center = Python stdlib + plain JS + SSE (not FastAPI/React) | Zero installs, no build, offline, matches TIDOS stdlib-only scripts (Q3 delegated) |
 | 2026-10-24 | Control password is set/changed only in the browser; no CLI | Anything typed in a terminal can be captured in AI transcripts |
 | 2026-10-24 | Kill switches live in `~/.tidos/control.json` and are enforced by scripts/hooks | Real control, not prose; survives TIDOS updates |
+| 2026-10-24 | Driver orchestrates sandboxed agents (Claude Code, OpenCode), not raw completions | OpenCode free tier only works inside its agent; agents already read/edit/run, the driver adds the loop, checks and escalation |
+| 2026-10-24 | The strong model writes the checks ("defines done"), the weak model does the work | Spec -> tests is cheap for a strong model and the hardest part for a weak one |
 | 2026-10-24 | Agent cannot edit `~/.claude/settings.json` or deploy to Firebase (Claude Code safety) — owner runs those two commands | Self-modification and production deploys need a human |
