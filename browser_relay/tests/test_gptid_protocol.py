@@ -226,7 +226,10 @@ class TestAutoDriverUnit(unittest.TestCase):
         a = ChatGPTAdapter(driver="auto")
         self.assertIsNone(a.auto, "constructor must not launch a browser")
         block = a.diagnose_block()
-        self.assertIn("GPTID MODE: AUTO", block)
+        import importlib.util
+        has_playwright = importlib.util.find_spec("playwright") is not None
+        # without Playwright (e.g. CI) the adapter falls back to the human bridge instead of failing
+        self.assertIn("GPTID MODE: AUTO" if has_playwright else "GPTID MODE: MANUAL", block)
         self.assertIn("USER_ACTION_REQUIRED", USER_ACTION_REQUIRED)
 
 
