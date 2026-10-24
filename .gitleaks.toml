@@ -1,0 +1,16 @@
+title = "TIDOS gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Public-by-design values and deliberate fake secrets in tests"
+paths = [
+  '''^tests/''',
+  '''^evals/dungeons/.*/hidden/''',
+]
+regexes = [
+  # Firebase Web SDK apiKey of the tidos-framework project: public by design (shipped in web clients);
+  # access is controlled by Firestore rules (firebase/firestore.rules), not by this key.
+  '''AIzaSyDzbyda_7ygLaWtqjLZtiHrqSd0b_CYBQk''',
+]

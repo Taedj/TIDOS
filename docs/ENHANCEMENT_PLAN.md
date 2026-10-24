@@ -46,7 +46,7 @@
 - [x] **1.1** `scripts/sanitizer.py:43` — fix `\U` bad-escape crash in `sanitize_text()` (`--sanitize` mode crashes on every input) — done 2026-10-24 (regression test `test_does_not_crash_on_plain_text`; also fixed Windows user names with spaces, e.g. `C:\Users\Dr Jane Doe`)
 - [x] **1.2** `scripts/sanitizer.py:161` — fix `%e` format bug in error handler (use `%s`) — done 2026-10-24
 - [x] **1.3** `scripts/sanitizer.py` — use `ALLOWED_DIRECTORIES`; add path/PII checks to `--check` mode — done 2026-10-24 (dir whitelist on by default, `--any-dir` to scan elsewhere; user paths, e-mails, non-loopback IPs flagged)
-- [ ] **1.4** *(partial 2026-10-24: new patterns + false-positive fixes done and tested; gitleaks hook written but **unverified** — gitleaks is not installed on this machine)* Sanitizer detection: integrate **gitleaks** (or trufflehog) as primary scanner; keep regex as fallback; add patterns for `sk-ant-`, `AKIA…`, JWT `eyJ…`, Slack `xox?-`; remove false positives on prose ("Bearer tokens", "password: never hardcode")
+- [ ] **1.4** *(partial: new patterns + false-positive fixes tested; gitleaks layer runs in CI (secrets job) - still not installed on this machine)* Sanitizer detection: integrate **gitleaks** (or trufflehog) as primary scanner; keep regex as fallback; add patterns for `sk-ant-`, `AKIA…`, JWT `eyJ…`, Slack `xox?-`; remove false positives on prose ("Bearer tokens", "password: never hardcode")
 - [x] **1.5** Add `tests/test_sanitizer.py` covering crash, true positives, false positives — done 2026-10-24 (13 tests + 19 subtests pass; full suite 102/102)
 - [x] **1.6** `scripts/update.ps1` / `update.sh` — remove `"."` from candidate paths; refuse to run if the directory is not a genuine TIDOS checkout — done 2026-10-24 (markers: `TIDSTART.md` + `core/kernel.md` + `config/framework.md`; git must be the directory's own top-level, never a parent project)
 - [x] **1.7** `scripts/update.ps1` / `update.sh` — never `git remote set-url`; abort with a clear message if `origin` is not TIDOS (protects forks and user projects) — done 2026-10-24
@@ -78,8 +78,8 @@
 
 ### 1E. CI
 - [x] **1.30** *(found and fixed 2026-10-24)* `scripts/factory_sync.ps1` never parsed on Windows since v4.0 (unclosed `if` block + UTF-8 `✓` read as a smart quote by PowerShell 5.1) — fixed; all `.ps1` files now parse and are ASCII-only. CI should run a PowerShell parse check (see 1.27)
-- [ ] **1.27** Add `.github/workflows/ci.yml`: pytest, ruff, markdown-lint, link check, gitleaks secret scan, PowerShell lint (PSScriptAnalyzer), shellcheck
-- [ ] **1.28** Add persona/skill schema validator (required sections, routing signals) to CI
+- [ ] **1.27** *(written 2026-10-24: .github/workflows/ci.yml = tests on Linux + Windows, spec validator, update-gate scenarios (sh + ps1), dungeon validation (node/dart/PowerShell), .ps1 parse + ASCII check, PSScriptAnalyzer and shellcheck (errors only), gitleaks on the working tree with .gitleaks.toml allowlist. Every step that can run locally passes; the workflow itself runs for the first time when the branch is pushed)* Add `.github/workflows/ci.yml`: pytest, ruff, markdown-lint, link check, gitleaks secret scan, PowerShell lint (PSScriptAnalyzer), shellcheck
+- [x] **1.28** Add persona/skill schema validator (required sections, routing signals) to CI — done 2026-10-24 (scripts/validate_specs.py: persona title + registration, factory schema for generated personas, registry links, VERSION vs config, models.json, dungeon task.json, repo-relative Markdown links; 0 errors; in CI and tests/test_specs.py)
 - [ ] **1.29** Release v4.1.0 (changelog, tag)
 
 ---

@@ -4,7 +4,7 @@
 set -u
 KIND="$1"
 SRC="$(cd "$(dirname "$0")/../scripts" && pwd)"
-W=$(cygpath -m "$(mktemp -d)")
+if command -v cygpath >/dev/null; then W=$(cygpath -m "$(mktemp -d)"); else W=$(mktemp -d); fi
 export GIT_AUTHOR_NAME=t GIT_AUTHOR_EMAIL=t@example.com GIT_COMMITTER_NAME=t GIT_COMMITTER_EMAIL=t@example.com
 pass=0; failn=0
 ok()  { echo "  PASS: $1"; pass=$((pass+1)); }
