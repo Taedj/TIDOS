@@ -69,7 +69,7 @@
     <button class="tab" data-view="playbooks">Playbooks</button>
     <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
     <button class="tab" data-view="memory">Memory</button>
-    <button class="tab locked" title="Unlocks in Phase 10 — Auto-develop">🔒 Evolution</button>
+    <button class="tab" data-view="evolution">Evolution</button>
     <button class="tab locked" title="Unlocks in Phase 11 — Tool scout">🔒 Tool Scout</button>
   </nav>
 
@@ -86,11 +86,34 @@
         <p class="small faint note">XP = evidence: tasks whose checks passed (bonus when right first time), minus your corrections. Engine: tidos_learn/xp.py.</p>
       </div>
       <div class="window"><h2>Stats</h2><div id="stats"></div></div>
-      <div class="window"><h2>Daily Quests</h2><div id="quests"></div></div>
+      <div class="window"><h2>Daily Quests</h2><div id="quests"></div>
+        <h2 class="mt">System Notifications</h2><div id="notes"></div></div>
       <div class="window"><h2>Domains</h2><div id="domains"></div></div>
       <div class="window"><h2>Models</h2><div id="models"></div></div>
       <div class="window"><h2>Quest Log</h2><div id="cleared"></div></div>
       <div class="window span-3"><h2>Shadow Army — your subagents</h2><div id="army"></div></div>
+    </div>
+
+    <!-- EVOLUTION -->
+    <div id="view-evolution" class="grid g-2 hidden">
+      <div class="window span-2">
+        <h2>Evolution Queue — improving TIDOS itself</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>#</th><th>Proposal</th><th>Priority</th><th>Status</th><th>Decide</th></tr></thead>
+          <tbody id="evoList"></tbody>
+        </table></div>
+        <p class="small faint note">Accepted proposals can be implemented by <code class="sys">python scripts/self_improve.py</code>
+          on a separate branch, gated by all checks, never pushed. You review and merge.</p>
+      </div>
+      <div class="window">
+        <h2>Daily Quest</h2>
+        <div class="kv" id="evoReport"></div>
+        <p class="small faint note">Run: <code class="sys">python scripts/daily_quest.py</code></p>
+      </div>
+      <div class="window">
+        <h2>Unlocked Drafts</h2>
+        <div class="kv" id="evoDrafts"></div>
+      </div>
     </div>
 
     <!-- MEMORY -->

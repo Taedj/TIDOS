@@ -40,7 +40,7 @@ class Task:
         exe = self.verify[0]
         return exe == "{python}" or shutil.which(exe) is not None
 
-    def prepare(self, workdir, with_tidos=False):
+    def prepare(self, workdir, with_tidos=False, ablate=None):
         """Create a fresh workdir: fixture + TASK.md (+ TIDOS_PROTOCOL.md)."""
         if os.path.exists(workdir):
             shutil.rmtree(workdir)
@@ -51,7 +51,7 @@ class Task:
             # the real GUIDE mode: brief for this workdir + per-request guidance (never counted as "served")
             from tidos_session import brief, detect, guide
             facts = detect.project_facts(workdir)
-            text = brief.guide_brief({"model": "weak model", "tier": "weak", "tool": "opencode"}, facts, record=False)
+            text = brief.guide_brief({"model": "weak model", "tier": "weak", "tool": "opencode"}, facts, record=False, ablate=ablate)
             text = text.split("## For EVERY new request")[0] + "\n" + guide.guidance(self.prompt, workdir, record=False)[1]
             with open(os.path.join(workdir, "GUIDE.md"), "w", encoding="utf-8") as f:
                 f.write(text)

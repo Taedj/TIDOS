@@ -107,7 +107,18 @@ def _user_rules(project, limit=4):
     return rules[:limit]
 
 
-def guide_brief(session, facts, record=True):
+def weak_rules(ablate=None):
+    """WEAK_RULES, optionally without rule number `ablate` (renumbered) - used by eval ablation runs."""
+    if not ablate:
+        return WEAK_RULES
+    rules = re.split(r"\n(?=\d+\. )", WEAK_RULES)
+    if not 1 <= ablate <= len(rules):
+        raise ValueError("rule %d does not exist (1-%d)" % (ablate, len(rules)))
+    del rules[ablate - 1]
+    return "\n".join(re.sub(r"^\d+\.", "%d." % (i + 1), r) for i, r in enumerate(rules))
+
+
+def guide_brief(session, facts, record=True, ablate=None):
     rules = _user_rules(facts["name"])
     user_rules = ("## The user's standing rules (they repeated these; apply when relevant)\n%s\n\n"
                   % "\n".join("- " + r for r in rules)) if rules else ""
@@ -135,7 +146,7 @@ def guide_brief(session, facts, record=True):
         "## Project: %s\n- Stack: %s\n%s\n"
         "## How to check work\n%s\n\n%s"
         "## Playbooks learned from strong models\n%s\n"
-        % (session["model"], session["tier"], WEAK_RULES, per_request, facts["name"], ", ".join(facts["stack"]),
+        % (session["model"], session["tier"], weak_rules(ablate), per_request, facts["name"], ", ".join(facts["stack"]),
            notes, checks, user_rules, pb_text))
     lines = text.split("\n")
     while len("\n".join(lines).encode("utf-8")) > GUIDE_LIMIT - 12 and len(lines) > 3:

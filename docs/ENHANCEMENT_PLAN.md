@@ -21,7 +21,7 @@
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ✅ Done (10/10) |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ✅ Done (20/20) |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (11/14) - 9.7, 9.9 partial, 9.11 deferred |
-| 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | ⬜ Not started |
+| 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | 🟢 Done (5/6) - 10.1 partial (no eval delta per proposal yet) |
 | 11 | Tool Scout | Auto-discover, vet, propose tools | ⬜ Not started |
 | 12 | Control Center (full) | All dashboard panels | ⬜ Not started |
 | 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | ⬜ Not started |
@@ -239,12 +239,12 @@
 
 ## Phase 10 — Auto-Develop
 
-- [ ] **10.1** `evolution/SUGGESTIONS.md` → GitHub Issues (label, score, eval delta)
-- [ ] **10.2** Self-PR bot (scheduled agent): implements top suggestion on a branch, runs CI + evals, opens PR with before/after score — **human merges, never pushes to main**
-- [ ] **10.3** Mutation testing of the OS: remove a rule → eval drop? If not, propose deletion (keeps TIDOS lean)
-- [ ] **10.4** Daily quest: scheduled eval run + regression report (`/schedule` or GitHub Actions)
-- [ ] **10.5** Notifications (daily quests, playbooks ready for promotion, regressions)
-- [ ] **10.6** Panel: 🧬 **Evolution Queue** (approve → PR, reject)
+- [ ] **10.1** *(partial: evolution queue (~/.tidos/proposals.jsonl, priorities, statuses) + local GitHub issue drafts with the exact gh command (publishing stays the user's decision); eval delta per proposal not yet attached)* `evolution/SUGGESTIONS.md` → GitHub Issues (label, score, eval delta)
+- [x] **10.2** Self-PR bot (scheduled agent): implements top suggestion on a branch, runs CI + evals, opens PR with before/after score — **human merges, never pushes to main** — done 2026-10-24 (scripts/self_improve.py: implements one ACCEPTED proposal in a temporary git worktree on branch auto/<id>-<slug>, gates = tests + spec validator + plugin sync, commits only if all pass, never pushes/merges; verified for real (haiku, 0.02 USD, branch auto/1-... with code + 2 tests))
+- [x] **10.3** Mutation testing of the OS: remove a rule → eval drop? If not, propose deletion (keeps TIDOS lean) — done 2026-10-24 (tidos_evals run --ablate N: GUIDE mode with weak rule N removed, compared with full GUIDE on the same tasks (>= 10); no drop -> deletion proposal filed in the evolution queue (tests; verified with the reference agent; real-model ablations are the user's cost decision))
+- [x] **10.4** Daily quest: scheduled eval run + regression report (`/schedule` or GitHub Actions) — done 2026-10-24 (scripts/daily_quest.py: tests, specs, plugin sync, dungeon validation, learning refresh, status -> ~/.tidos/reports/<date>.md, exit 1 on regression (first real run: all clear); schedule with schtasks/cron (docstring))
+- [x] **10.5** Notifications (daily quests, playbooks ready for promotion, regressions) — done 2026-10-24 ([SYSTEM] notifications on the Status window: new proposals, implemented branches to review, daily quest regressions, unlocked drafts, missing report (tests))
+- [x] **10.6** Panel: 🧬 **Evolution Queue** (approve → PR, reject) — done 2026-10-24 (Evolution tab unlocked: queue with Accept/Reject (logged in the security log), daily quest result, unlocked draft counts)
 
 ---
 

@@ -47,7 +47,7 @@ def main():
             details.append("### %s\n```\n%s\n```" % (name, out[-2500:]))
         if name == "status":
             details.insert(0, "```\n%s\n```" % out.strip())
-    report = "\n".join(["# TIDOS daily quest — %s" % stamp.strftime("%Y-%m-%d %H:%M UTC"), "",
+    report = "\n".join(["# TIDOS daily quest - %s" % stamp.strftime("%Y-%m-%d %H:%M UTC"), "",
                         "**Result:** %s" % ("all clear" if not failed else "REGRESSION in " + ", ".join(failed)), "",
                         "| Check | Result | Last line |", "|---|---|---|"] + rows + ["", "## Details"] + details) + "\n"
     folder = os.path.join(tidos_home(), "reports")

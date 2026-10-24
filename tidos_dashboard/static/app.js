@@ -120,6 +120,7 @@ async function startApp(fresh = false) {
   if (fresh) toast("<b>[SYSTEM]</b> Welcome back, Player. Control center unlocked.");
   await loadStatus();
   loadArmy();
+  loadNotifications();
   loadLive();
   connectStream();
   refreshTimer = setInterval(() => { loadStatus(); if (!$("view-security").classList.contains("hidden")) loadSecurity(); }, 30000);
@@ -140,7 +141,8 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "evolution", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    if (tab.dataset.view === "evolution") loadEvolution();
     if (tab.dataset.view === "memory") loadMemory();
     if (tab.dataset.view === "live") loadLive();
     if (tab.dataset.view === "dungeons") loadDungeons();
@@ -292,6 +294,35 @@ async function loadDungeons() {
     <tr><td><span class="rank ${esc(t.difficulty)}">${esc(t.difficulty)}</span> <span title="${esc(t.title)}">${esc(t.id)}</span></td>
     ${d.columns.map((c) => { const x = d.cells[t.id + "|" + c];
       return `<td>${!x ? '<span class="cell none">·</span>' : x.passed ? `<span class="cell ok" title="${x.seconds}s">✓</span>` : `<span class="cell bad" title="${esc(x.error || "failed")}">✗</span>`}</td>`; }).join("")}</tr>`).join("");
+}
+
+// ---- evolution + notifications
+async function loadNotifications() {
+  const r = await api("/api/notifications");
+  if (!r.ok) return;
+  $("notes").innerHTML = r.data.notifications.map((n) => `
+    <div class="log-item"><span class="sys">[SYSTEM]</span><span class="${n.level === "bad" ? "lift-down" : n.level === "ok" ? "lift-up" : ""}">${esc(n.text)}</span></div>`).join("")
+    || `<p class="muted">Nothing needs your attention.</p>`;
+}
+
+async function loadEvolution() {
+  const r = await api("/api/evolution");
+  if (!r.ok) return;
+  const d = r.data;
+  $("evoList").innerHTML = d.proposals.map((p) => `
+    <tr><td>${p.id}</td><td><b>${esc(p.title)}</b><br><span class="small faint">${esc(p.reason)}</span>${p.branch ? `<br><code class="sys">${esc(p.branch)}</code>` : ""}</td>
+    <td><span class="pill ${p.priority === "high" ? "warn" : ""}">${esc(p.priority)}</span></td>
+    <td><span class="pill ${p.status === "accepted" || p.status === "implemented" ? "ok" : p.status === "rejected" ? "bad" : ""}">${esc(p.status)}</span></td>
+    <td>${p.status === "new" ? `<button class="btn ghost evo" data-id="${p.id}" data-s="accepted">Accept</button> <button class="btn ghost evo" data-id="${p.id}" data-s="rejected">Reject</button>` : ""}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">No proposals yet. Agents add them with tidos_propose; you with tidos_learn proposals --add.</td></tr>`;
+  $("evoList").querySelectorAll(".evo").forEach((b) => b.addEventListener("click", async () => {
+    const res = await api("/api/evolution/status", { id: Number(b.dataset.id), status: b.dataset.s });
+    if (res.ok) { toast(`<b>[SYSTEM]</b> Proposal #${esc(b.dataset.id)} ${esc(b.dataset.s)}.`); loadEvolution(); loadNotifications(); }
+  }));
+  $("evoReport").innerHTML = d.report ? `<span class="muted">Last run</span><b>${esc(d.report.name)}</b><span class="muted">Result</span><b>${esc(d.report.result)}</b>`
+    : `<span class="muted">Last run</span><b>never</b>`;
+  $("evoDrafts").innerHTML = [["Skill drafts", d.drafts.skills], ["Specialist drafts", d.drafts.agents], ["Issue drafts", d.drafts.issues]]
+    .map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("");
 }
 
 // ---- shadow army + memory

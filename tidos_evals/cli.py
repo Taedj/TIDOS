@@ -71,6 +71,8 @@ def cmd_run(args):
              and RANKS.index(t.difficulty) >= RANKS.index(args.min_difficulty)]
     modes = {"on": [True], "off": [False], "both": [False, True], "guide": ["guide"],
              "compare": [False, "guide"]}[args.tidos]
+    if args.ablate:
+        modes = ["guide"]  # ablation = GUIDE mode with one rule removed, compared against full GUIDE runs
     # unique even for parallel runs started in the same second
     slug = "".join(c if c.isalnum() else "-" for c in args.agent)[:40].strip("-")
     run_id = "%s-%s-%s" % (datetime.now().strftime("%Y%m%d-%H%M%S"), slug, os.urandom(2).hex())
@@ -89,14 +91,14 @@ def cmd_run(args):
                 label = "%s%s%s" % (t.id, {"-guide": " +GUIDE", "-tidos": " +TIDOS", "": ""}[tag],
                                     " #%d" % (rep + 1) if args.repeat > 1 else "")
                 work = os.path.join(run_dir, t.suite, "%s%s-%d" % (t.name, tag, rep + 1))
-                t.prepare(work, with_tidos)
+                t.prepare(work, with_tidos, ablate=args.ablate)
                 print("[%d/%d] %-52s ..." % (n, total, label), end="", flush=True)
                 res, seconds = agents.timed_attempt(args.agent, t, work, with_tidos, args.budget)
                 passed, verify_log = t.run_verify(work)
                 with open(os.path.join(work, "_tidos_eval_log.txt"), "w", encoding="utf-8") as f:
                     f.write("AGENT (%s, ok=%s, error=%s)\n%s\n\nVERIFY\n%s" % (
                         args.agent, res.ok, res.error, res.log, verify_log))
-                row = {"suite": t.suite, "task_name": t.name, "model": args.agent,
+                row = {"suite": t.suite, "task_name": t.name, "model": _ablated(args.agent, args.ablate),
                        "agent": args.agent.partition(":")[0], "with_tidos": 2 if with_tidos == "guide" else int(with_tidos),
                        "passed": int(passed), "duration_s": seconds, "cost_usd": res.cost_usd,
                        "run_at": _now(), "run_id": run_id, "difficulty": t.difficulty,
@@ -112,8 +114,46 @@ def cmd_run(args):
         json.dump(results, f, indent=1)
     print()
     _print_report(conn, run_id)
+    if args.ablate:
+        print(ablation_verdict(conn, args.agent, args.ablate))
     conn.close()
     return 0
+
+
+def _ablated(agent, rule):
+    return "%s [no rule %d]" % (agent, rule) if rule else agent
+
+
+MIN_ABLATION_TASKS = 10
+
+
+def ablation_verdict(conn, agent, rule):
+    """Compare GUIDE without rule N vs full GUIDE on the same tasks; propose deleting a rule that earns nothing."""
+    def rates(model):
+        rows = conn.execute("SELECT suite || '/' || task_name t, AVG(passed) p FROM evals WHERE model = ? AND "
+                            "with_tidos = 2 AND COALESCE(error, '') NOT LIKE 'contaminated%' GROUP BY t", (model,))
+        return {r["t"]: r["p"] for r in rows}
+    full, without = rates(agent), rates(_ablated(agent, rule))
+    common = sorted(set(full) & set(without))
+    if len(common) < MIN_ABLATION_TASKS:
+        return ("Rule %d ablation: only %d task(s) have both full-GUIDE and ablated results (need %d). Run "
+                "`--tidos guide` for the same tasks first." % (rule, len(common), MIN_ABLATION_TASKS))
+    a = 100.0 * sum(full[t] for t in common) / len(common)
+    b = 100.0 * sum(without[t] for t in common) / len(common)
+    verdict = "Rule %d ablation on %d tasks: full GUIDE %.0f%%, without rule %d %.0f%% (%+.0f points)." % (
+        rule, len(common), a, rule, b, b - a)
+    if b >= a:
+        from tidos_learn import evolve
+        from tidos_session.brief import WEAK_RULES
+        text = next((r for r in WEAK_RULES.split("\n") if r.startswith("%d. " % rule)), "rule %d" % rule)
+        item = evolve.add("Consider deleting GUIDE rule %d" % rule,
+                          "Mutation test: removing '%s' did not lower the pass rate for %s on %d dungeons "
+                          "(%.0f%% -> %.0f%%). A rule that earns nothing costs tokens and attention." % (
+                              text[3:80], agent, len(common), a, b), "low")
+        verdict += " No drop: proposal #%d filed in the evolution queue." % item["id"]
+    else:
+        verdict += " The rule earns its place."
+    return verdict
 
 
 def _print_report(conn, run_id=None):
@@ -197,6 +237,8 @@ def main(argv=None):
     run.add_argument("--budget", type=float, default=1.0, help="max USD per Claude attempt")
     run.add_argument("--repeat", type=int, default=1)
     run.add_argument("--min-difficulty", default="E", choices=list("EDCBAS"), help="only tasks of this rank or harder")
+    run.add_argument("--ablate", type=int, metavar="N",
+                     help="mutation test: GUIDE mode with weak rule N removed; files a deletion proposal if no drop")
     sub.choices["report"].add_argument("--run", help="only this run id")
     new = sub.add_parser("new", help="scaffold a dungeon from a real bug")
     new.add_argument("--suite", required=True)

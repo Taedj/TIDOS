@@ -151,6 +151,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
             if path == "/api/dungeons":
                 return self._json(200, stats.dungeons(conn))
+            if path == "/api/evolution":
+                return self._json(200, stats.evolution())
+            if path == "/api/notifications":
+                return self._json(200, {"notifications": stats.notifications(conn)})
             if path == "/api/army":
                 return self._json(200, stats.army(conn))
             if path == "/api/memory":
@@ -240,6 +244,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/auth/setup": self._auth_setup, "/api/auth/logout": self._auth_logout,
             "/api/auth/change": self._auth_change, "/api/switches": self._switches,
             "/api/playbooks/toggle": self._playbook_toggle,
+            "/api/evolution/status": self._evolution_status,
         }
         handler = routes.get(urlparse(self.path).path)
         if not handler:
@@ -324,6 +329,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": problem})
         self.server.fb.set_password_doc(self.server.cfg, session["id_token"], auth.hash_password(new))
         self.server.lockout.log("password_changed", session["email"])
+        return self._json(200, {"ok": True})
+
+    def _evolution_status(self, body):
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        from tidos_learn import evolve
+        status = body.get("status")
+        if status not in ("accepted", "rejected", "new"):
+            return self._json(400, {"error": "status must be accepted, rejected or new"})
+        try:
+            evolve.set_status(int(body.get("id")), status)
+        except (KeyError, ValueError, TypeError):
+            return self._json(400, {"error": "unknown proposal"})
+        self.server.lockout.log("proposal", "#%s %s" % (body.get("id"), status))
         return self._json(200, {"ok": True})
 
     def _playbook_toggle(self, body):

@@ -214,6 +214,46 @@ def army(conn):
     return {"units": units, "other_missions": sum(v for k, v in missions.items() if not k.startswith("tidos-"))}
 
 
+def evolution():
+    """Evolution queue + latest daily quest report + unlocked drafts (for the Evolution tab)."""
+    import glob
+    from tidos_learn import evolve
+    from tidos_session import detect
+    home = detect.tidos_home()
+    reports = sorted(glob.glob(os.path.join(home, "reports", "*.md")))
+    latest = None
+    if reports:
+        with open(reports[-1], "r", encoding="utf-8") as f:
+            text = f.read()
+        result = next((l for l in text.splitlines() if l.startswith("**Result:**")), "")
+        latest = {"name": os.path.basename(reports[-1]), "result": result.replace("**Result:**", "").strip()}
+    return {"proposals": evolve.ranked(), "report": latest,
+            "drafts": {"skills": len(glob.glob(os.path.join(home, "drafts", "skills", "*", "SKILL.md"))),
+                       "agents": len(glob.glob(os.path.join(home, "drafts", "agents", "*.md"))),
+                       "issues": len(glob.glob(os.path.join(home, "drafts", "issues", "*.md")))}}
+
+
+def notifications(conn):
+    """[SYSTEM] messages: what needs the owner's attention right now."""
+    evo = evolution()
+    notes = []
+    new = [p for p in evo["proposals"] if p["status"] == "new"]
+    if new:
+        notes.append({"level": "info", "text": "%d new proposal(s) to review in Evolution." % len(new)})
+    implemented = [p for p in evo["proposals"] if p["status"] == "implemented" and p.get("branch")]
+    for p in implemented[:3]:
+        notes.append({"level": "ok", "text": "Proposal #%d implemented on branch %s - review and merge if you agree."
+                      % (p["id"], p["branch"])})
+    if evo["report"] and "REGRESSION" in evo["report"]["result"]:
+        notes.append({"level": "bad", "text": "Daily quest %s: %s" % (evo["report"]["name"], evo["report"]["result"])})
+    if evo["drafts"]["skills"] or evo["drafts"]["agents"]:
+        notes.append({"level": "info", "text": "Unlocked: %d skill draft(s), %d specialist draft(s) - see Memory."
+                      % (evo["drafts"]["skills"], evo["drafts"]["agents"])})
+    if not evo["report"]:
+        notes.append({"level": "info", "text": "No daily quest report yet: python scripts/daily_quest.py"})
+    return notes
+
+
 MEMORY_DIRS = ("memory", "drafts")
 
 
