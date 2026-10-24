@@ -296,6 +296,7 @@ const AR_PATTERNS = [
   [/^Daily quest (\S+): (.*)$/, "المهمة اليومية $1: $2"],
   [/^Unlocked: (\d+) skill draft\(s\), (\d+) specialist draft\(s\) - see Memory\.$/, "فُتحت: $1 مسودة مهارة و$2 مسودة متخصص — انظر تبويب الذاكرة."],
   [/^No daily quest report yet: (.*)$/, "لا يوجد تقرير للمهمة اليومية بعد: $1"],
+  [/^(\d+) contradictory rule\(s\): TIDOS kept your most recent instruction - see Memory \(LEARNED_PREFERENCES\.md\)\.$/, "قواعد متناقضة: $1 — احتفظ TIDOS بأحدث تعليماتك. انظر الذاكرة (LEARNED_PREFERENCES.md)."],
   [/^Use at least (\d+) characters\.$/, "استخدم $1 أحرف على الأقل."],
   [/^Raid: (.*)$/, "غارة: $1"],
   [/^Trial: (.*)$/, "اختبار: $1"],

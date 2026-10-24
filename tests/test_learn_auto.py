@@ -90,6 +90,25 @@ class PrefsTests(Isolated):
         self.assertFalse(any(t == "Do NOT modify code." for t in trade))      # too generic, never a rule
         self.assertEqual([e["projects"] for e in learned["all"]], [["APP", "TRADE"]])
 
+    def test_opposite_rules_never_merge_and_the_latest_wins(self):
+        add_session(self.conn, "s3", r"D:\work\Dev\WEB", "WEB", "claude-opus-5-5", [
+            ("Always run the full browser test suite before committing.", "success", 1, 0, [], []),
+            ("Always run the full browser test suite before committing!", "success", 1, 0, [], []),
+            ("Never run the full browser test suite before committing, it is too slow.", "success", 1, 0, [], []),
+            ("Never run the full browser test suite before committing.", "success", 1, 0, [], [])])
+        self.assertEqual(prefs.polarity("Never run the suite"), "-")
+        self.assertEqual(prefs.polarity("Always run the suite"), "+")
+        learned = prefs.learn(self.conn)
+        web = [e["text"] for e in learned["projects"]["WEB"]]
+        self.assertEqual(len(web), 1)
+        self.assertTrue(web[0].startswith("Never"))                          # said most recently
+        self.assertEqual(len(learned["conflicts"]), 1)
+        self.assertTrue(learned["conflicts"][0]["dropped"].startswith("Always"))
+        prefs.write(learned)
+        served = brief._user_rules("WEB")
+        self.assertEqual(served[0], web[0])
+        self.assertFalse(any(r.startswith("Always run") for r in served))   # the dropped rule is never served
+
     def test_brief_includes_rules(self):
         prefs.write(prefs.learn(self.conn))
         rules = brief._user_rules("TRADE")

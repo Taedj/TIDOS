@@ -221,6 +221,16 @@ def notifications(conn):
     new = [p for p in evo["proposals"] if p["status"] == "new"]
     if new:
         notes.append({"level": "info", "text": "%d new proposal(s) to review in Evolution." % len(new)})
+    from tidos_session.detect import tidos_home
+    try:
+        with open(os.path.join(tidos_home(), "memory", "LEARNED_PREFERENCES.md"), "r", encoding="utf-8") as f:
+            text = f.read()
+        solved = text.split("## Contradictions resolved", 1)[1].count("\n- ") if "## Contradictions resolved" in text else 0
+    except OSError:
+        solved = 0
+    if solved:
+        notes.append({"level": "info", "text": "%d contradictory rule(s): TIDOS kept your most recent instruction - "
+                                               "see Memory (LEARNED_PREFERENCES.md)." % solved})
     implemented = [p for p in evo["proposals"] if p["status"] == "implemented" and p.get("branch")]
     for p in implemented[:3]:
         notes.append({"level": "ok", "text": "Proposal #%d implemented on branch %s - review and merge if you agree."
