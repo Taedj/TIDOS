@@ -16,8 +16,8 @@
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
-| 5 | Learn from Strong Models (Distillation) | Turn strong-model traces into playbooks | ⬜ Not started |
-| 6 | Weak-Model Driver | TIDOS drives weak models to strong-model results | 🔄 In progress (3/10) |
+| 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | ⬜ Not started |
+| 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | ⬜ Not started |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ⬜ Not started |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ⬜ Not started |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | ⬜ Not started |
@@ -136,33 +136,38 @@
 
 ---
 
-## Phase 5 — Learn from Strong Models (Distillation)
+## Phase 5 — LEARN mode: TIDOS learns from strong models (START TIDOS on Claude, Gemini Pro…)
 
-- [ ] **5.1** Task classifier (task type × stack: bug-fix/flutter, feature/python, refactor, migration, TP-builder…)
-- [ ] **5.2** Filter: only successful, high-score strong-model traces are learning material
-- [ ] **5.3** Distiller: strong model summarizes N similar traces into a **Playbook** (steps, grounding pattern, verification habit, negative constraints, worked example)
-- [ ] **5.4** Playbook format (`playbooks/<type>/<stack>.md` + metadata in brain.db: source models, uses, success rate, rank)
-- [ ] **5.5** Negative-constraint extractor (from strong-model mistakes and user corrections)
-- [ ] **5.6** Worked-example selector (best 1–2 traces per playbook as few-shot)
-- [ ] **5.7** **Eval gate**: a playbook is promoted only if it raises the weak-model score on golden tasks
-- [ ] **5.8** Per-model methodology profile (how Claude vs Gemini vs Grok plan/verify; which is best per domain)
-- [ ] **5.9** Panel: 📜 **Playbook Library** (rank E→S, approve/edit/demote/delete, "test against eval")
-- [ ] **5.10** Check each provider's terms before any fine-tuning use of outputs (playbooks/prompts for own use are fine)
+> Goal (user, 2026-10-24): develop TIDOS itself. TIDOS learns while a strong model works with the user,
+> and later guides weak/free models with that knowledge. No model training, no model benchmarking.
+
+- [ ] **5.1** Model & tool detection at START TIDOS: which tool (Claude Code / OpenCode / Gemini CLI…) and which model is running
+- [ ] **5.2** Model registry `models/registry.yaml`: model → tier (frontier / medium / weak), user-editable; unknown models default to "weak" (safe side)
+- [ ] **5.3** Mode switch: frontier → LEARN mode, medium/weak → GUIDE mode; shown in the startup report and the control center
+- [ ] **5.4** Task classifier on traces (task type × stack: bugfix/python, feature/flutter, deploy/firebase, teaching/TP…)
+- [ ] **5.5** Playbook distiller: from successful strong-model tasks (brain traces), extract HOW it worked: steps, files it read first, commands it verified with, pitfalls, user corrections → `~/.tidos/playbooks/<type>/<stack>.md` (private, outside repo)
+- [ ] **5.6** Distillation runs at session end in LEARN mode (the strong model summarizes its own session — cheap, high quality), plus `tidos learn` to process older sessions
+- [ ] **5.7** User & project knowledge: preferences, recurring corrections, project facts (stack, test command, deploy steps) learned per project
+- [ ] **5.8** Playbook quality: confidence from outcomes (verified success, no correction), merge duplicates, decay unused ones
+- [ ] **5.9** Panel: 📜 Playbook Library in /TIDOSZIT (view, edit, approve, delete)
 
 ---
 
-## Phase 6 — Weak-Model Driver
+## Phase 6 — GUIDE mode: TIDOS guides weak/free models with the user
 
-- [ ] **6.1** *(partial 2026-10-24: agent-level backends `claude:<model>` and `opencode:<provider/model>` (sandboxed); no LiteLLM / API keys on this machine; OpenCode free tier refuses raw-API use outside its agent, so the driver orchestrates agents instead of raw completions)* Model router via LiteLLM (cloud: Claude, Gemini, Grok, OpenRouter; local: Ollama / llama.cpp)
-- [ ] **6.2** Model profiles `models/{small,medium,frontier}.yaml` (context budget, micro-step size, output format, verify depth)
-- [x] **6.3** Driver loop: classify → fetch playbook → decompose into micro-steps → strict JSON/diff output per step — done 2026-10-24 (`tidos_driver/`: code-owned loop DEFINE DONE -> IMPLEMENT -> VERIFY -> REPAIR -> ESCALATE; models only do bounded steps through a step file; checks hash-protected and restored if a model edits them)
-- [ ] **6.4** *(partial 2026-10-24: neutral working-file names (a weak model misspelled a "tidos" path), relative-paths-only rule, language detection + check templates; repo map / ast-grep / LSP still to do)* Grounding: TIDOS reads files itself; repo map (tree-sitter), ast-grep, LSP (Serena MCP) — weak model gets only relevant slices
-- [x] **6.5** Mechanical verify after every step (tests/lint/compile) + repair loop with exact error + playbook fix pattern (max N tries) — done 2026-10-24 (driver runs the checks itself after every step; exact failing output fed back; max 2 repair rounds)
-- [x] **6.6** **Teacher-on-call** escalation: strong model fixes only the stuck step; the fix becomes a new trace — done 2026-10-24 (teacher defines "done" (spec -> executable checks, gated: must fail on untouched code) and takes over a step the student cannot finish)
-- [ ] **6.7** Cost-aware routing: cheap model first, escalate on gate failure; budget limits
-- [ ] **6.8** *(in progress 2026-10-24: weak `flint-40b-free` plain vs driver (+Haiku teacher) on the 8 hardest dungeons)* Measure: weak + TIDOS driver vs weak alone vs strong (Phase 4 suites)
-- [ ] **6.9** Panel: ⚔ **Model Arena** (leaderboard model × domain, teacher-vs-student chart, routing rules editor)
-- [ ] **6.10** Panel: 💰 **Cost & Tokens**
+- [ ] **6.1** Compact guided brief (< 4 KB, not the 86 KB v4 boot): user profile, project facts, weak-model protocol, top playbooks for this project
+- [ ] **6.2** Weak-model protocol (from what the evals showed): one small step at a time, relative paths only, read before edit, run the project's checks after every change, never claim "done" without check output, ask the user when unsure
+- [ ] **6.3** Just-in-time guidance: on each user prompt, TIDOS picks the matching playbook and injects only that (Claude Code `UserPromptSubmit` hook; OpenCode/Gemini via MCP tool `tidos_guide(task)`)
+- [ ] **6.4** Checks-first for risky tasks: TIDOS asks the model to write/locate the checks before editing (driver lesson: "define done" first)
+- [ ] **6.5** Stuck detection: repeated failures / same error loop → TIDOS tells the user and suggests switching to a strong model for this step (or, with consent, asks a strong model for a hint)
+- [ ] **6.6** Delivery per tool: Claude Code (hooks + CLAUDE.md block), OpenCode (AGENTS.md + instructions + plugin), Gemini CLI (GEMINI.md), others via AGENTS.md
+- [ ] **6.7** Every guided session is traced too, so TIDOS learns which guidance helped weak models
+- [ ] **6.8** Measure TIDOS guidance with dungeons: free model inside its own agent WITH the TIDOS guide vs WITHOUT (quality check of TIDOS, not a model benchmark)
+- [ ] **6.9** Panel: mode, model tier and guidance used per session in the Live Monitor
+
+> Built 2026-10-24 before this realignment and kept as tools: `tidos_driver/` (external orchestrator — its lessons feed 6.2/6.4/6.5),
+> `tidos_evals/` dungeons (used by 6.8). Earlier model baselines: Claude Haiku 32/32 without vs 31/32 with the v4 prose protocol
+> (+55% cost) → the long v4 boot text does not help; GUIDE mode must be short and task-specific.
 
 ---
 
@@ -302,6 +307,7 @@
 | 2026-10-24 | Control center = Python stdlib + plain JS + SSE (not FastAPI/React) | Zero installs, no build, offline, matches TIDOS stdlib-only scripts (Q3 delegated) |
 | 2026-10-24 | Control password is set/changed only in the browser; no CLI | Anything typed in a terminal can be captured in AI transcripts |
 | 2026-10-24 | Kill switches live in `~/.tidos/control.json` and are enforced by scripts/hooks | Real control, not prose; survives TIDOS updates |
-| 2026-10-24 | Driver orchestrates sandboxed agents (Claude Code, OpenCode), not raw completions | OpenCode free tier only works inside its agent; agents already read/edit/run, the driver adds the loop, checks and escalation |
+| 2026-10-24 | REALIGNMENT: the goal is developing TIDOS — learn from strong-model sessions, guide weak models with the user; no model training or model benchmarking | User correction |
+| 2026-10-24 | (superseded) Driver orchestrates sandboxed agents (Claude Code, OpenCode), not raw completions | OpenCode free tier only works inside its agent; agents already read/edit/run, the driver adds the loop, checks and escalation |
 | 2026-10-24 | The strong model writes the checks ("defines done"), the weak model does the work | Spec -> tests is cheap for a strong model and the hardest part for a weak one |
 | 2026-10-24 | Agent cannot edit `~/.claude/settings.json` or deploy to Firebase (Claude Code safety) — owner runs those two commands | Self-modification and production deploys need a human |
