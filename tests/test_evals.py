@@ -4,6 +4,7 @@ import json
 import os
 import sys
 import tempfile
+import time
 import unittest
 from unittest import mock
 
@@ -64,6 +65,17 @@ class AgentTests(unittest.TestCase):
     def test_claude_tools_are_restricted(self):
         self.assertNotIn("Bash,", agents.CLAUDE_TOOLS + ",")  # never unrestricted Bash
         self.assertNotIn("WebFetch", agents.CLAUDE_TOOLS)
+
+    def test_timeout_kills_grandchildren(self):
+        # a child that spawns a long-lived grandchild sharing our pipes (like an npm .cmd shim)
+        code = ("import subprocess, sys; subprocess.Popen([sys.executable, '-c', 'import time; time.sleep(60)']);"
+                "import time; time.sleep(60)")
+        with tempfile.TemporaryDirectory() as tmp:
+            start = time.time()
+            proc, err = agents._run(["python", "-c", code], tmp, 2)
+        self.assertIsNone(proc)
+        self.assertIn("timed out", err)
+        self.assertLess(time.time() - start, 40)
 
     def test_unknown_agent(self):
         task = dungeon.load_tasks(task="paginate-off-by-one")[0]

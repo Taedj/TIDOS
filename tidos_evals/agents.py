@@ -58,14 +58,28 @@ def _run(argv, workdir, timeout):
     exe = shutil.which(argv[0])
     if not exe:
         return None, "%s not found on PATH" % argv[0]
+    proc = subprocess.Popen([exe] + argv[1:], cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                            text=True, encoding="utf-8", errors="replace", env=_env(workdir),
+                            stdin=subprocess.DEVNULL)
     try:
-        proc = subprocess.run([exe] + argv[1:], cwd=workdir, capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=timeout, env=_env(workdir),
-                              stdin=subprocess.DEVNULL)
-    except subprocess.TimeoutExpired as e:
-        out = (e.stdout or "") if isinstance(e.stdout, str) else ""
-        return None, "agent timed out after %ds\n%s" % (timeout, out[-2000:])
-    return proc, None
+        out, err = proc.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired:
+        # npm .cmd shims spawn the real CLI as a grandchild: killing only the shim leaves it running and
+        # holding our pipes, so communicate() would never return. Kill the whole tree.
+        kill_tree(proc)
+        try:
+            out, _ = proc.communicate(timeout=30)
+        except subprocess.TimeoutExpired:
+            out = ""
+        return None, "agent timed out after %ds\n%s" % (timeout, (out or "")[-2000:])
+    return subprocess.CompletedProcess(proc.args, proc.returncode, out, err), None
+
+
+def kill_tree(proc):
+    if os.name == "nt":
+        subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+    else:
+        proc.kill()
 
 
 def attempt(spec, task, workdir, with_tidos, budget_usd=1.0):
