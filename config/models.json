@@ -1,0 +1,30 @@
+{
+  "_comment": "Model -> tier for START TIDOS. First matching pattern wins (fnmatch, case-insensitive). Override or extend in ~/.tidos/models.json (its rules are checked first). Tiers: frontier = LEARN mode, medium/weak = GUIDE mode. Unknown models are treated as weak (safe side).",
+  "rules": [
+    ["claude-opus-*", "frontier"],
+    ["claude-sonnet-*", "frontier"],
+    ["claude-fable-*", "frontier"],
+    ["*opus*", "frontier"],
+    ["claude-haiku-*", "medium"],
+    ["*gemini-*-pro*", "frontier"],
+    ["*gemini-*flash-lite*", "weak"],
+    ["*gemini-*flash*", "medium"],
+    ["*gpt-5*codex-spark*", "medium"],
+    ["*gpt-5*mini*", "medium"],
+    ["*gpt-5*nano*", "weak"],
+    ["*gpt-5*", "frontier"],
+    ["*grok-4*", "frontier"],
+    ["*grok*fast*", "medium"],
+    ["*deepseek*flash*", "weak"],
+    ["*deepseek*", "medium"],
+    ["*glm-5*flash*", "weak"],
+    ["*glm-4*", "weak"],
+    ["*glm-5*", "medium"],
+    ["*devstral*", "medium"],
+    ["*mistral-medium*", "medium"],
+    ["*-free", "weak"],
+    ["opencode/big-pickle", "weak"],
+    ["ollama/*", "weak"],
+    ["*", "weak"]
+  ]
+}

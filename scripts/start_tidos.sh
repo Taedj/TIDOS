@@ -8,6 +8,16 @@
 
 set -e
 
+PROJECT_DIR="$(pwd)"   # the user's project: where START TIDOS was run
+TOOL="auto"; MODEL="auto"; SKIP_ARG=""
+for arg in "$@"; do
+    case "$arg" in
+        --tool=*) TOOL="${arg#--tool=}" ;;
+        --model=*) MODEL="${arg#--model=}" ;;
+        --skip-update) SKIP_ARG="--skip-update" ;;
+    esac
+done
+set -- $SKIP_ARG
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TIDOS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
@@ -50,18 +60,15 @@ if [ -f "$SCRIPT_DIR/auth_verify.sh" ]; then
     fi
 fi
 
-VER="3.2.0"
+VER="unknown"
 if [ -f "$TIDOS_ROOT/VERSION.md" ]; then
     VER=$(grep "Current Version" "$TIDOS_ROOT/VERSION.md" | awk -F: '{print $2}' | xargs)
 fi
 
 echo ""
 echo "=========================================================="
-echo "  TIDOS SYSTEM READY & AUTHENTICATED (v$VER)"
+echo "  TIDOS READY (v$VER)"
 echo "=========================================================="
-echo "  - Core: Frozen & Protected"
-echo "  - Engine: Active"
-echo "  - Personas: Mounted"
-echo "  - GPTID Partner Relay: Ready (Chrome)"
-echo "=========================================================="
-echo "TIDOS is active. You may now give engineering commands."
+# Session mode: LEARN on strong models, GUIDE on weak/free models
+"$(command -v python3 || command -v python)" -I "$TIDOS_ROOT/tidos_session/__main__.py" start     --tool "$TOOL" --model "$MODEL" --project "$PROJECT_DIR"
+echo "Follow the TIDOS brief above for this whole session."

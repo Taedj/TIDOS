@@ -40,7 +40,23 @@ TIDOS strictly requires the user to authenticate via Google (Gmail) before any w
 2. The user may disconnect at any time with `TIDOS AUTH logout` (clears the saved session in `~/.tidos`).
 3. Record auth status in the Startup Report: `Authenticated: <email> (Google)`.
 
-### Mandatory Subsystem Checklist
+### Step 1: Session Mode — LEARN or GUIDE (v4.1, replaces reading every spec below)
+
+START TIDOS ends by printing a **TIDOS brief**. The scripts pass your tool and model to `tidos_session`:
+
+- Windows: `.\start_tidos.ps1 -Tool <claude-code|opencode|gemini-cli|...> -Model <your exact model id>`
+- Linux/macOS: `./scripts/start_tidos.sh --tool=<tool> --model=<model id>`
+
+If you do not know your exact model id, pass nothing: TIDOS detects it from the tool (Claude Code transcript,
+OpenCode state) and treats unknown models as weak. The model → tier table is `config/models.json`
+(override in `~/.tidos/models.json`).
+
+- **Frontier model → LEARN mode.** Work normally. TIDOS records the session to learn how tasks are solved here.
+- **Medium/weak model → GUIDE mode.** The brief (≤ 4 KB) contains the rules, project facts, how to check work and
+  the playbooks learned from strong models. **Follow the brief for the whole session.** In GUIDE mode, do NOT load the
+  long specs listed below: they are written for strong models and measurably do not help weaker ones.
+
+### Mandatory Subsystem Checklist (LEARN mode / strong models only)
 - [ ] **1. OS Core**: Read [core/kernel.md](file:///d:/work/Dev/TIDOS/core/kernel.md) (Protected OS Freeze invariant).
 - [ ] **2. Identity**: Read [core/identity.md](file:///d:/work/Dev/TIDOS/core/identity.md) (Senior Principal Engineer stance).
 - [ ] **3. Bootstrap**: Read [core/bootstrap.md](file:///d:/work/Dev/TIDOS/core/bootstrap.md) (Non-destructive inspection).

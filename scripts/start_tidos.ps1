@@ -7,8 +7,12 @@
 
 param(
     [string]$TidosDir = "",
-    [switch]$SkipUpdate
+    [switch]$SkipUpdate,
+    [string]$Tool = "auto",      # claude-code | opencode | gemini-cli | ... (auto-detected when possible)
+    [string]$Model = "auto"      # exact model id if the agent knows it; otherwise TIDOS detects it
 )
+
+$projectDir = (Get-Location).Path   # the user's project: where START TIDOS was run
 
 $ErrorActionPreference = "Stop"
 
@@ -59,8 +63,8 @@ if (Test-Path $authScript) {
     }
 }
 
-# Step 1-9: Startup Report
-$ver = "3.2.0"
+# Step 1: version + session mode (LEARN on strong models, GUIDE on weak/free models)
+$ver = "unknown"
 $vf = Join-Path $tidosRoot "VERSION.md"
 if (Test-Path $vf) {
     $line = Get-Content $vf | Select-String "Current Version"
@@ -69,11 +73,8 @@ if (Test-Path $vf) {
 
 Write-Host ""
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "  TIDOS SYSTEM READY & AUTHENTICATED (v$ver)" -ForegroundColor Green
+Write-Host "  TIDOS READY (v$ver)" -ForegroundColor Green
 Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "  - Core: Frozen & Protected"
-Write-Host "  - Engine: Active"
-Write-Host "  - Personas: Mounted"
-Write-Host "  - GPTID Partner Relay: Ready (Chrome)"
-Write-Host "==========================================================" -ForegroundColor Green
-Write-Host "TIDOS is active. You may now give engineering commands." -ForegroundColor White
+$session = Join-Path $tidosRoot "tidos_session\__main__.py"
+& python -I $session start --tool $Tool --model $Model --project $projectDir
+Write-Host "Follow the TIDOS brief above for this whole session." -ForegroundColor White
