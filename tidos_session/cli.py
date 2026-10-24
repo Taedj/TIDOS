@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from . import brief, detect, memory
+from . import brief, detect, effect, memory
 
 
 def _session_path():
@@ -67,7 +67,28 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
         json.dump(dict(session, facts=facts), f, indent=2)
     with open(os.path.join(detect.tidos_home(), "brief.md"), "w", encoding="utf-8") as f:
         f.write(text)
+    effect.log_start(session)
     return session, facts, text
+
+
+INSTRUCTION_FILES = {"claude-code": "CLAUDE.md", "opencode": "AGENTS.md", "codex": "AGENTS.md",
+                     "gemini-cli": "GEMINI.md", "cursor": ".cursor/rules/tidos.mdc", "windsurf": ".windsurf/rules/tidos.md",
+                     "cline": ".clinerules", "roo-code": ".roo/rules/tidos.md"}
+
+
+def snippet(tool):
+    """Instructions to paste into a tool's own instruction file (see docs/tools/)."""
+    if os.name == "nt":
+        cmd = 'powershell -ExecutionPolicy Bypass -File "%s" -Tool %s' % (
+            os.path.join(detect.REPO_ROOT, "start_tidos.ps1"), tool)
+    else:
+        cmd = '"%s" --tool=%s' % (os.path.join(detect.REPO_ROOT, "scripts", "start_tidos.sh"), tool)
+    return ("<!-- paste into %s -->\n## TIDOS\nWhen the user says **START TIDOS**:\n"
+            "1. Run `%s` (add `-Model <your exact model id>` if you know it).\n"
+            "2. Follow the brief it prints for the whole session (LEARN mode on strong models, GUIDE mode on weak ones).\n"
+            "3. If it reports a TIDOS update, tell the user what it contains; install it only if they approve.\n"
+            "Never ask for, repeat or store passwords or tokens in the chat.\n"
+            % (INSTRUCTION_FILES.get(tool, "AGENTS.md"), cmd))
 
 
 def report(session, facts):
@@ -92,6 +113,12 @@ def main(argv=None):
     p.add_argument("--json", action="store_true")
     p.add_argument("--no-learn", action="store_true", help="skip refreshing the brain and playbooks")
     sub.add_parser("status")
+    g = sub.add_parser("guide", help="guidance for one user request (GUIDE mode, just in time)")
+    g.add_argument("request")
+    g.add_argument("--project", default=".")
+    sub.add_parser("effect", help="does GUIDE mode help? guided vs unguided weak-model tasks")
+    sn = sub.add_parser("snippet", help="START TIDOS instructions to paste into a tool's instruction file")
+    sn.add_argument("--tool", default="claude-code")
     t = sub.add_parser("tier")
     t.add_argument("model")
     args = parser.parse_args(argv)
@@ -103,6 +130,25 @@ def main(argv=None):
         else:
             print(report(session, facts))
             print(text)
+        return 0
+    if args.command == "effect":
+        from tidos_brain import db
+        conn = db.connect()
+        for row in effect.guidance_effect(conn):
+            for side in ("guided", "unguided"):
+                st = row[side]
+                print("%-46s %-9s tasks %4d  checks passed %s  corrected %s" % (
+                    row["model"][:46], side, st["tasks"],
+                    "%3s%%" % st["pass_rate"] if st["pass_rate"] is not None else "  -",
+                    "%3s%%" % st["correction_rate"] if st["correction_rate"] is not None else "  -"))
+        conn.close()
+        return 0
+    if args.command == "snippet":
+        print(snippet(args.tool))
+        return 0
+    if args.command == "guide":
+        from . import guide
+        print(guide.guidance(args.request, args.project)[1])
         return 0
     if args.command == "status":
         try:

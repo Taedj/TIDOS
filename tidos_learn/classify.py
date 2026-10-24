@@ -7,17 +7,19 @@ import os
 import re
 
 TYPE_RULES = [
-    ("deploy", r"\bdeploy|\brelease\b|\bpublish|bump (the )?version|version bump|\baab\b|\bapk\b|play console|"
+    # "release" alone is not a deploy ("pre-release identifiers" is a coding spec): only release ACTIONS count
+    ("deploy", r"\bdeploy|\bpublish|(?<!-)\brelease (the |a |new )?(app|apk|aab|build|version)|"
+               r"\bmake a release|bump (the )?version|version bump|\baab\b|\bapk\b|play console|"
                r"\bhosting\b|store listing|d[ée]ploi"),
     ("bugfix", r"\bfix|\bbug|\berror|\bcrash|broken|not work|n'?t work|dont work|ne (marche|fonctionne) pas|"
                r"\berreur|\bissue\b|\bproblem|\bfail|empty screen|black screen|\bwrong\b|\bstuck\b"),
     # an explicit review/explain request is the intent, even when it mentions screens or buttons
-    ("review", r"\breview|\bexplain|\banaly[sz]e|\baudit|what do you think|\bfeedback|\bopinion|\bcompare"),
+    ("review", r"\breview|\bexplain|\banaly[sz]e|\baudit|what do you think|\bfeedback|\bopinion"),
     ("ui", r"\bscreens?\b|\bbutton|\blayout|\bui\b|\bux\b|\bdesign|\bicon|\btheme|dark mode|\bpage\b|\bwidget|"
            r"\b[ée]cran|\bbouton"),
     ("refactor", r"refactor|\brename|clean ?up|reorgani[sz]|simplif|restructur"),
-    ("test", r"\btests?\b|coverage|\btesting\b"),
-    ("docs", r"\breadme\b|\bdocs?\b|documentation|changelog|release notes?|\bplan\b"),
+    ("test", r"\b(write|add|more|missing|unit|integration) tests?\b|test coverage|\bcoverage\b"),
+    ("docs", r"\breadme\b|\bdocumentation|changelog|release notes?|\bupdate the docs\b"),
     ("feature", r"\badd\b|\bimplement|\bcreate|\bbuild\b|\bmake\b|\bnew\b|\bajout|\bfeature|\bsupport|\boption|"
                 r"\benable|\ballow"),
 ]
@@ -33,11 +35,35 @@ CMD_STACKS = [("flutter", "flutter/dart"), ("dart ", "flutter/dart"), ("firebase
               ("powershell", "powershell")]
 
 
-def task_type(prompt, calls):
-    text = prompt or ""
+# The opening verb states the intent best ("Implement X ... raise ValueError" is a feature, not a bugfix)
+OPENING_VERBS = [
+    ("deploy", r"(deploy|publish|ship)\b"),
+    ("bugfix", r"(fix|repair|debug|resolve)\b"),
+    ("review", r"(review|explain|analy[sz]e|audit|investigate)\b"),
+    ("refactor", r"(refactor|rename|reorgani[sz]e|clean ?up|simplify|replace)\b"),
+    ("test", r"(write|add) (unit |integration )?tests?\b"),
+    ("feature", r"(implement|add|create|build|write|make|support|allow|enable|generate|ajoute)\b"),
+]
+_OPENING = [(name, re.compile(r"^\W*(?:(?:can|could|would|will) you\s+)?(?:please\s+|now\s+|then\s+)?" + p,
+                              re.IGNORECASE)) for name, p in OPENING_VERBS]
+_QUESTION = re.compile(r"^\W*(what|why|how|where|which|when|who|can|could|does|do|is|are|should)\b|\?\s*$", re.IGNORECASE)
+
+
+def task_type(prompt, calls=None):
+    """calls=None means a raw request (GUIDE mode, before any work): no actions to look at."""
+    text = (prompt or "").strip()
+    first = re.split(r"(?<=[.!?:])\s|\n", text, maxsplit=1)[0]
+    for name, pattern in _OPENING:
+        if pattern.search(first):
+            return name
+    bug = dict(_COMPILED)["bugfix"]
+    if calls is None and _QUESTION.search(first) and not bug.search(text):
+        return "question"  # "why does X load slowly?" asks for an answer; "why does X crash?" is a bug
     for name, pattern in _COMPILED:
         if pattern.search(text):
             return name
+    if calls is None:
+        return "question" if _QUESTION.search(first) else "feature"
     commands = " ".join((c.get("summary") or "") for c in calls if c.get("kind") == "exec").lower()
     if "deploy" in commands:
         return "deploy"

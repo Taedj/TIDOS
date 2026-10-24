@@ -277,6 +277,10 @@ def handle_hook(conn, payload, background_import=True):
         response = payload.get("tool_response")
         if isinstance(response, dict) and (response.get("is_error") or response.get("interrupted")):
             is_error = 1
+        elif isinstance(response, dict) and scoring.tool_kind(tool) == "exec" and scoring.is_verify_command(summary):
+            # Bash results carry no exit code: judge checks by their output
+            output = "%s\n%s" % (response.get("stdout", ""), response.get("stderr", ""))
+            is_error = 0 if scoring.verify_passed(False, output) else 1
     with conn:
         conn.execute(
             "INSERT INTO live_events (ts, session_id, source, event, tool, summary, is_error, cwd)"

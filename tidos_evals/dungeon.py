@@ -47,7 +47,15 @@ class Task:
         shutil.copytree(os.path.join(self.path, "fixture"), workdir)
         with open(os.path.join(workdir, "TASK.md"), "w", encoding="utf-8") as f:
             f.write("# Task: %s\n\n%s" % (self.title, self.prompt))
-        if with_tidos:
+        if with_tidos == "guide":
+            # the real GUIDE mode: brief for this workdir + per-request guidance (never counted as "served")
+            from tidos_session import brief, detect, guide
+            facts = detect.project_facts(workdir)
+            text = brief.guide_brief({"model": "weak model", "tier": "weak", "tool": "opencode"}, facts, record=False)
+            text = text.split("## For EVERY new request")[0] + "\n" + guide.guidance(self.prompt, workdir, record=False)[1]
+            with open(os.path.join(workdir, "GUIDE.md"), "w", encoding="utf-8") as f:
+                f.write(text)
+        elif with_tidos:
             shutil.copy(PROTOCOL, os.path.join(workdir, "TIDOS_PROTOCOL.md"))
 
     def overlay(self, part, workdir):

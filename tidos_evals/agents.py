@@ -16,6 +16,7 @@ import time
 
 PROMPT = "Complete the task described in TASK.md in the current directory."
 TIDOS_SUFFIX = " Before you start, read TIDOS_PROTOCOL.md and follow it strictly."
+GUIDE_SUFFIX = " Before you start, read GUIDE.md and follow it."
 
 # Claude Code: edits + language runners only (no network, no arbitrary shell)
 CLAUDE_TOOLS = ",".join([
@@ -68,7 +69,7 @@ def _run(argv, workdir, timeout):
 
 
 def attempt(spec, task, workdir, with_tidos, budget_usd=1.0):
-    prompt = PROMPT + (TIDOS_SUFFIX if with_tidos else "")
+    prompt = PROMPT + (GUIDE_SUFFIX if with_tidos == "guide" else TIDOS_SUFFIX if with_tidos else "")
     if spec == "reference":
         task.overlay("solution", workdir)
         return AgentResult()

@@ -21,12 +21,20 @@ HOOK_MARKER = "tidos_brain"
 
 
 def cmd_hook(args):
-    # Hooks must never disturb the session: no stdout (UserPromptSubmit stdout reaches the model), no failure.
+    # Hooks must never disturb a session: they only print in GUIDE mode (UserPromptSubmit stdout reaches the
+    # model = just-in-time guidance; PostToolUse exit 2 + stderr = "you are stuck"), and never fail.
     try:
         payload = json.loads(sys.stdin.read() or "{}")
         conn = db.connect(args.db)
         claude_code.handle_hook(conn, payload)
+        from tidos_session import guide  # GUIDE mode only; silent for strong-model (LEARN) sessions
+        out, err, code = guide.hook_feedback(payload, conn)
         conn.close()
+        if out:
+            sys.stdout.write(out)
+        if err:
+            sys.stderr.write(err)
+        return code
     except Exception as e:  # noqa: BLE001 - a broken trace must never break the user's session
         try:
             log = os.path.join(os.path.dirname(db.default_path()), "brain-hook-errors.log")

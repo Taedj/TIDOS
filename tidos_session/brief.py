@@ -16,6 +16,7 @@ from .detect import tidos_home
 
 GUIDE_LIMIT = 4096
 PLAYBOOK_LIMIT = 1000
+SESSION_CLI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
 LEARN_CLI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tidos_learn", "__main__.py")
 
 WEAK_RULES = """\
@@ -75,7 +76,12 @@ def _playbooks(stack, project=None, limit=3, with_paths=False):
 
 
 def _cap(text, limit):
-    return text if len(text) <= limit else text[: limit - 20].rstrip() + "\n...[cut]"
+    """Shorten to whole lines (a half line confuses weak models more than a missing one)."""
+    if len(text) <= limit:
+        return text
+    head = text[: limit - 10]
+    head = head.rsplit("\n", 1)[0] if "\n" in head else head
+    return head.rstrip() + "\n...[more]"
 
 
 def _user_rules(project, limit=4):
@@ -101,7 +107,7 @@ def _user_rules(project, limit=4):
     return rules[:limit]
 
 
-def guide_brief(session, facts):
+def guide_brief(session, facts, record=True):
     rules = _user_rules(facts["name"])
     user_rules = ("## The user's standing rules (they repeated these; apply when relevant)\n%s\n\n"
                   % "\n".join("- " + r for r in rules)) if rules else ""
@@ -109,7 +115,7 @@ def guide_brief(session, facts):
         "- No test command detected: ask the user how they check this project, or write a small check script."
     notes = "".join("- %s\n" % n for n in facts["notes"])
     selected = _playbooks(facts["stack"], facts["name"], limit=2, with_paths=True)
-    if selected:
+    if selected and record:
         pbstate.record_served([p for *_, p in selected])
     playbooks = [s[:3] for s in selected]
     if playbooks:
@@ -117,17 +123,25 @@ def guide_brief(session, facts):
                               for _, name, body in playbooks).replace("\n# ", "\n#### ")
     else:
         pb_text = "None yet for this stack. (They are learned from sessions run on a strong model.)"
+    if session.get("tool") == "claude-code":
+        per_request = ""  # the UserPromptSubmit hook injects per-request guidance automatically
+    else:
+        per_request = ("## For EVERY new request from the user\nFirst run `python -I \"%s\" guide \"<the request in a "
+                       "few words>\"` and follow what it prints.\n\n" % SESSION_CLI)
     text = (
         "# TIDOS GUIDE MODE\n"
         "You are running on `%s` (tier: %s). TIDOS will guide you so you can work well with the user.\n\n"
-        "## Rules (follow them exactly)\n%s\n\n"
+        "## Rules (follow them exactly)\n%s\n\n%s"
         "## Project: %s\n- Stack: %s\n%s\n"
         "## How to check work\n%s\n\n%s"
         "## Playbooks learned from strong models\n%s\n"
-        % (session["model"], session["tier"], WEAK_RULES, facts["name"], ", ".join(facts["stack"]), notes,
-           checks, user_rules, pb_text))
-    if len(text.encode("utf-8")) > GUIDE_LIMIT:  # playbooks are the only variable-size part
-        text = text.encode("utf-8")[:GUIDE_LIMIT - 12].decode("utf-8", "ignore").rstrip() + "\n...[cut]\n"
+        % (session["model"], session["tier"], WEAK_RULES, per_request, facts["name"], ", ".join(facts["stack"]),
+           notes, checks, user_rules, pb_text))
+    lines = text.split("\n")
+    while len("\n".join(lines).encode("utf-8")) > GUIDE_LIMIT - 12 and len(lines) > 3:
+        lines.pop()  # playbooks are the only variable-size part; drop whole lines
+    if len(lines) < len(text.split("\n")):
+        text = "\n".join(lines).rstrip() + "\n...[more]\n"
     return text
 
 

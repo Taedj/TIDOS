@@ -69,7 +69,8 @@ def cmd_validate(args):
 def cmd_run(args):
     tasks = [t for t in dungeon.load_tasks(args.suite, args.task) if t.tool_available()
              and RANKS.index(t.difficulty) >= RANKS.index(args.min_difficulty)]
-    modes = {"on": [True], "off": [False], "both": [False, True]}[args.tidos]
+    modes = {"on": [True], "off": [False], "both": [False, True], "guide": ["guide"],
+             "compare": [False, "guide"]}[args.tidos]
     # unique even for parallel runs started in the same second
     slug = "".join(c if c.isalnum() else "-" for c in args.agent)[:40].strip("-")
     run_id = "%s-%s-%s" % (datetime.now().strftime("%Y%m%d-%H%M%S"), slug, os.urandom(2).hex())
@@ -84,8 +85,10 @@ def cmd_run(args):
         for with_tidos in modes:
             for rep in range(args.repeat):
                 n += 1
-                label = "%s%s%s" % (t.id, " +TIDOS" if with_tidos else "", " #%d" % (rep + 1) if args.repeat > 1 else "")
-                work = os.path.join(run_dir, t.suite, "%s%s-%d" % (t.name, "-tidos" if with_tidos else "", rep + 1))
+                tag = "-guide" if with_tidos == "guide" else "-tidos" if with_tidos else ""
+                label = "%s%s%s" % (t.id, {"-guide": " +GUIDE", "-tidos": " +TIDOS", "": ""}[tag],
+                                    " #%d" % (rep + 1) if args.repeat > 1 else "")
+                work = os.path.join(run_dir, t.suite, "%s%s-%d" % (t.name, tag, rep + 1))
                 t.prepare(work, with_tidos)
                 print("[%d/%d] %-52s ..." % (n, total, label), end="", flush=True)
                 res, seconds = agents.timed_attempt(args.agent, t, work, with_tidos, args.budget)
@@ -94,7 +97,7 @@ def cmd_run(args):
                     f.write("AGENT (%s, ok=%s, error=%s)\n%s\n\nVERIFY\n%s" % (
                         args.agent, res.ok, res.error, res.log, verify_log))
                 row = {"suite": t.suite, "task_name": t.name, "model": args.agent,
-                       "agent": args.agent.partition(":")[0], "with_tidos": int(with_tidos),
+                       "agent": args.agent.partition(":")[0], "with_tidos": 2 if with_tidos == "guide" else int(with_tidos),
                        "passed": int(passed), "duration_s": seconds, "cost_usd": res.cost_usd,
                        "run_at": _now(), "run_id": run_id, "difficulty": t.difficulty,
                        "turns": res.turns, "error": res.error}
@@ -127,12 +130,13 @@ def _print_report(conn, run_id=None):
     for r in rows:
         rate = 100.0 * (r["p"] or 0) / r["n"]
         by_model.setdefault(r["model"], {})[r["with_tidos"]] = rate
-        print("%-44s %-6s %5d/%-3d %8.0f%% %8s %8.0f" % (r["model"], "on" if r["with_tidos"] else "off",
+        print("%-44s %-6s %5d/%-3d %8.0f%% %8s %8.0f" % (r["model"], {0: "off", 1: "on", 2: "guide"}[r["with_tidos"]],
                                                        r["p"] or 0, r["n"], rate,
                                                        "$%.2f" % r["c"] if r["c"] else "-", r["d"] or 0))
     for model, rates in by_model.items():
-        if 0 in rates and 1 in rates:
-            print("TIDOS lift for %s: %+.0f points" % (model, rates[1] - rates[0]))
+        for mode, name in ((1, "TIDOS"), (2, "GUIDE")):
+            if 0 in rates and mode in rates:
+                print("%s lift for %s: %+.0f points" % (name, model, rates[mode] - rates[0]))
 
 
 def cmd_new(args):
@@ -188,7 +192,8 @@ def main(argv=None):
     sub.choices["validate"].add_argument("-v", "--verbose", action="store_true")
     run = sub.choices["run"]
     run.add_argument("--agent", required=True, help="reference | noop | claude:<model> | opencode:<provider/model>")
-    run.add_argument("--tidos", choices=["on", "off", "both"], default="both")
+    run.add_argument("--tidos", choices=["on", "off", "both", "guide", "compare"], default="both",
+                     help="off=plain, on=v4 protocol text, guide=v4.1 GUIDE brief + per-request guidance, compare=off+guide")
     run.add_argument("--budget", type=float, default=1.0, help="max USD per Claude attempt")
     run.add_argument("--repeat", type=int, default=1)
     run.add_argument("--min-difficulty", default="E", choices=list("EDCBAS"), help="only tasks of this rank or harder")

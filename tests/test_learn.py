@@ -20,6 +20,21 @@ class ClassifyTests(unittest.TestCase):
         self.assertEqual(classify.task_type("ça ne marche pas", []), "bugfix")
         self.assertEqual(classify.task_type("add a zoom option to the scanner", []), "feature")
         self.assertEqual(classify.task_type("review the admin screens", []), "review")
+        self.assertEqual(classify.task_type("a pre-release version has lower precedence than the release"), "feature")
+        self.assertEqual(classify.task_type("release the app on play console", []), "deploy")
+        self.assertEqual(classify.task_type("now bump version, creat aab", []), "deploy")
+
+    def test_raw_requests(self):
+        cases = {"Implement sort_versions(). Invalid versions raise ValueError.": "feature",
+                 "why does the attendance screen load slowly?": "question",
+                 "why does the app crash on login?": "bugfix",
+                 "can you add dark mode?": "feature",
+                 "could you please fix the login?": "bugfix",
+                 "Replace the JSON.stringify-based deepEqual": "refactor",
+                 "Phase 1": "feature"}
+        for request, expected in cases.items():
+            with self.subTest(request=request):
+                self.assertEqual(classify.task_type(request), expected)
 
     def test_types_from_actions_when_words_say_nothing(self):
         self.assertEqual(classify.task_type("Phase 1", [{"kind": "edit", "summary": "lib/a.dart"}]), "feature")
