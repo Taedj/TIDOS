@@ -153,8 +153,10 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "army", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "army", "jobs", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
     if (tab.dataset.view === "army") loadArmyTab();
+    clearInterval(jobsTimer);
+    if (tab.dataset.view === "jobs") { loadJobs(); jobsTimer = setInterval(loadJobs, 8000); }
     if (tab.dataset.view === "tools") loadTools();
     if (tab.dataset.view === "evolution") loadEvolution();
     if (tab.dataset.view === "memory") loadMemory();
@@ -329,7 +331,8 @@ async function loadEvolution() {
     <tr><td>${p.id}</td><td><b>${esc(p.title)}</b><br><span class="small faint">${esc(p.reason)}</span>${p.branch ? `<br><code class="sys">${esc(p.branch)}</code>` : ""}</td>
     <td><span class="pill ${p.priority === "high" ? "warn" : ""}">${esc(t(p.priority))}</span></td>
     <td><span class="pill ${p.status === "accepted" || p.status === "implemented" ? "ok" : p.status === "rejected" ? "bad" : ""}">${esc(t(p.status))}</span></td>
-    <td>${p.status === "new" ? `<button class="btn ghost evo" data-id="${p.id}" data-s="accepted">${t("Accept")}</button> <button class="btn ghost evo" data-id="${p.id}" data-s="rejected">${t("Reject")}</button>` : ""}</td></tr>`).join("")
+    <td>${p.status === "new" ? `<button class="btn ghost evo" data-id="${p.id}" data-s="accepted">${t("Accept")}</button> <button class="btn ghost evo" data-id="${p.id}" data-s="rejected">${t("Reject")}</button>` : ""}
+      ${p.status === "accepted" && !p.branch ? `<button class="btn ghost job-btn" type="button" data-job="self_improve" data-params='{"id": ${Number(p.id)}}'>${t("Implement")}</button>` : ""}</td></tr>`).join("")
     || `<tr><td colspan="5" class="muted">${t("No proposals yet. Agents add them with tidos_propose; you with tidos_learn proposals --add.")}</td></tr>`;
   $("evoList").querySelectorAll(".evo").forEach((b) => b.addEventListener("click", async () => {
     const res = await api("/api/evolution/status", { id: Number(b.dataset.id), status: b.dataset.s });
@@ -384,6 +387,151 @@ async function loadTools() {
   }));
 }
 
+// ---- autopilot + jobs (buttons instead of terminal commands)
+let jobOptions = null, logJob = null, logOffset = 0, logTimer = null, jobsTimer = null;
+const openTab = (view) => { const tab = document.querySelector(`.tab[data-view=${view}]`); if (tab) tab.click(); };
+
+function fillSelects() {
+  if (!jobOptions) return;
+  document.querySelectorAll("select[data-opt]").forEach((sel) => {
+    const keep = sel.value;
+    let items = jobOptions[sel.dataset.opt] || [];
+    if (sel.dataset.opt === "projects") items = items.map((p) => [p.path, p.name]);
+    else if (sel.dataset.opt === "accepted") items = items.map((p) => [String(p.id), `#${p.id} ${p.title}`]);
+    else items = items.map((v) => [v, v]);
+    if (sel.dataset.any) items = [["", t("all")]].concat(items);
+    sel.innerHTML = items.map(([v, l]) => `<option value="${esc(v)}">${esc(l)}</option>`).join("");
+    if (keep && items.some(([v]) => v === keep)) sel.value = keep;
+    else if (sel.dataset.default && items.some(([v]) => v === sel.dataset.default)) sel.value = sel.dataset.default;
+  });
+  const trial = $("trialForm");
+  if (!trial.dataset.touched) {  // default: the first unit a dungeon suite can test
+    const unit = (jobOptions.units || []).find((u) => jobOptions.unit_suites[u]);
+    if (unit) { trial.elements.unit.value = unit; trial.elements.suite.value = jobOptions.unit_suites[unit]; }
+  }
+}
+
+async function runJob(job, params = {}) {
+  const dry = await api("/api/jobs/run", { job, params, dry: true });
+  if (!dry.ok) { toast(`<b>[SYSTEM]</b> ${esc(t(dry.data.error || "failed"))}`, "warn"); return; }
+  const d = dry.data;
+  if (d.busy) { toast(`<b>[SYSTEM]</b> ${esc(t("Another job is running. Wait for it or cancel it."))}`, "warn"); openTab("jobs"); return; }
+  const msg = d.estimate > 0
+    ? t("Run {title}? Estimated cost ${usd} (at most $0.25 per Claude attempt).", { title: d.title, usd: d.estimate.toFixed(2) })
+    : (job === "raid" || job === "trial" || job === "daily_quest") ? t("Run {title}? It can take a while; you can cancel it.", { title: d.title }) : null;
+  if (msg && !confirm(msg)) return;
+  const r = await api("/api/jobs/run", { job, params });
+  if (!r.ok) { toast(`<b>[SYSTEM]</b> ${esc(t(r.data.error || "failed"))}`, "warn"); return; }
+  toast(`<b>[SYSTEM]</b> ${esc(t("Started: {title}", { title: r.data.title }))}`);
+  openTab("jobs");
+  showLog(r.data.id, r.data.title);
+}
+
+function showLog(id, title) {
+  logJob = id; logOffset = 0;
+  $("jobTitle").textContent = title;
+  $("jobLog").textContent = "";
+  clearTimeout(logTimer);
+  pollLog();
+}
+
+async function pollLog() {
+  if (!logJob) return;
+  const id = logJob;
+  const r = await api(`/api/jobs/log?id=${encodeURIComponent(id)}&offset=${logOffset}`);
+  if (!r.ok || id !== logJob) return;
+  if (r.data.text) {
+    const box = $("jobLog"), atEnd = box.scrollTop + box.clientHeight >= box.scrollHeight - 30;
+    box.textContent += r.data.text;
+    if (atEnd) box.scrollTop = box.scrollHeight;
+  }
+  logOffset = r.data.offset;
+  if (r.data.state === "running" || r.data.state === "cancelling") logTimer = setTimeout(pollLog, 1500);
+  else loadJobs();
+}
+
+async function loadJobs() {
+  const r = await api("/api/jobs");
+  if (!r.ok) return;
+  const d = r.data, ap = d.autopilot;
+  jobOptions = d.options;
+  fillSelects();
+  $("apInfo").innerHTML = [
+    ["Autopilot", `<span class="pill ${ap.on ? "ok" : ""}">${t(ap.on ? "ON" : "OFF")}</span>`],
+    ["Spent today", `$${ap.spent_today.toFixed(2)} / $${ap.budget.toFixed(2)}`],
+  ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
+  if (document.activeElement !== $("apBudget")) $("apBudget").value = ap.budget;
+  $("recs").innerHTML = d.recommendations.map((x, i) => `
+    <div class="rec"><div><b>${esc(t(x.title))}</b><div class="small faint">${esc(t(x.reason))}</div></div>
+      <span class="pill">${x.estimate ? "$" + x.estimate.toFixed(2) : t("free")}</span>
+      <span class="small ${x.auto && ap.on ? "lift-up" : "muted"}">${esc(t(x.verdict))}</span>
+      <button class="btn ghost rec-run" type="button" data-i="${i}">${t("Run")}</button></div>`).join("")
+    || `<p class="muted">${t("Nothing is due. TIDOS is up to date.")}</p>`;
+  $("recs").querySelectorAll(".rec-run").forEach((b) => b.addEventListener("click", () => {
+    const x = d.recommendations[Number(b.dataset.i)];
+    runJob(x.job, x.params);
+  }));
+  const stateCls = { done: "ok", failed: "bad", cancelled: "warn", interrupted: "warn", running: "warn" };
+  $("jobList").innerHTML = d.jobs.map((j) => `
+    <tr><td>${esc(when(j.started))}</td><td title="${esc(j.argv)}">${esc(t(j.title))}</td><td>${esc(t(j.by))}</td>
+      <td><span class="pill ${stateCls[j.state] || ""}">${esc(t(j.state))}</span></td>
+      <td>${j.cost !== null && j.cost !== undefined ? "$" + Number(j.cost).toFixed(2) : j.estimate ? "~$" + j.estimate.toFixed(2) : t("free")}</td>
+      <td><button class="btn ghost job-log" type="button" data-id="${esc(j.id)}" data-title="${esc(t(j.title))}">${t("Log")}</button>
+        ${j.id === d.running ? `<button class="btn ghost job-cancel" type="button" data-id="${esc(j.id)}">${t("Cancel")}</button>` : ""}</td></tr>`).join("")
+    || `<tr><td colspan="6" class="muted">${t("No jobs yet.")}</td></tr>`;
+  $("jobList").querySelectorAll(".job-log").forEach((b) => b.addEventListener("click", () => showLog(b.dataset.id, b.dataset.title)));
+  $("jobList").querySelectorAll(".job-cancel").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm(t("Cancel this job? Everything it started is stopped."))) return;
+    b.disabled = true;
+    const res = await api("/api/jobs/cancel", { id: b.dataset.id });
+    if (!res.ok) toast(`<b>[SYSTEM]</b> ${esc(t(res.data.error || "failed"))}`, "warn");
+    loadJobs();
+  }));
+  if (d.running && !logJob) { const j = d.jobs.find((x) => x.id === d.running); if (j) showLog(j.id, t(j.title)); }
+}
+
+function openJobForm(kind, unit) {
+  openTab("jobs");
+  const form = $({ raid: "raidForm", trial: "trialForm", scout: "scoutForm", self_improve: "improveForm" }[kind]);
+  if (!form) return;
+  const apply = () => {
+    if (unit && form.elements.unit) {
+      form.dataset.touched = "1";
+      form.elements.unit.value = unit;
+      const suite = jobOptions && jobOptions.unit_suites[unit];
+      form.elements.suite.value = suite || "";
+    }
+    form.scrollIntoView({ behavior: "smooth", block: "center" });
+    form.classList.add("flash");
+    setTimeout(() => form.classList.remove("flash"), 1500);
+  };
+  if (jobOptions) apply(); else setTimeout(apply, 600);
+}
+
+document.addEventListener("click", (e) => {
+  const run = e.target.closest(".job-btn");
+  if (run) { e.preventDefault(); runJob(run.dataset.job, run.dataset.params ? JSON.parse(run.dataset.params) : {}); return; }
+  const open = e.target.closest("[data-open]");
+  if (open) { e.preventDefault(); openJobForm(open.dataset.open, open.dataset.unit); }
+});
+document.querySelectorAll("form.job-card").forEach((form) => form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  const params = {};
+  for (const [k, v] of new FormData(form).entries()) if (v !== "") params[k] = k === "id" ? Number(v) : v;
+  runJob(form.dataset.job, params);
+}));
+$("trialForm").addEventListener("change", () => { $("trialForm").dataset.touched = "1"; });
+$("trialForm").elements.unit.addEventListener("change", (e) => {
+  const suite = jobOptions && jobOptions.unit_suites[e.target.value];
+  $("trialForm").elements.suite.value = suite || "";
+});
+$("apForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const r = await api("/api/autopilot", { budget: Number($("apBudget").value) });
+  toast(`<b>[SYSTEM]</b> ${esc(r.ok ? t("Autopilot budget: ${usd}/day", { usd: r.data.budget.toFixed(2) }) : t(r.data.error || "failed"))}`, r.ok ? "" : "warn");
+  loadJobs();
+});
+
 // ---- shadow army + memory
 async function loadArmy() {
   const r = await api("/api/army");
@@ -420,6 +568,7 @@ async function loadArmyTab() {
       <td><span class="pill ${u.state === "active" ? "ok" : u.state === "draft" ? "warn" : ""}">${esc(t(u.state))}</span></td>
       <td class="nowrap">LV ${u.level} · ${fmt(u.xp)}</td><td>${fmt(u.missions)}</td><td>${pct(u.success)}</td><td>${trial(u.trial)}</td>
       <td>${u.has_lessons ? `<button class="btn ghost unit" data-a="lessons" data-n="${esc(u.name)}">${t("Lessons")}</button>` : ""}
+        ${u.path ? `<button class="btn ghost" type="button" data-open="trial" data-unit="${esc(u.name)}">${t("Trial")}</button>` : ""}
         ${u.state === "draft" ? `<button class="btn ghost unit" data-a="activate" data-n="${esc(u.name)}">ARISE</button>` : ""}
         ${activated.has(u.name) ? `<button class="btn ghost unit" data-a="deactivate" data-n="${esc(u.name)}">${t("Deactivate")}</button>` : ""}</td></tr>`).join("")
     || `<tr><td colspan="8" class="muted">${t("No subagents yet.")}</td></tr>`;
@@ -429,7 +578,7 @@ async function loadArmyTab() {
     if (b.dataset.a === "activate") {
       const tr = u.trial;
       const msg = tr ? t("Activate {name}? Trial: {u}% with it vs {p}% plain on {n} dungeons.", { name: u.name, u: tr.unit, p: tr.plain, n: tr.tasks })
-        : t("Activate {name}? It has NOT been trialled. Trial it first with: tidos_evals run --agent claude:haiku --unit {name}", { name: u.name });
+        : t("Activate {name}? It has NOT been trialled yet (use its Trial button first if a dungeon suite tests it).", { name: u.name });
       if (!confirm(msg)) return;
     }
     if (b.dataset.a === "deactivate" && !confirm(t("Deactivate {name}? Its draft is kept.", { name: u.name }))) return;

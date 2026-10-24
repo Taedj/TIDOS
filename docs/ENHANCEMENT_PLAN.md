@@ -268,6 +268,7 @@
 - [x] **12.3** Settings editor for `config/framework.md` values (with validation) — done 2026-10-24 (settings editor (Security tab) for 10 whitelisted config/framework.md values with type/range/choice validation; rewrites one line in place keeping comments/line endings; relay_host and other risky values stay manual)
 - [x] **12.4** Export / backup / restore of brain.db — done 2026-10-24 (tidos_brain backup / backup --list / restore NAME --yes (integrity + schema check, current brain saved as pre-restore first, never overwrites a backup, newest 10 kept by mtime); dashboard: Back up now + list; restore terminal-only)
 - [x] **12.5** Mobile-friendly layout — done 2026-10-24 (every tab checked at 390 px: no horizontal scroll (Playwright E2E + visual QA); ask bar wraps on phones)
+- [x] **12.7** *(added 2026-10-25 at the user's request)* Buttons instead of commands + Autopilot — done 2026-10-25 (jobs runner: whitelisted jobs, validated parameters, no shell, one at a time across processes, live log, cancel = process-tree kill, cost estimate from past runs + $0.25 per-attempt cap; autopilot decides due jobs and runs them when its switch is on, paid within a daily budget, also after every START TIDOS; tests/test_jobs.py + E2E button test)
 - [x] **12.6** Dashboard E2E tests (Playwright) — done 2026-10-24 (tests/test_dashboard_e2e.py (Playwright/Chromium, opt-in TIDOS_E2E=1, run by the daily quest): login wall, all tabs without console errors, search -> memory, Ask, settings write, backup, mobile overflow - 4/4 pass)
 
 ---

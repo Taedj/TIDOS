@@ -16,6 +16,17 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
   `tool_install` kill switch is on (off by default), the tool is approved, trust >= 70 and not installed.
   Every command is logged (`~/.tidos/tool_installs.log` + security log); Uninstall removes only what TIDOS
   installed. MCP servers and project-local packages stay manual.
+- **Buttons instead of commands + Autopilot** (`tidos_dashboard/jobs.py`, `autopilot.py`, Autopilot tab):
+  every TIDOS command shown in the control center is now a button (refresh learning, daily quest, backup,
+  dungeon validation, raids, unit trials, implement a proposal, tool needs, advice notes), with a live log
+  and Cancel (kills the whole process tree). Only listed jobs run; every parameter is checked against known
+  values; no shell; one job at a time across processes; paid jobs show an estimate from your own past runs
+  and keep a hard $0.25 cap per Claude attempt. The autopilot decides what is due (stale learning, no
+  health report today, old backup, untested draft units, accepted proposals, a weekly free-model GUIDE
+  check, tool needs) and, when the new `autopilot` switch is on, runs it: free jobs always, paid jobs within
+  `autopilot_budget_usd` per day (default 0.50), never retrying a job that failed in the last 24 h. It runs
+  inside the control center and after every START TIDOS. It never installs, pushes, merges, activates a
+  unit or flips a switch.
 - **Shadow Army v2** (`tidos_learn/army.py`, `tidos_learn army`, Army tab): subagents rank by mission
   EVIDENCE (each mission earns the XP of the task it served: checks, first try, minus corrections), private
   lessons per unit (`~/.tidos/army/<unit>.md`, read by TIDOS units before they start), ARISE drafts a

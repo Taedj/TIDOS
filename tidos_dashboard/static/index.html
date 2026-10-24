@@ -70,6 +70,7 @@
     <button class="tab" data-view="dungeons">Dungeons</button>
     <button class="tab" data-view="playbooks">Playbooks</button>
     <button class="tab" data-view="army">Army</button>
+    <button class="tab" data-view="jobs">Autopilot</button>
     <button class="tab" data-view="memory">Memory</button>
     <button class="tab" data-view="evolution">Evolution</button>
     <button class="tab" data-view="tools">Tool Scout</button>
@@ -113,12 +114,76 @@
         </table></div>
         <p class="small faint note">A mission earns the XP of the task it served: checks passed, right first time, minus your corrections.
           Drafts come from job changes (project level 15) and ARISE (recurring work no unit covers). Activate puts a draft in
-          ~/.claude/agents (your personal units, every project). Trial a unit first:
-          <code class="sys">python -I tidos_evals/__main__.py run --agent claude:haiku --unit NAME</code></p>
+          ~/.claude/agents (your personal units, every project). Test a unit first with its Trial button.</p>
       </div>
       <div class="window">
         <h2 id="armyTitle">Select a unit</h2>
         <pre class="console pb-view" id="armyView"></pre>
+      </div>
+    </div>
+
+    <!-- AUTOPILOT / JOBS -->
+    <div id="view-jobs" class="grid g-army hidden">
+      <div class="window">
+        <h2>Autopilot — TIDOS decides what to run</h2>
+        <div class="kv" id="apInfo"></div>
+        <form class="ap-row" id="apForm" autocomplete="off">
+          <label>Daily budget (USD) <input type="number" id="apBudget" min="0" max="20" step="0.1"></label>
+          <button class="btn ghost" type="submit">Save</button>
+        </form>
+        <p class="small faint note">Free jobs run by themselves; paid ones (Claude calls) only within the daily budget. Switch the autopilot on or off in Security. It never installs, pushes, merges, activates a unit or changes a switch.</p>
+
+        <h2 class="mt">Recommended now</h2>
+        <div id="recs"></div>
+
+        <h2 class="mt">Run a job</h2>
+        <div class="jobs-grid">
+          <div class="job-card">
+            <b>Quick jobs</b>
+            <div class="job-actions">
+              <button class="btn ghost job-btn" type="button" data-job="distill">Refresh learning</button>
+              <button class="btn ghost job-btn" type="button" data-job="daily_quest">Daily quest</button>
+              <button class="btn ghost job-btn" type="button" data-job="backup">Back up</button>
+              <button class="btn ghost job-btn" type="button" data-job="validate_dungeons">Validate dungeons</button>
+              <button class="btn ghost job-btn" type="button" data-job="summarize">Advice notes</button>
+            </div>
+          </div>
+          <form class="job-card" id="raidForm" data-job="raid">
+            <b>Raid (dungeons)</b>
+            <label>Agent <select name="agent" data-opt="agents"></select></label>
+            <label>Mode <select name="mode" data-opt="modes" data-default="compare"></select></label>
+            <label>Suite <select name="suite" data-opt="suites" data-any="1"></select></label>
+            <label>From rank <select name="min_difficulty" data-opt="difficulties"></select></label>
+            <button class="btn" type="submit">Run raid</button>
+          </form>
+          <form class="job-card" id="trialForm" data-job="trial">
+            <b>Unit trial</b>
+            <label>Unit <select name="unit" data-opt="units"></select></label>
+            <label>Agent <select name="agent" data-opt="agents"></select></label>
+            <label>Suite <select name="suite" data-opt="suites" data-any="1"></select></label>
+            <button class="btn" type="submit">Run trial</button>
+          </form>
+          <form class="job-card" id="scoutForm" data-job="scout_needs">
+            <b>Tool needs</b>
+            <label>Project <select name="project" data-opt="projects"></select></label>
+            <button class="btn" type="submit">Find needs</button>
+          </form>
+          <form class="job-card" id="improveForm" data-job="self_improve">
+            <b>Implement a proposal</b>
+            <label>Proposal <select name="id" data-opt="accepted"></select></label>
+            <button class="btn" type="submit">Implement</button>
+          </form>
+        </div>
+
+        <h2 class="mt">Jobs</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>When</th><th>Job</th><th>By</th><th>State</th><th>Cost</th><th>Actions</th></tr></thead>
+          <tbody id="jobList"></tbody>
+        </table></div>
+      </div>
+      <div class="window">
+        <h2 id="jobTitle">Job log</h2>
+        <pre class="console pb-view" id="jobLog"></pre>
       </div>
     </div>
 
@@ -130,13 +195,12 @@
           <thead><tr><th>#</th><th>Proposal</th><th>Priority</th><th>Status</th><th>Decide</th></tr></thead>
           <tbody id="evoList"></tbody>
         </table></div>
-        <p class="small faint note">Accepted proposals can be implemented by <code class="sys">python scripts/self_improve.py</code>
-          on a separate branch, gated by all checks, never pushed. You review and merge.</p>
+        <p class="small faint note">Implement builds an accepted proposal on a separate branch, gated by all checks, never pushed. You review and merge.</p>
       </div>
       <div class="window">
         <h2>Daily Quest</h2>
         <div class="kv" id="evoReport"></div>
-        <p class="small faint note">Run: <code class="sys">python scripts/daily_quest.py</code></p>
+        <button class="btn ghost job-btn" type="button" data-job="daily_quest">Run now</button>
       </div>
       <div class="window">
         <h2>Unlocked Drafts</h2>
@@ -153,7 +217,8 @@
           <tbody id="toolList"></tbody>
         </table></div>
         <p class="small faint note">Approve a tool, then Install: TIDOS installs only approved catalog tools, pinned to an exact version or a verified download, in your user account (switch tool_install in Security). MCP servers stay manual.
-          Per project: <code class="sys">python -I tidos_scout/__main__.py needs --project PATH --trust</code></p>
+</p>
+        <button class="btn ghost" type="button" data-open="scout">Find what a project is missing</button>
       </div>
     </div>
 
@@ -221,9 +286,7 @@
           <thead id="matrixHead"></thead>
           <tbody id="matrixBody"></tbody>
         </table></div>
-        <p class="small faint note">Run a raid from a terminal:
-          <code class="sys">python -I tidos_evals/__main__.py run --agent claude:haiku --tidos both</code> ·
-          free models: <code class="sys">--agent opencode:opencode/glm-5.3-flash-free</code></p>
+        <button class="btn ghost" type="button" data-open="raid">Run a raid</button>
       </div>
     </div>
 

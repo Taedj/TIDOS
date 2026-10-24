@@ -272,6 +272,21 @@ html[lang=ar] code, html[lang=ar] pre, html[lang=ar] .console, html[lang=ar] inp
 [dir=rtl] .log-item, [dir=rtl] td, [dir=rtl] .kv b, [dir=rtl] .answer, [dir=rtl] .hit, [dir=rtl] .quest { unicode-bidi: plaintext; }
 [dir=rtl] .row .name { direction: ltr; text-align: right; }
 
+/* ---- Autopilot / jobs --------------------------------------------------- */
+.ap-row { display: flex; gap: 10px; align-items: end; flex-wrap: wrap; margin: 10px 0 0; }
+.ap-row input { width: 100px; background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 6px 8px; font-family: var(--mono); color: inherit; margin-inline-start: 8px; }
+.rec { display: grid; grid-template-columns: minmax(0, 1fr) auto auto auto; gap: 10px; align-items: center; padding: 8px 0;
+  border-bottom: 1px solid rgba(79,176,255,.08); }
+.jobs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+.job-card { border: 1px solid var(--line); border-radius: var(--r); padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.job-card label { display: flex; justify-content: space-between; gap: 8px; align-items: center; font-size: 13px; color: var(--muted); }
+.job-card select { max-width: 60%; background: rgba(0,0,0,.35); border: 1px solid var(--line); border-radius: var(--r);
+  padding: 5px 6px; color: inherit; font-family: var(--mono); font-size: 12px; }
+.job-actions { display: flex; flex-wrap: wrap; gap: 6px; }
+.job-card.flash { border-color: var(--accent); box-shadow: var(--glow); }
+@media (max-width: 760px) { .rec { grid-template-columns: 1fr auto; } }
+
 /* ---- Army -------------------------------------------------------------- */
 .g-army { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
 .unit-desc { display: block; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

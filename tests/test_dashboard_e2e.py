@@ -111,7 +111,7 @@ class DashboardE2E(unittest.TestCase):
 
     def test_every_tab_renders_without_errors(self):
         ctx, page, errors = self.open()
-        for view in ("status", "live", "security", "dungeons", "playbooks", "army", "memory", "evolution", "tools"):
+        for view in ("status", "live", "security", "dungeons", "playbooks", "army", "jobs", "memory", "evolution", "tools"):
             page.click(".tab[data-view=%s]" % view)
             page.wait_for_selector("#view-%s:not(.hidden)" % view)
             page.wait_for_timeout(300)
@@ -141,9 +141,10 @@ class DashboardE2E(unittest.TestCase):
         with open(self.framework, encoding="utf-8") as f:
             self.assertIn("depth_threshold: 5", f.read())
 
+        before = len(explore.list_backups())  # other tests may have backed up already (shared test brain)
         page.click("#backupBtn")
         page.wait_for_selector("#backups .kv")
-        self.assertEqual(len(explore.list_backups()), 1)
+        self.assertEqual(len(explore.list_backups()), before + 1)
         self.assertEqual(errors, [])
         ctx.close()
 
@@ -164,7 +165,7 @@ class DashboardE2E(unittest.TestCase):
         self.assertEqual(page.text_content(".tab[data-view=status]"), "الحالة")
         self.assertEqual(page.text_content("#app .lang-switch"), "English")
         page.locator("#quests", has_text="أنجز 3 مهام").wait_for()  # server text translated
-        for view in ("status", "live", "security", "tools", "evolution", "playbooks", "army", "memory", "dungeons"):
+        for view in ("status", "live", "security", "tools", "evolution", "playbooks", "army", "jobs", "memory", "dungeons"):
             page.click(".tab[data-view=%s]" % view)
             page.wait_for_timeout(300)
             self.assertFalse(page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"), view)
@@ -174,6 +175,20 @@ class DashboardE2E(unittest.TestCase):
         page.click("#app .lang-switch")
         page.wait_for_selector("html[dir=ltr] #app:not(.hidden)")
         self.assertEqual(page.text_content(".tab[data-view=status]"), "Status")
+        self.assertEqual(errors, [])
+        ctx.close()
+
+    def test_button_runs_a_job_with_live_log(self):
+        ctx, page, errors = self.open()
+        page.click(".tab[data-view=jobs]")
+        page.locator("#recs .rec").first.wait_for()                  # the autopilot has recommendations
+        page.click("#view-jobs .job-btn[data-job=backup]")           # free job: no confirmation, starts at once
+        page.locator("#jobLog", has_text="verified").wait_for(timeout=60000)
+        page.locator("#jobList .pill", has_text="done").first.wait_for(timeout=60000)
+        page.on("dialog", lambda d: d.dismiss())                     # a paid trial asks first: dismissing runs nothing
+        page.click("#trialForm button[type=submit]")
+        page.wait_for_timeout(800)
+        self.assertEqual(page.locator("#jobList tr").count(), 1)
         self.assertEqual(errors, [])
         ctx.close()
 

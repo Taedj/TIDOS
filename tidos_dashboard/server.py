@@ -166,6 +166,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"notifications": stats.notifications(conn)})
             if path == "/api/army":
                 return self._json(200, stats.army(conn))
+            if path == "/api/jobs":
+                from tidos_dashboard import autopilot, jobs
+                return self._json(200, {
+                    "jobs": [{k: v for k, v in j.items() if k != "log"} for j in reversed(jobs.history()[-30:])],
+                    "running": (jobs.running() or {}).get("id"), "options": jobs.options(conn),
+                    "recommendations": autopilot.decide(conn),
+                    "autopilot": {"on": control.is_on("autopilot"),
+                                  "budget": control.values()["autopilot_budget_usd"],
+                                  "spent_today": jobs.spent_today()}})
+            if path == "/api/jobs/log":
+                from tidos_dashboard import jobs
+                data = jobs.log_text((query.get("id") or [""])[0], (query.get("offset") or ["0"])[0])
+                return self._json(200, data) if data is not None else self._json(404, {"error": "not found"})
             if path == "/api/army/lessons":
                 from tidos_learn import army
                 text = army.lessons((query.get("name") or [""])[0])
@@ -259,6 +272,9 @@ class Handler(BaseHTTPRequestHandler):
             "/api/playbooks/toggle": self._playbook_toggle,
             "/api/evolution/status": self._evolution_status,
             "/api/army/action": self._army_action,
+            "/api/jobs/run": self._job_run,
+            "/api/jobs/cancel": self._job_cancel,
+            "/api/autopilot": self._autopilot,
             "/api/tools/action": self._tool_action,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
@@ -363,6 +379,50 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "unknown proposal"})
         self.server.lockout.log("proposal", "#%s %s" % (body.get("id"), status))
         return self._json(200, {"ok": True})
+
+    def _job_run(self, body):
+        """Run a TIDOS job from a button (only jobs in tidos_dashboard.jobs.JOBS, parameters checked)."""
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        from tidos_dashboard import jobs
+        conn = db.connect(self.server.db_path)
+        try:
+            params = body.get("params") if isinstance(body.get("params"), dict) else {}
+            if body.get("dry"):  # what it would run and cost, for the confirmation
+                argv, _, estimate, title = jobs.build(conn, str(body.get("job") or ""), params)
+                return self._json(200, {"title": title, "estimate": estimate, "busy": bool(jobs.running())})
+            record = jobs.start(conn, str(body.get("job") or ""), params, by="owner", db_path=self.server.db_path)
+        except (jobs.JobError, TypeError) as e:
+            return self._json(400, {"error": str(e)})
+        except RuntimeError as e:
+            return self._json(409, {"error": str(e)})
+        finally:
+            conn.close()
+        self.server.lockout.log("job", "%s (est. %.2f USD)" % (record["title"], record["estimate"]))
+        return self._json(200, {k: v for k, v in record.items() if k != "log"})
+
+    def _job_cancel(self, body):
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        from tidos_dashboard import jobs
+        try:
+            jobs.cancel(str(body.get("id") or ""))
+        except jobs.JobError as e:
+            return self._json(409, {"error": str(e)})
+        self.server.lockout.log("job", "cancelled %s" % body.get("id"))
+        return self._json(200, {"ok": True})
+
+    def _autopilot(self, body):
+        """Autopilot daily budget (the on/off switch is a normal kill switch)."""
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        from tidos_brain import control
+        try:
+            values = control.set_value("autopilot_budget_usd", body.get("budget"))
+        except (KeyError, ValueError, TypeError) as e:
+            return self._json(400, {"error": str(e)})
+        self.server.lockout.log("autopilot", "budget %.2f USD/day" % values["autopilot_budget_usd"])
+        return self._json(200, {"budget": values["autopilot_budget_usd"]})
 
     def _army_action(self, body):
         """ARISE: activate a draft unit (-> ~/.claude/agents, personal) or undo it. Owner only, logged."""
@@ -470,6 +530,8 @@ class Handler(BaseHTTPRequestHandler):
 
 def serve(port=8767, open_browser=True, db_path=None):
     server = ControlServer(port=port, db_path=db_path)
+    from tidos_dashboard import autopilot
+    autopilot.loop(db_path, log=server.lockout.log)  # does nothing while the autopilot switch is off
     url = "http://localhost:%d/" % server.port
     print("[TIDOSZIT] Control Center running at %s (localhost only). Ctrl+C to stop." % url)
     print("[TIDOSZIT] Log in IN THE BROWSER. Never type your control password in a chat or terminal.")
