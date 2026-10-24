@@ -21,6 +21,7 @@ SWITCHES = {
     "factory_sync": (True, "Persona factory may commit + push generated personas"),
     "community_sync": (True, "Community sync may open upstream pull requests"),
     "gptid": (False, "ChatGPT browser relay (experimental, ToS risk)"),
+    "auto_summarize": (True, "After strong-model sessions, a cheap strong model writes advice notes (max 2 per START, $0.05 each)"),
     "auth_gate": (False, "Require Google sign-in at START TIDOS (the /TIDOSZIT owner login is always on)"),
 }
 

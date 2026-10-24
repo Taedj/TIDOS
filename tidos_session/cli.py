@@ -28,9 +28,22 @@ def refresh_learning():
         opencode.import_all(conn)
         distill.distill(conn)
         conn.close()
+        _spawn_summaries()
         return True
     except Exception:  # noqa: BLE001 - learning must never block START TIDOS
         return False
+
+
+def _spawn_summaries():
+    """Strong-model session summaries run in the background so START TIDOS stays fast."""
+    import subprocess
+    learn = os.path.join(detect.REPO_ROOT, "tidos_learn", "__main__.py")
+    kwargs = {"stdin": subprocess.DEVNULL, "stdout": subprocess.DEVNULL, "stderr": subprocess.DEVNULL}
+    if os.name == "nt":
+        kwargs["creationflags"] = subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP
+    else:
+        kwargs["start_new_session"] = True
+    subprocess.Popen([sys.executable, "-I", learn, "summarize", "--pending"], **kwargs)
 
 
 def start(tool=None, model=None, project=".", env=None, learn=False):

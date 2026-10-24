@@ -4,6 +4,7 @@
   list                            show playbooks (rank, confidence, evidence)
   show PATH_OR_NAME               print one playbook
   note --project P --stack S "advice"   (LEARN mode) a strong model records advice for weaker models
+  summarize [--pending | --session ID]  a cheap strong model turns finished sessions into advice notes
 """
 import argparse
 import glob
@@ -58,6 +59,19 @@ def cmd_note(args):
     return 0
 
 
+def cmd_summarize(args):
+    from . import summarize
+    conn = db.connect(args.db)
+    if args.session:
+        results = [(args.session,) + summarize.summarize_session(conn, args.session)]
+    else:
+        results = summarize.summarize_pending(conn)
+    conn.close()
+    for sid, lines, error in results:
+        print("%s: %d note(s)%s" % (sid[:12], len(lines), " (error: %s)" % error if error else ""))
+    return 0
+
+
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -81,5 +95,9 @@ def main(argv=None):
     p.add_argument("--type", default="notes")
     p.add_argument("text")
     p.set_defaults(func=cmd_note)
+    p = sub.add_parser("summarize")
+    p.add_argument("--session")
+    p.add_argument("--pending", action="store_true")
+    p.set_defaults(func=cmd_summarize)
     args = parser.parse_args(argv)
     return args.func(args)

@@ -75,7 +75,33 @@ def _cap(text, limit):
     return text if len(text) <= limit else text[: limit - 20].rstrip() + "\n...[cut]"
 
 
+def _user_rules(project, limit=4):
+    """Standing directives the user repeated (learned by tidos_learn.prefs), this project's first."""
+    path = os.path.join(tidos_home(), "memory", "LEARNED_PREFERENCES.md")
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            text = f.read()
+    except OSError:
+        return []
+    sections = dict(re.findall(r"^## (.+?)\n(.*?)(?=^## |\Z)", text, re.M | re.S))
+    rules, seen = [], []
+    for name in (project, "All projects"):
+        for line in sections.get(name, "").splitlines():
+            if not line.startswith("- "):
+                continue
+            rule = re.sub(r"\s*_\(x\d+\)_$", "", line[2:].strip())[:150]
+            words = {w for w in re.findall(r"[a-z0-9]+", rule.lower()) if len(w) > 3}
+            # skip near-duplicates ("modify trading behavior" / "change trading behavior")
+            if words and all(len(words & s) / len(words | s) < 0.5 for s in seen):
+                rules.append(rule)
+                seen.append(words)
+    return rules[:limit]
+
+
 def guide_brief(session, facts):
+    rules = _user_rules(facts["name"])
+    user_rules = ("## The user's standing rules (they repeated these; apply when relevant)\n%s\n\n"
+                  % "\n".join("- " + r for r in rules)) if rules else ""
     checks = "\n".join("- `%s`" % c for c in facts["checks"]) or \
         "- No test command detected: ask the user how they check this project, or write a small check script."
     notes = "".join("- %s\n" % n for n in facts["notes"])
@@ -90,10 +116,10 @@ def guide_brief(session, facts):
         "You are running on `%s` (tier: %s). TIDOS will guide you so you can work well with the user.\n\n"
         "## Rules (follow them exactly)\n%s\n\n"
         "## Project: %s\n- Stack: %s\n%s\n"
-        "## How to check work\n%s\n\n"
+        "## How to check work\n%s\n\n%s"
         "## Playbooks learned from strong models\n%s\n"
         % (session["model"], session["tier"], WEAK_RULES, facts["name"], ", ".join(facts["stack"]), notes,
-           checks, pb_text))
+           checks, user_rules, pb_text))
     if len(text.encode("utf-8")) > GUIDE_LIMIT:  # playbooks are the only variable-size part
         text = text.encode("utf-8")[:GUIDE_LIMIT - 12].decode("utf-8", "ignore").rstrip() + "\n...[cut]\n"
     return text

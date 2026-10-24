@@ -243,6 +243,8 @@ def distill(conn, out_dir=None):
             conn.execute("INSERT INTO playbooks (task_type, stack, path, source_models, uses, successes, rank, status,"
                          " created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
                          (ttype, stack, path, ", ".join(models), n, verified, rank_for(conf, n), "generated", now, now))
+    from . import prefs  # standing user directives, learned alongside the playbooks
+    prefs.write(prefs.learn(conn))
     return [(w[0], w[2], w[3], w[4], w[5], w[6]) for w in written]
 
 
