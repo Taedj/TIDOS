@@ -16,7 +16,7 @@
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
-| 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | 🔄 In progress (3/9) |
+| 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | 🔄 In progress (5/9) |
 | 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🔄 In progress (2/9) |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ⬜ Not started |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ⬜ Not started |
@@ -144,11 +144,11 @@
 - [x] **5.1** Model & tool detection at START TIDOS: which tool (Claude Code / OpenCode / Gemini CLI…) and which model is running — done 2026-10-24 (`tidos_session`: tool from env/args; model from args, else Claude Code transcript or OpenCode state (`~/.local/state/opencode/model.json`) — weak models do not need to know their own id)
 - [x] **5.2** Model registry `models/registry.yaml`: model → tier (frontier / medium / weak), user-editable; unknown models default to "weak" (safe side) — done 2026-10-24 (`config/models.json` (fnmatch rules, first match wins) + user override `~/.tidos/models.json`; unknown -> weak)
 - [x] **5.3** Mode switch: frontier → LEARN mode, medium/weak → GUIDE mode; shown in the startup report and the control center — done 2026-10-24 (START TIDOS (`scripts/start_tidos.ps1|.sh`, `-Tool/-Model`) prints the session report + brief; saved to `~/.tidos/session.json` and `brief.md`. Verified live: OpenCode big-pickle -> weak -> GUIDE (ZTAP), this Claude session -> claude-opus-5-5 -> frontier -> LEARN)
-- [ ] **5.4** Task classifier on traces (task type × stack: bugfix/python, feature/flutter, deploy/firebase, teaching/TP…)
-- [ ] **5.5** Playbook distiller: from successful strong-model tasks (brain traces), extract HOW it worked: steps, files it read first, commands it verified with, pitfalls, user corrections → `~/.tidos/playbooks/<type>/<stack>.md` (private, outside repo)
-- [ ] **5.6** Distillation runs at session end in LEARN mode (the strong model summarizes its own session — cheap, high quality), plus `tidos learn` to process older sessions
-- [ ] **5.7** User & project knowledge: preferences, recurring corrections, project facts (stack, test command, deploy steps) learned per project
-- [ ] **5.8** Playbook quality: confidence from outcomes (verified success, no correction), merge duplicates, decay unused ones
+- [x] **5.4** Task classifier on traces (task type × stack: bugfix/python, feature/flutter, deploy/firebase, teaching/TP…) — done 2026-10-24 (`tidos_learn/classify.py`: type from request words (EN+FR) and, when words say nothing ("Phase 1", "go"), from actions; stack from files touched and commands)
+- [x] **5.5** Playbook distiller: from successful strong-model tasks (brain traces), extract HOW it worked: steps, files it read first, commands it verified with, pitfalls, user corrections → `~/.tidos/playbooks/<type>/<stack>.md` (private, outside repo) — done 2026-10-24 (`tidos_learn/distill.py`: per-project + general playbooks in `~/.tidos/playbooks/` from strong-model successes and verified checks: where the code lives, files read/changed, reusable checks with pass counts, pitfalls (checks that failed first, user corrections, informative failures), example requests. Real history: 24 playbooks (ZTAP 5, Dev/TIDOS 4, SMARTRAD 2, SYLLAB 1 + general))
+- [ ] **5.6** *(partial 2026-10-24: LEARN brief asks the strong model to leave advice with `tidos_learn note` (kept across regenerations, ranked first for its project); every START TIDOS re-imports sessions and regenerates playbooks (~3 s). Automatic end-of-session summary by the strong model still to do)* Distillation runs at session end in LEARN mode (the strong model summarizes its own session — cheap, high quality), plus `tidos learn` to process older sessions
+- [ ] **5.7** *(partial 2026-10-24: project facts (stack, checks, deploy/git notes) + per-project playbooks + your corrections as pitfalls; learned user preferences still to do)* User & project knowledge: preferences, recurring corrections, project facts (stack, test command, deploy steps) learned per project
+- [ ] **5.8** *(partial 2026-10-24: confidence + E-S rank from verified evidence and strong-model share, idempotent regeneration (merges), stale generated playbooks removed, notes kept; decay of unused playbooks still to do)* Playbook quality: confidence from outcomes (verified success, no correction), merge duplicates, decay unused ones
 - [ ] **5.9** Panel: 📜 Playbook Library in /TIDOSZIT (view, edit, approve, delete)
 
 ---
@@ -307,6 +307,7 @@
 | 2026-10-24 | Control center = Python stdlib + plain JS + SSE (not FastAPI/React) | Zero installs, no build, offline, matches TIDOS stdlib-only scripts (Q3 delegated) |
 | 2026-10-24 | Control password is set/changed only in the browser; no CLI | Anything typed in a terminal can be captured in AI transcripts |
 | 2026-10-24 | Kill switches live in `~/.tidos/control.json` and are enforced by scripts/hooks | Real control, not prose; survives TIDOS updates |
+| 2026-10-24 | TIDOS learns from EVERY project the user works on; strong-model work counts most; TIDOS's own test runs (dungeons) are never learned from | User: "make tidos learn when users work on their project, especially with powerful models" |
 | 2026-10-24 | REALIGNMENT: the goal is developing TIDOS — learn from strong-model sessions, guide weak models with the user; no model training or model benchmarking | User correction |
 | 2026-10-24 | (superseded) Driver orchestrates sandboxed agents (Claude Code, OpenCode), not raw completions | OpenCode free tier only works inside its agent; agents already read/edit/run, the driver adds the loop, checks and escalation |
 | 2026-10-24 | The strong model writes the checks ("defines done"), the weak model does the work | Spec -> tests is cheap for a strong model and the hardest part for a weak one |

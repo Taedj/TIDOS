@@ -18,8 +18,24 @@ def _session_path():
     return os.path.join(detect.tidos_home(), "session.json")
 
 
-def start(tool=None, model=None, project=".", env=None):
+def refresh_learning():
+    """Import new sessions and regenerate playbooks so the brief uses everything learned so far."""
+    try:
+        from tidos_brain import claude_code, db
+        from tidos_learn import distill
+        conn = db.connect()
+        claude_code.import_all(conn)
+        distill.distill(conn)
+        conn.close()
+        return True
+    except Exception:  # noqa: BLE001 - learning must never block START TIDOS
+        return False
+
+
+def start(tool=None, model=None, project=".", env=None, learn=False):
     project = os.path.abspath(project)
+    if learn:
+        refresh_learning()
     tool = detect.detect_tool(tool, env)
     model, source = detect.detect_model(tool, model, project)
     tier, pattern = detect.tier_for(model)
@@ -56,13 +72,14 @@ def main(argv=None):
     p.add_argument("--model", default="auto")
     p.add_argument("--project", default=".")
     p.add_argument("--json", action="store_true")
+    p.add_argument("--no-learn", action="store_true", help="skip refreshing the brain and playbooks")
     sub.add_parser("status")
     t = sub.add_parser("tier")
     t.add_argument("model")
     args = parser.parse_args(argv)
 
     if args.command == "start":
-        session, facts, text = start(args.tool, args.model, args.project)
+        session, facts, text = start(args.tool, args.model, args.project, learn=not args.no_learn)
         if args.json:
             print(json.dumps(dict(session, facts=facts, brief=text), indent=2))
         else:

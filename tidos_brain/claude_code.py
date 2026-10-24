@@ -210,18 +210,39 @@ def store(conn, session, tasks):
                 [(task_id, v["ts"], clean(v["command"]), v["passed"]) for v in t["verifications"]])
 
 
+# Sessions TIDOS itself started (eval dungeons, driver runs, scratch dirs) are not user work
+_SYNTHETIC_CWD = re.compile(r"(eval-runs|dungeon-runs|[\\/]Temp[\\/]claude[\\/])", re.IGNORECASE)
+
+
+def is_synthetic(cwd):
+    return bool(cwd and _SYNTHETIC_CWD.search(cwd))
+
+
+def purge_synthetic(conn):
+    rows = conn.execute("SELECT id, cwd FROM sessions").fetchall()
+    ids = [r[0] for r in rows if is_synthetic(r[1])]
+    with conn:
+        conn.executemany("DELETE FROM sessions WHERE id = ?", [(i,) for i in ids])
+    return len(ids)
+
+
 def import_transcript(conn, path):
     session, tasks = parse_transcript(path)
+    if is_synthetic(session["cwd"]):
+        return session, []          # never learn from TIDOS's own test runs
     store(conn, session, tasks)
     return session, tasks
 
 
 def import_all(conn, projects_dir=PROJECTS_DIR):
     """Import every top-level transcript (subagent transcripts live in subfolders and are skipped)."""
+    purge_synthetic(conn)
     results = []
     for path in sorted(glob.glob(os.path.join(projects_dir, "*", "*.jsonl"))):
         try:
-            results.append(import_transcript(conn, path))
+            session, tasks = import_transcript(conn, path)
+            if tasks:
+                results.append((session, tasks))
         except (OSError, ValueError) as e:
             print("skip %s: %s" % (path, e), file=sys.stderr)
     return results

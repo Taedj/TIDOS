@@ -14,7 +14,8 @@ import re
 from .detect import tidos_home
 
 GUIDE_LIMIT = 4096
-PLAYBOOK_LIMIT = 1200
+PLAYBOOK_LIMIT = 1000
+LEARN_CLI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tidos_learn", "__main__.py")
 
 WEAK_RULES = """\
 1. Work in SMALL steps: one file, one change at a time. Never rewrite whole files.
@@ -30,21 +31,42 @@ WEAK_RULES = """\
    a stronger model for this step."""
 
 
-def _playbooks(stack, limit=2):
-    """Playbooks learned from strong-model sessions whose `stack:` matches this project."""
+def _front(text, key):
+    m = re.search(r"^%s:\s*(.+)$" % key, text, re.M)
+    return m.group(1).strip() if m else ""
+
+
+def _compact(text):
+    """Playbook body for the brief: no front matter, no example requests (they cost bytes, teach little)."""
+    body = re.sub(r"^---.*?---\s*", "", text, flags=re.S)
+    body = re.split(r"\n## Example requests", body)[0]
+    return body.strip()
+
+
+def _playbooks(stack, project=None, limit=3):
+    """Playbooks learned from earlier sessions: this project's first, then same-stack general ones."""
     found = []
+    wanted = {s.lower() for s in stack}
     for path in sorted(glob.glob(os.path.join(tidos_home(), "playbooks", "**", "*.md"), recursive=True)):
         try:
             with open(path, "r", encoding="utf-8") as f:
                 text = f.read()
         except OSError:
             continue
-        m = re.search(r"^stack:\s*(.+)$", text, re.M)
-        tags = {t.strip().lower() for t in (m.group(1).split(",") if m else [])}
-        score = len(tags & {s.lower() for s in stack}) + (0.5 if "any" in tags else 0)
-        if score:
-            body = re.sub(r"^---.*?---\s*", "", text, flags=re.S).strip()
-            found.append((score, os.path.splitext(os.path.basename(path))[0], body))
+        tags = {t.strip().lower() for t in _front(text, "stack").split(",") if t.strip()}
+        same_project = bool(project) and _front(text, "project").lower() == project.lower()
+        overlap = len(tags & wanted)
+        if not (same_project or overlap or "any" in tags):
+            continue
+        kind = _front(text, "type")
+        try:
+            confidence = float(_front(text, "confidence") or 0.5)
+        except ValueError:
+            confidence = 0.5
+        score = (3 if same_project else 0) + overlap + confidence + (2 if kind == "notes" and same_project else 0) \
+            + (0.5 if kind in ("bugfix", "feature") else 0)
+        name = "%s / %s" % (_front(text, "project") or "any", kind or os.path.basename(path)[:-3])
+        found.append((score, name, _compact(text)))
     found.sort(key=lambda x: -x[0])
     return found[:limit]
 
@@ -57,9 +79,10 @@ def guide_brief(session, facts):
     checks = "\n".join("- `%s`" % c for c in facts["checks"]) or \
         "- No test command detected: ask the user how they check this project, or write a small check script."
     notes = "".join("- %s\n" % n for n in facts["notes"])
-    playbooks = _playbooks(facts["stack"])
+    playbooks = _playbooks(facts["stack"], facts["name"], limit=2)
     if playbooks:
-        pb_text = "\n\n".join("### %s\n%s" % (name, _cap(body, PLAYBOOK_LIMIT)) for _, name, body in playbooks)
+        pb_text = "\n\n".join("### %s\n%s" % (name, _cap(body, PLAYBOOK_LIMIT))
+                              for _, name, body in playbooks).replace("\n# ", "\n#### ")
     else:
         pb_text = "None yet for this stack. (They are learned from sessions run on a strong model.)"
     text = (
@@ -82,7 +105,10 @@ def learn_brief(session, facts):
         "You are running on `%s` (tier: frontier). Work at your normal level with the user.\n"
         "TIDOS records this session (tool calls, checks, corrections) into its local brain, outside the\n"
         "repository, so it can later teach weaker models how tasks are solved in this project.\n"
-        "Help TIDOS learn: run the project's real checks before calling a task done, and say briefly\n"
-        "which files you read first and why.\n\n"
+        "Help TIDOS learn: run the project's real checks before calling a task done.\n\n"
+        "When you finish a significant task, leave ONE short piece of advice for weaker models working on\n"
+        "this project later (where things live, the trap you avoided, how to verify), by running:\n"
+        "  python -I \"%s\" note --project \"%s\" --stack \"%s\" \"<advice>\"\n\n"
         "Project: %s - stack: %s - checks: %s\n"
-        % (session["model"], facts["name"], ", ".join(facts["stack"]), ", ".join(facts["checks"]) or "none detected"))
+        % (session["model"], LEARN_CLI, facts["name"], ", ".join(facts["stack"]),
+           facts["name"], ", ".join(facts["stack"]), ", ".join(facts["checks"]) or "none detected"))
