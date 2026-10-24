@@ -1,0 +1,465 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>دليل TIDOS</title>
+<style>
+  :root {
+    --bg: #f6f7fb; --panel: #ffffff; --ink: #1b2130; --muted: #5b6475; --line: #dde2ec;
+    --accent: #1f6feb; --accent-soft: #e7f0ff; --ok: #1a7f37; --warn: #9a6700; --bad: #c2372f;
+    --code-bg: #f0f2f7; --violet: #7c4dff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #070b14; --panel: #0d1424; --ink: #e6ecf7; --muted: #9aa6bd; --line: #1f2b45;
+      --accent: #5cb2ff; --accent-soft: #10223d; --ok: #3fb950; --warn: #d29922; --bad: #f85149;
+      --code-bg: #0a1020; --violet: #a98bff;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #070b14; --panel: #0d1424; --ink: #e6ecf7; --muted: #9aa6bd; --line: #1f2b45;
+    --accent: #5cb2ff; --accent-soft: #10223d; --ok: #3fb950; --warn: #d29922; --bad: #f85149;
+    --code-bg: #0a1020; --violet: #a98bff;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.85 "Segoe UI", Tahoma, "Noto Naskh Arabic", "Noto Sans Arabic", system-ui, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 32px; }
+  header.hero { max-width: 1180px; margin: 0 auto; padding: 40px 16px 24px; }
+  .hero h1 { margin: 0 0 6px; font-size: 34px; line-height: 1.3; }
+  .hero h1 span { color: var(--accent); font-family: Consolas, "Cascadia Mono", monospace; direction: ltr; unicode-bidi: isolate; }
+  .hero p { margin: 0; color: var(--muted); max-width: 760px; }
+  nav.toc { position: sticky; top: 16px; align-self: start; max-height: calc(100vh - 32px); overflow: auto;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 15px; }
+  nav.toc b { display: block; margin-bottom: 6px; }
+  nav.toc ol { margin: 0; padding-inline-start: 20px; }
+  nav.toc a { color: var(--ink); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+  main { min-width: 0; padding-bottom: 60px; }
+  section { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 22px 26px; margin-bottom: 22px; }
+  h2 { margin: 0 0 12px; font-size: 24px; line-height: 1.4; }
+  h2 .n { display: inline-block; min-width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%;
+    background: var(--accent-soft); color: var(--accent); font-size: 17px; margin-inline-end: 8px; }
+  h3 { margin: 20px 0 8px; font-size: 19px; }
+  p { margin: 8px 0; }
+  ul, ol { padding-inline-start: 24px; margin: 8px 0; }
+  li { margin: 4px 0; }
+  code, pre, kbd { font-family: Consolas, "Cascadia Mono", "SF Mono", monospace; font-size: 14.5px; }
+  code { background: var(--code-bg); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px;
+    direction: ltr; unicode-bidi: isolate; white-space: nowrap; }
+  pre { background: var(--code-bg); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px;
+    direction: ltr; text-align: left; overflow-x: auto; line-height: 1.55; margin: 10px 0; }
+  pre code { background: none; border: 0; padding: 0; white-space: pre; }
+  .callout { border-inline-start: 4px solid var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 10px 14px; margin: 12px 0; }
+  .callout.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 12%, transparent); }
+  .callout.ok { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 12%, transparent); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .card h4 { margin: 0 0 6px; font-size: 17px; }
+  .tag { display: inline-block; border-radius: 999px; padding: 0 10px; font-size: 13px; border: 1px solid var(--line); color: var(--muted); }
+  .tag.learn { color: var(--ok); border-color: var(--ok); }
+  .tag.guide { color: var(--warn); border-color: var(--warn); }
+  .table-wrap { overflow-x: auto; margin: 10px 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 15.5px; }
+  th, td { border-bottom: 1px solid var(--line); padding: 8px 10px; text-align: start; vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+  .steps { counter-reset: s; list-style: none; padding: 0; }
+  .steps > li { counter-increment: s; position: relative; padding-inline-start: 46px; margin: 12px 0; }
+  .steps > li::before { content: counter(s); position: absolute; inset-inline-start: 0; top: 2px; width: 32px; height: 32px;
+    border-radius: 50%; background: var(--accent); color: #fff; text-align: center; line-height: 32px; font-weight: 700; }
+  figure { margin: 14px 0; }
+  figure svg { width: 100%; height: auto; display: block; }
+  figcaption { color: var(--muted); font-size: 14px; text-align: center; margin-top: 6px; }
+  svg .box { fill: var(--panel); stroke: var(--line); stroke-width: 1.5; }
+  svg .box.strong { stroke: var(--ok); }
+  svg .box.weak { stroke: var(--warn); }
+  svg .box.brain { stroke: var(--violet); }
+  svg text { fill: var(--ink); font: 15px "Segoe UI", Tahoma, sans-serif; }
+  svg text.small { fill: var(--muted); font-size: 12.5px; }
+  svg .arrow { stroke: var(--accent); stroke-width: 2; fill: none; marker-end: url(#ah); }
+  svg #ah path { fill: var(--accent); }
+  .ranks { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+  .rank { border: 2px solid var(--line); border-radius: 10px; padding: 6px 12px; text-align: center; min-width: 74px; }
+  .rank b { display: block; font-size: 20px; font-family: Consolas, monospace; }
+  .theme { position: fixed; bottom: 16px; inset-inline-start: 16px; border: 1px solid var(--line); background: var(--panel);
+    color: var(--ink); border-radius: 999px; padding: 6px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+  footer { color: var(--muted); font-size: 14px; text-align: center; padding: 10px 0 70px; }
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns: 1fr; gap: 16px; }
+    nav.toc { position: static; max-height: none; }
+    .grid2 { grid-template-columns: 1fr; }
+    section { padding: 18px 16px; }
+    .hero h1 { font-size: 27px; }
+    body { font-size: 16px; }
+    code { white-space: normal; overflow-wrap: anywhere; }
+  }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>دليل <span>TIDOS</span>: كيف يعمل، كيف يتطوّر، وكيف تستخدمه</h1>
+  <p>نظام تشغيل للتطوير يتعلّم من جلساتك مع النماذج القوية (مثل Claude)، ثم يقود النماذج الضعيفة أو المجانية لتعمل معك بطريقة أفضل. هذا الدليل يشرح الفكرة، الأجزاء، دورة التعلّم والتطوّر، ومركز التحكم، وطريقة الاستخدام اليومية خطوة بخطوة.</p>
+</header>
+
+<div class="wrap">
+  <nav class="toc" aria-label="المحتويات">
+    <b>المحتويات</b>
+    <ol>
+      <li><a href="#idea">الفكرة في سطرين</a></li>
+      <li><a href="#cycle">الدورة الكاملة</a></li>
+      <li><a href="#modes">وضعا العمل: تعلّم وتوجيه</a></li>
+      <li><a href="#brain">الدماغ: أين تُحفظ المعرفة</a></li>
+      <li><a href="#learn">كيف يتعلّم</a></li>
+      <li><a href="#guide">كيف يوجّه النماذج الضعيفة</a></li>
+      <li><a href="#level">كيف يتطوّر (Solo Leveling)</a></li>
+      <li><a href="#evolve">كيف يطوّر نفسه</a></li>
+      <li><a href="#scout">كشّاف الأدوات</a></li>
+      <li><a href="#zit">مركز التحكم <bdi dir="ltr">/TIDOSZIT</bdi></a></li>
+      <li><a href="#daily">الاستخدام اليومي</a></li>
+      <li><a href="#commands">مرجع الأوامر</a></li>
+      <li><a href="#safety">الأمان والخصوصية</a></li>
+      <li><a href="#tips">نصائح لتسريع التعلّم</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <section id="idea">
+    <h2><span class="n">1</span>الفكرة في سطرين</h2>
+    <p><b>النموذج القوي يعلّم، وTIDOS يحفظ، والنموذج الضعيف يُقاد.</b> عندما تعمل مع نموذج قوي، يراقب TIDOS <i>كيف</i> حُلّت المهمة: ما الملفات التي قُرئت أولًا، وما الفحوص التي شُغّلت، وأين حدثت الأخطاء، وما الذي صحّحته أنت. ثم يحوّل ذلك إلى «خطط عمل» خاصة بكل مشروع. وعندما تعمل لاحقًا مع نموذج مجاني أضعف، يعطيه TIDOS خلاصة قصيرة ومركّزة من هذه الخبرة، ويفرض عليه قواعد عمل صارمة (اقرأ قبل أن تعدّل، تحقّق قبل أن تقول «انتهيت»).</p>
+    <div class="callout">TIDOS <b>لا يدرّب النماذج</b> ولا يغيّر أوزانها. الهدف هو تطوير TIDOS نفسه: معرفته وقواعده وأدواته تكبر مع كل جلسة، وأي نموذج يعمل داخله يستفيد منها.</div>
+    <div class="grid2">
+      <div class="card"><h4>ما الذي يميّزه؟</h4>
+        <ul>
+          <li>يفرض القواعد بالكود (خطافات وأدوات)، لا بالنصوص الطويلة فقط.</li>
+          <li>يتعلّم من <b>أدلة</b>: فحوص نجحت أو فشلت، وتصحيحاتك؛ لا من كلام النموذج عن نفسه.</li>
+          <li>كل معرفتك الخاصة تبقى على جهازك في <code>~/.tidos</code>.</li>
+        </ul></div>
+      <div class="card"><h4>من أين يتعلّم؟</h4>
+        <ul>
+          <li>من <b>كل مشاريعك</b>، وليس من مشروع TIDOS فقط.</li>
+          <li>عمل النماذج القوية له الوزن الأكبر.</li>
+          <li>لكنه <b>لا يعدّل إلا نفسه</b>: لا يلمس مشاريعك، يقرأ آثار العمل فقط.</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <section id="cycle">
+    <h2><span class="n">2</span>الدورة الكاملة</h2>
+    <figure>
+      <svg viewBox="0 0 900 330" role="img" aria-label="دورة التعلّم والتوجيه في TIDOS">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z"/></marker></defs>
+        <rect class="box strong" x="650" y="20" width="230" height="86" rx="12"/>
+        <text x="765" y="55" text-anchor="middle">جلسة مع نموذج قوي</text>
+        <text class="small" x="765" y="80" text-anchor="middle">START TIDOS ← وضع التعلّم</text>
+
+        <rect class="box brain" x="335" y="20" width="230" height="86" rx="12"/>
+        <text x="450" y="55" text-anchor="middle">الدماغ ‎~/.tidos</text>
+        <text class="small" x="450" y="80" text-anchor="middle">سجلات · مهام · فحوص · تصحيحات</text>
+
+        <rect class="box brain" x="20" y="20" width="230" height="86" rx="12"/>
+        <text x="135" y="55" text-anchor="middle">التقطير</text>
+        <text class="small" x="135" y="80" text-anchor="middle">خطط عمل · قواعدك · ملاحظات</text>
+
+        <rect class="box weak" x="20" y="220" width="230" height="86" rx="12"/>
+        <text x="135" y="255" text-anchor="middle">موجز التوجيه (≤ 4KB)</text>
+        <text class="small" x="135" y="280" text-anchor="middle">+ توجيه لكل طلب + خطافات</text>
+
+        <rect class="box weak" x="335" y="220" width="230" height="86" rx="12"/>
+        <text x="450" y="255" text-anchor="middle">جلسة مع نموذج ضعيف</text>
+        <text class="small" x="450" y="280" text-anchor="middle">START TIDOS ← وضع التوجيه</text>
+
+        <rect class="box" x="650" y="220" width="230" height="86" rx="12"/>
+        <text x="765" y="255" text-anchor="middle">XP · رتب · تطوّر</text>
+        <text class="small" x="765" y="280" text-anchor="middle">ماذا نفع؟ ماذا يُحذف؟</text>
+
+        <path class="arrow" d="M648,63 L568,63"/>
+        <path class="arrow" d="M333,63 L253,63"/>
+        <path class="arrow" d="M135,108 L135,217"/>
+        <path class="arrow" d="M253,263 L332,263"/>
+        <path class="arrow" d="M568,263 L647,263"/>
+        <path class="arrow" d="M765,217 Q765,160 568,95"/>
+      </svg>
+      <figcaption>كل جلسة (قوية أو ضعيفة) تُسجَّل، فيعرف TIDOS أي توجيه ساعد فعلًا، ويعدّل نفسه.</figcaption>
+    </figure>
+  </section>
+
+  <section id="modes">
+    <h2><span class="n">3</span>وضعا العمل: تعلّم وتوجيه</h2>
+    <p>عندما تكتب <code>START TIDOS</code> في أي أداة (Claude Code أو OpenCode أو Gemini CLI…)، يكتشف TIDOS الأداة والنموذج المستخدم، ثم يحدد <b>فئة</b> النموذج من القواعد في <code>config/models.json</code> (ويمكنك تجاوزها في <code>~/.tidos/models.json</code>). أي نموذج غير معروف يُعامَل كـ«ضعيف» من باب الحذر.</p>
+    <div class="grid2">
+      <div class="card"><h4><span class="tag learn">LEARN</span> وضع التعلّم: نموذج قوي</h4>
+        <ul>
+          <li>النموذج يعمل بمستواه الطبيعي، دون قيود إضافية.</li>
+          <li>TIDOS يسجّل الجلسة: الأدوات، الملفات، الفحوص، تصحيحاتك.</li>
+          <li>يُطلب من النموذج تشغيل الفحوص الحقيقية قبل إعلان الانتهاء، وترك نصيحة قصيرة للنماذج الأضعف بعد كل مهمة مهمّة.</li>
+        </ul></div>
+      <div class="card"><h4><span class="tag guide">GUIDE</span> وضع التوجيه: نموذج متوسط أو ضعيف</h4>
+        <ul>
+          <li>يستلم النموذج موجزًا قصيرًا (أقل من 4KB) بدل نصوص طويلة لا يتبعها.</li>
+          <li>يحصل على توجيه خاص بكل طلب: نوع المهمة، الخطوة الأولى، كيف حُلّت مهام مشابهة في هذا المشروع، والفخاخ المعروفة.</li>
+          <li>الخطافات تمنعه من التعديل قبل القراءة، ومن الإنهاء دون تحقق، وتوقفه بعد 3 أخطاء متطابقة وتقترح نموذجًا أقوى.</li>
+        </ul></div>
+    </div>
+  </section>
+
+  <section id="brain">
+    <h2><span class="n">4</span>الدماغ: أين تُحفظ المعرفة</h2>
+    <p>كل ما يتعلّمه TIDOS يُحفظ <b>خارج المستودع</b> في مجلد خاص على جهازك، فلا يمسحه التحديث ولا يصل إلى GitHub:</p>
+    <div class="table-wrap"><table>
+      <tr><th>المسار</th><th>المحتوى</th></tr>
+      <tr><td><code>~/.tidos/brain.db</code></td><td>قاعدة بيانات SQLite: الجلسات، المهام، استدعاءات الأدوات، الفحوص، التقييمات، أحداث XP، الأحداث المباشرة.</td></tr>
+      <tr><td><code>~/.tidos/playbooks/</code></td><td>خطط العمل: لكل مشروع ونوع مهمة، كيف حُلّت، وأين يقع الكود، وما الفحوص التي نجحت.</td></tr>
+      <tr><td><code>~/.tidos/memory/</code></td><td>ذاكرتك الخاصة، ومنها <b>القواعد التي كرّرتها</b> (LEARNED_PREFERENCES).</td></tr>
+      <tr><td><code>~/.tidos/drafts/</code></td><td>مسودات مهارات ووكلاء متخصصين وقضايا: لا تُفعَّل إلا عندما تنقلها أنت.</td></tr>
+      <tr><td><code>~/.tidos/proposals.jsonl</code></td><td>طابور التطوّر: اقتراحات لتحسين TIDOS نفسه.</td></tr>
+      <tr><td><code>~/.tidos/reports/</code></td><td>تقارير المهمة اليومية.</td></tr>
+      <tr><td><code>~/.tidos/backups/</code></td><td>نسخ احتياطية من الدماغ.</td></tr>
+      <tr><td><code>~/.tidos/control.json</code></td><td>مفاتيح الإيقاف (تُعدَّل من مركز التحكم).</td></tr>
+      <tr><td><code>~/.tidos/bin/</code></td><td>الأدوات التي ثبّتها TIDOS بالتنزيل المُتحقَّق منه.</td></tr>
+    </table></div>
+    <div class="callout ok">كل نص يدخل الدماغ يمرّ أولًا عبر <b>جدار الخصوصية</b>: المفاتيح وكلمات المرور والبريد والمسارات الشخصية تُحذف قبل الحفظ.</div>
+  </section>
+
+  <section id="learn">
+    <h2><span class="n">5</span>كيف يتعلّم</h2>
+    <ol class="steps">
+      <li><b>الالتقاط.</b> الخطافات في Claude Code تسجّل كل طلب وكل أداة لحظيًا. وعند كل <code>START TIDOS</code> يستورد TIDOS أيضًا سجلات Claude Code وOpenCode القديمة (تلقائيًا، وفقط الجديد منها).</li>
+      <li><b>تقييم كل مهمة.</b> يُحكم على النتيجة بالأدلة: هل شُغّلت فحوص (اختبارات، lint، بناء) وهل نجحت؟ هل صحّحت النموذج (بالعربية أو الإنجليزية أو الفرنسية)؟ هل حدثت أخطاء في الأدوات؟ النتيجة: نجاح، فشل، أو غير معروف.</li>
+      <li><b>التصنيف.</b> كل مهمة تُصنَّف حسب النوع (إصلاح خطأ، ميزة، نشر، إعادة هيكلة، سؤال…) والتقنية (Python، Flutter، Firebase…).</li>
+      <li><b>التقطير إلى خطط عمل.</b> من مهام النماذج القوية الناجحة يستخرج: أين يعيش الكود، أي ملفات تُقرأ أولًا، أي فحوص تُعاد، والفخاخ (فحص فشل ثم نجح، تصحيحاتك، محاولات فاشلة مفيدة).</li>
+      <li><b>قواعدك أنت.</b> الجمل التوجيهية التي <b>تكرّرها</b> (مرتين أو أكثر، بصياغة متقاربة) تصبح قواعد دائمة للمشروع، مثل «لا تغيّر سلوك التداول».</li>
+      <li><b>ملاحظات النموذج القوي.</b> بعد جلسات النماذج القوية، يكتب نموذج رخيص (بحد 0.05$) 1–3 نصائح عملية للنماذج الأضعف، ويمكن للنموذج القوي ترك نصيحة بنفسه بأمر <code>note</code>.</li>
+      <li><b>الجودة والنسيان.</b> لكل خطة عمل ثقة ورتبة (E–S). الثقة تقلّ مع قِدم الأدلة (بعد 30 يومًا، إلى النصف كحد أقصى)، والخطط التي توقفها أنت لا تُقدَّم أبدًا.</li>
+    </ol>
+    <div class="callout">TIDOS لا يتعلّم من اختباراته الخاصة (الزنزانات)، حتى لا يتعلّم من نفسه.</div>
+  </section>
+
+  <section id="guide">
+    <h2><span class="n">6</span>كيف يوجّه النماذج الضعيفة</h2>
+    <h3>الموجز عند البداية</h3>
+    <p>عند <code>START TIDOS</code> بنموذج ضعيف يحصل على: قواعد العمل السبع، وحقائق المشروع (التقنيات، أوامر الفحص، ملاحظات النشر وgit)، وقواعدك الدائمة، وأفضل خطط العمل لهذا المشروع، والأدوات المثبّتة كفحوص إضافية (مثل <code>ruff check .</code> أو <code>gitleaks detect</code>).</p>
+    <h3>قواعد النموذج الضعيف</h3>
+    <ol>
+      <li>خطوة صغيرة واحدة في كل مرة.</li>
+      <li>اقرأ قبل أن تعدّل.</li>
+      <li>مسارات نسبية فقط.</li>
+      <li>حدّد الفحوص أولًا (عرّف «الانتهاء» قبل البدء).</li>
+      <li>شغّل الفحوص بعد كل تغيير.</li>
+      <li>لا تقل «انتهيت» دون مخرجات الفحص، واطلب الإذن في الأفعال الخطيرة.</li>
+      <li>بعد 3 أخطاء متطابقة: توقّف، اشرح، واقترح نموذجًا أقوى.</li>
+    </ol>
+    <h3>توجيه لكل طلب</h3>
+    <p>مع كل طلب جديد، يصنّف TIDOS الطلب ويعيد (في أقل من 1.6KB) خطة العمل المطابقة فقط، مع خطوة «الفحوص أولًا» المناسبة لنوع المهمة: لإصلاح خطأ ← أعد إنتاجه بفحص يفشل؛ لميزة ← اكتب السلوك المتوقع كفحوص؛ للنشر ← موافقة صريحة على الأمر نفسه؛ لسؤال ← لا تعدّل الكود.</p>
+    <h3>الفرض بالكود (في Claude Code)</h3>
+    <div class="table-wrap"><table>
+      <tr><th>الخطاف</th><th>ما يفعله في وضع التوجيه</th></tr>
+      <tr><td><code>UserPromptSubmit</code></td><td>يحقن التوجيه الخاص بالطلب تلقائيًا.</td></tr>
+      <tr><td><code>PreToolUse</code></td><td>يمنع التعديل حتى يقرأ النموذج أو يبحث بعد طلبك.</td></tr>
+      <tr><td><code>PostToolUse</code></td><td>يكتشف التعثر: ثالث فشل متطابق ← يوقف النموذج ويقترح نموذجًا أقوى.</td></tr>
+      <tr><td><code>Stop</code></td><td>يمنع الإنهاء إذا تغيّر الكود ولم ينجح أي فحص بعد آخر تعديل (أو يجب أن يصرّح بأنه «غير مُتحقَّق منه»).</td></tr>
+    </table></div>
+    <p>في الأدوات الأخرى (OpenCode، Gemini…) يصل التوجيه عبر مخرجات <code>START TIDOS</code> وخادم MCP (أداة <code>tidos_guide</code>).</p>
+  </section>
+
+  <section id="level">
+    <h2><span class="n">7</span>كيف يتطوّر (Solo Leveling)</h2>
+    <p>مثل الأنمي، يرتفع مستوى TIDOS مع العمل الحقيقي، لكن <b>فقط بالأدلة</b>:</p>
+    <div class="table-wrap"><table>
+      <tr><th>الحدث في مهمة</th><th>XP</th></tr>
+      <tr><td>نجاح</td><td>+20</td></tr>
+      <tr><td>نتيجة غير معروفة</td><td>+5</td></tr>
+      <tr><td>فشل</td><td>−10</td></tr>
+      <tr><td>آخر فحص نجح</td><td>+5</td></tr>
+      <tr><td>أول فحص نجح (صحيح من أول مرة)</td><td>+5</td></tr>
+      <tr><td>صحّحتَ النموذج</td><td>−10</td></tr>
+    </table></div>
+    <p>المستوى n يحتاج <code>100 × (n−1)^1.5</code> نقطة XP. وهناك مستوى عام، ومستوى لكل مشروع (مجال).</p>
+    <div class="ranks">
+      <div class="rank"><b>S</b>مستوى ≥ 50</div><div class="rank"><b>A</b>≥ 35</div><div class="rank"><b>B</b>≥ 20</div>
+      <div class="rank"><b>C</b>≥ 10</div><div class="rank"><b>D</b>≥ 5</div><div class="rank"><b>E</b>≥ 1</div>
+    </div>
+    <h3>الخصائص الخمس</h3>
+    <ul>
+      <li><b>INT الذكاء</b>: نسبة نجاح المهام ذات النتيجة الواضحة.</li>
+      <li><b>PRE الدقة</b>: آخر تشغيل للاختبار أو الفحص أو البناء نجح.</li>
+      <li><b>DIS الانضباط</b>: مهام عدّلت الكود وشغّلت تحققًا.</li>
+      <li><b>WIS الحكمة</b>: إجابات لم تضطر إلى تصحيحها.</li>
+      <li><b>AGI الرشاقة</b>: مهام انتهت دون خطأ في الأدوات.</li>
+    </ul>
+    <h3>ما الذي يُفتح مع الارتفاع؟</h3>
+    <ul>
+      <li><b>مسودات مهارات:</b> خطة عمل نجحت 10 مرات أو أكثر برتبة B فما فوق ← مسودة <code>SKILL.md</code> في <code>~/.tidos/drafts/skills</code>.</li>
+      <li><b>تغيير الوظيفة:</b> مجال يصل إلى المستوى 15 ← مسودة وكيل متخصص لهذا المشروع، تتضمن قواعدك الدائمة.</li>
+      <li><b>جيش الظلال:</b> وكلاؤك الفرعيون (المعماري، المراجع، المختبِر، الأمني، الباحث، الواجهات، الموبايل) مع عدد المهمات ورتبة كل منهم.</li>
+      <li><b>المهام اليومية:</b> أنجز 3 مهام مُتحقَّق منها، صفر تصحيحات، تحقّق من كل تعديل.</li>
+    </ul>
+    <div class="callout warn">المسودات لا تُفعَّل تلقائيًا أبدًا. أنت تراجعها وتنقلها إلى <code>.claude/skills</code> أو <code>.claude/agents</code> إن أعجبتك.</div>
+  </section>
+
+  <section id="evolve">
+    <h2><span class="n">8</span>كيف يطوّر نفسه</h2>
+    <ol class="steps">
+      <li><b>طابور التطوّر.</b> النماذج (عبر <code>tidos_propose</code>) وأنت (عبر الأمر أو مركز التحكم) تضيفون اقتراحات لتحسين TIDOS، بأولويات.</li>
+      <li><b>قرارك.</b> في تبويب «التطوّر» تقبل أو ترفض كل اقتراح.</li>
+      <li><b>التنفيذ الآلي الآمن.</b> <code>python scripts/self_improve.py</code> ينفّذ اقتراحًا مقبولًا واحدًا في نسخة عمل مؤقتة على فرع <code>auto/…</code>، ويشغّل كل الفحوص (الاختبارات، مدقق المواصفات، تزامن الإضافة)، ولا يحفظ إلا إذا نجحت كلها. <b>لا يرفع ولا يدمج أبدًا</b>: أنت تراجع وتدمج.</li>
+      <li><b>المهمة اليومية.</b> <code>python scripts/daily_quest.py</code>: اختبارات، مواصفات، تزامن الإضافة، صلاحية الزنزانات، تحديث التعلّم، الحالة ← تقرير في <code>~/.tidos/reports</code>. أي تراجع يظهر كإشعار.</li>
+      <li><b>اختبار حذف القواعد.</b> <code>tidos_evals run --ablate N</code> يشغّل وضع التوجيه دون القاعدة N ويقارن. إن لم يسُؤ الأداء، يُقترح حذف القاعدة: TIDOS يبقى خفيفًا.</li>
+      <li><b>الزنزانات.</b> 30 مهمة اختبار بفحوص مخفية (E إلى S) لقياس: هل يجعل TIDOS النماذج أفضل فعلًا؟</li>
+    </ol>
+  </section>
+
+  <section id="scout">
+    <h2><span class="n">9</span>كشّاف الأدوات</h2>
+    <ul>
+      <li><b>الحاجات:</b> يكتشف ما ينقص كل مشروع حسب تقنياته (ماسح أسرار، ماسح ثغرات الاعتماديات، lint…).</li>
+      <li><b>الثقة (0–100):</b> من النجوم، وحداثة التحديث، والرخصة، وOpenSSF Scorecard. المستودع المؤرشف = 0.</li>
+      <li><b>التثبيت بالموافقة:</b> شغّل مفتاح <code>tool_install</code> ← وافق ← اضغط «ثبّت». فقط أدوات الكتالوج، بإصدار محدد أو بتنزيل رسمي تُطابَق بصمته SHA-256، داخل حسابك فقط ودون صلاحيات المدير، وتُرفض إن كانت الثقة أقل من 70.</li>
+      <li><b>الاندماج:</b> الأداة المثبّتة تُضاف إلى توجيه النماذج الضعيفة كفحص إضافي، ويسمح <code>tidos_verify</code> بتشغيلها، ويُحسب لها XP من استخدامها الحقيقي.</li>
+      <li><b>الحظر:</b> أداة لا تفيد؟ «احظر» فلا تُقترح بعد ذلك. و«أزل التثبيت» تزيل ما ثبّته TIDOS فقط.</li>
+      <li>خوادم MCP تبقى يدوية (أمر <code>claude mcp add</code> تشغّله أنت).</li>
+    </ul>
+  </section>
+
+  <section id="zit">
+    <h2><span class="n">10</span>مركز التحكم <bdi dir="ltr">/TIDOSZIT</bdi></h2>
+    <h3>الدخول</h3>
+    <ol class="steps">
+      <li>اكتب <code>/TIDOSZIT</code> في Claude Code (أو شغّل <code>scripts\tidoszit.ps1</code>). يفتح المتصفح على <code>http://localhost:8767</code> (على جهازك فقط).</li>
+      <li>تحقّق بحساب Google الخاص بالمالك (لا يُقبل غيره).</li>
+      <li>اكتب كلمة مرور التحكم <b>في المتصفح فقط</b>. تُحفظ بصمتها فقط في Firestore. 5 محاولات خاطئة = قفل 15 دقيقة. الجلسة 30 دقيقة.</li>
+      <li>زر <b>العربية / English</b> في الأعلى يبدّل اللغة.</li>
+    </ol>
+    <h3>التبويبات</h3>
+    <div class="table-wrap"><table>
+      <tr><th>التبويب</th><th>ماذا تجد وماذا تفعل</th></tr>
+      <tr><td>الحالة</td><td>المستوى والرتبة وXP، الخصائص الخمس، المهام اليومية، إشعارات النظام، المجالات، النماذج، سجل المهام، جيش الظلال.</td></tr>
+      <tr><td>المراقبة المباشرة</td><td>الجلسات النشطة وتدفق الأحداث لحظيًا، جلسة TIDOS الحالية (الوضع، النموذج، الفئة)، «هل يساعد وضع التوجيه؟»، أحدث المهام.</td></tr>
+      <tr><td>الأمان</td><td>مفاتيح الإيقاف، الجلسة والقفل، تغيير كلمة المرور، الإعدادات الآمنة، النسخ الاحتياطي، سجل الأمان.</td></tr>
+      <tr><td>الزنزانات</td><td>لوحة الصدارة (مع TIDOS وبدونه) وخريطة النتائج لكل مهمة.</td></tr>
+      <tr><td>خطط العمل</td><td>كل ما تعلّمه: المشروع، النوع، الرتبة، الثقة، الأدلة، مرات الاستخدام، ومفتاح إيقاف لكل خطة.</td></tr>
+      <tr><td>الذاكرة</td><td>ذاكرتك الخاصة، قواعدك المتعلَّمة، والمسودات (للقراءة فقط).</td></tr>
+      <tr><td>التطوّر</td><td>الاقتراحات (اقبل/ارفض)، آخر مهمة يومية، عدد المسودات المفتوحة.</td></tr>
+      <tr><td>كشّاف الأدوات</td><td>الأدوات، القدرة، التثبيت، الثقة، الاستخدام، الحالة، والأزرار: ثقة، افحص، وافق، ثبّت، أزل التثبيت، احظر.</td></tr>
+    </table></div>
+    <h3>شريط «اسأل TIDOS» والبحث</h3>
+    <p><b>اسأل</b>: سؤال بلغتك العادية (مثل «أي مشروع يفشل أكثر ولماذا؟»). يُبنى ملخص منقّى من آخر 30 يومًا ويُرسل لنموذج رخيص دون أي أدوات (بحد 0.05$)، ويجيب بالعربية إذا كانت الواجهة بالعربية. سؤالك لا يُسجَّل. <b>بحث</b>: كلمات في المهام وخطط العمل والذاكرة والتقييمات والاقتراحات، والنقر على نتيجة يفتح التبويب المناسب.</p>
+    <h3>مفاتيح الإيقاف</h3>
+    <div class="table-wrap"><table>
+      <tr><th>المفتاح</th><th>الافتراضي</th><th>عمله</th></tr>
+      <tr><td><code>tracing</code></td><td>مفعّل</td><td>تسجيل جلسات Claude Code في الدماغ.</td></tr>
+      <tr><td><code>auto_update</code></td><td>مفعّل</td><td>فحص التحديثات عند START TIDOS (التثبيت بموافقتك فقط).</td></tr>
+      <tr><td><code>auto_summarize</code></td><td>مفعّل</td><td>نصائح النموذج الرخيص بعد الجلسات القوية.</td></tr>
+      <tr><td><code>ask_llm</code></td><td>مفعّل</td><td>«اسأل TIDOS» يستخدم نموذجًا؛ عند الإيقاف: حقائق محلية فقط.</td></tr>
+      <tr><td><code>tool_install</code></td><td>متوقف</td><td>السماح بتثبيت الأدوات الموافق عليها.</td></tr>
+      <tr><td><code>factory_sync</code> / <code>community_sync</code></td><td>مفعّل</td><td>مصنع الشخصيات ومزامنة المجتمع (عبر فروع وطلبات دمج).</td></tr>
+      <tr><td><code>auth_gate</code> / <code>gptid</code></td><td>متوقف</td><td>تسجيل Google عند START TIDOS / وسيط ChatGPT التجريبي.</td></tr>
+    </table></div>
+  </section>
+
+  <section id="daily">
+    <h2><span class="n">11</span>الاستخدام اليومي</h2>
+    <h3>أ) مع Claude أو نموذج قوي</h3>
+    <ol class="steps">
+      <li>افتح مشروعك في Claude Code واكتب <code>START TIDOS</code>. سيظهر «mode: learn».</li>
+      <li>اعمل كالعادة. اطلب تشغيل الفحوص الحقيقية قبل إنهاء أي مهمة.</li>
+      <li>إن أخطأ النموذج، صحّحه بوضوح. تصحيحاتك المتكررة تصبح قواعد دائمة.</li>
+      <li>للمهام الكبيرة: <code>/tidos وصف المهمة</code> ← خطة (المعماري) ← تنفيذ ← تحقق (المختبِر) ← مراجعة ← ملاحظة تعلّم ← تقرير.</li>
+    </ol>
+    <h3>ب) مع نموذج مجاني أو ضعيف (مثل OpenCode)</h3>
+    <ol class="steps">
+      <li>في مشروعك، اكتب <code>START TIDOS</code>. سيظهر «mode: guide» مع الموجز.</li>
+      <li>اطلب مهمة واحدة واضحة في كل مرة. TIDOS يعطي النموذج الخطوة الأولى والفحوص.</li>
+      <li>إن توقّف النموذج بعد 3 أخطاء متطابقة، انتقل لهذه الخطوة إلى نموذج قوي، ثم ارجع.</li>
+      <li>لا تقبل «انتهيت» دون مخرجات فحص.</li>
+    </ol>
+    <h3>ج) أسبوعيًا</h3>
+    <ul>
+      <li>افتح <code>/TIDOSZIT</code>: اقرأ الإشعارات، اقبل أو ارفض الاقتراحات، راجع المسودات المفتوحة.</li>
+      <li>شغّل <code>python scripts/daily_quest.py</code> (أو جدوله يوميًا).</li>
+      <li>انسخ الدماغ احتياطيًا من تبويب الأمان.</li>
+      <li>أوقف خطط العمل الضارة أو القديمة من تبويب «خطط العمل».</li>
+    </ul>
+  </section>
+
+  <section id="commands">
+    <h2><span class="n">12</span>مرجع الأوامر</h2>
+    <p>من داخل مجلد TIDOS (على Windows استعمل <code>python -I</code> كما هو مكتوب):</p>
+<pre><code># البداية والحالة
+START TIDOS                                     # في محادثة أي أداة
+python -I tidos_learn/__main__.py status        # نافذة الحالة في الطرفية
+/TIDOSZIT                                       # مركز التحكم (Claude Code)
+.\scripts\tidoszit.ps1 -Stop                    # إيقاف مركز التحكم
+
+# التعلّم
+python -I tidos_learn/__main__.py distill       # تحديث التعلّم (استيراد + تقطير + XP)
+python -I tidos_learn/__main__.py note --project NAME "نصيحة"
+python -I tidos_learn/__main__.py proposals --add "عنوان"   # --accept/--reject ID
+python -I tidos_learn/__main__.py dataset       # تصدير عملك المُتحقَّق منه (JSONL)
+
+# التوجيه والمراجعة
+python -I tidos_session/__main__.py guide "طلبك"            # التوجيه لطلب واحد
+python -I tidos_session/__main__.py review --with claude:haiku   # رأي ثانٍ من نموذج آخر
+
+# التطوّر والاختبار
+python scripts/daily_quest.py
+python scripts/self_improve.py
+python -I tidos_evals/__main__.py run --agent opencode:opencode/big-pickle --tidos compare
+
+# الأدوات
+python -I tidos_scout/__main__.py needs --project PATH --trust
+python -I tidos_scout/__main__.py install NAME --yes        # بعد الموافقة + مفتاح tool_install
+
+# الدماغ
+python -I tidos_brain/__main__.py backup        # --list للعرض
+python -I tidos_brain/__main__.py restore NAME --yes
+python -I tidos_brain/__main__.py install-hooks</code></pre>
+  </section>
+
+  <section id="safety">
+    <h2><span class="n">13</span>الأمان والخصوصية</h2>
+    <ul>
+      <li><b>كلمة مرور التحكم</b> تُكتب في المتصفح فقط، وإن كتبتها في محادثة أو طرفية، غيّرها فورًا من تبويب الأمان.</li>
+      <li>مركز التحكم يعمل على <code>127.0.0.1</code> فقط، مع حماية من CSRF وإعادة ربط DNS وسياسة أمان محتوى صارمة.</li>
+      <li>المعرفة الخاصة لا تدخل المستودع العام؛ وبوابة المساهمات في CI ترفض أي مسودة خاصة أو أسرار.</li>
+      <li>التحديث لا يُثبَّت إلا بموافقتك، ولا يحذف ملفاتك أبدًا.</li>
+      <li>التطوير الذاتي يعمل على فروع منفصلة، ولا يرفع ولا يدمج.</li>
+      <li>لا يُعدِّل TIDOS إعدادات Claude Code أو ينشر إلى Firebase أو يرفع إلى GitHub من تلقاء نفسه، ولا يغيّر مفاتيح الإيقاف.</li>
+    </ul>
+  </section>
+
+  <section id="tips">
+    <h2><span class="n">14</span>نصائح لتسريع التعلّم</h2>
+    <ul>
+      <li>اجعل لكل مشروع أمر فحص واضحًا (اختبارات، lint، بناء)، فهو مصدر الأدلة الأهم.</li>
+      <li>اكتب طلبات واضحة تبدأ بفعل («أصلح»، «أضف»، «راجع»)، فيُحسِن TIDOS تصنيفها.</li>
+      <li>صحّح بجمل محددة وكرّرها عند الحاجة، فتتحوّل إلى قواعد دائمة.</li>
+      <li>استخدم النماذج القوية للمهام الجديدة والصعبة، والضعيفة للمهام المتكررة التي لها خطط عمل.</li>
+      <li>كل خطأ حقيقي يُصلح يمكن تحويله إلى زنزانة جديدة: <code>tidos_evals new --suite S --name N --source PATH</code>.</li>
+      <li>راجع المسودات وفعّل الجيد منها: هكذا تكبر مهارات TIDOS بشكل دائم.</li>
+    </ul>
+  </section>
+
+  </main>
+</div>
+
+<footer>TIDOS v5.1 · هذا الدليل جزء من المستودع: <code>docs/TIDOS_GUIDE_AR.html</code></footer>
+<button class="theme" id="theme" type="button">تبديل المظهر</button>
+<script>
+  (function () {
+    var root = document.documentElement, key = "tidos-guide-theme";
+    try { var saved = localStorage.getItem(key); if (saved) root.setAttribute("data-theme", saved); } catch (e) {}
+    document.getElementById("theme").addEventListener("click", function () {
+      var dark = root.getAttribute("data-theme") ? root.getAttribute("data-theme") === "dark"
+        : matchMedia("(prefers-color-scheme: dark)").matches;
+      var next = dark ? "light" : "dark";
+      root.setAttribute("data-theme", next);
+      try { localStorage.setItem(key, next); } catch (e) {}
+    });
+  })();
+</script>
+</body>
+</html>
