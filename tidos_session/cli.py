@@ -160,7 +160,7 @@ def main(argv=None):
             pass
     parser = argparse.ArgumentParser(prog="tidos_session")
     parser.add_argument("--version", action="version", version=version())
-    sub =parser.add_subparsers(dest="command", required=True)
+    sub = parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("start")
     p.add_argument("--tool", default="auto")
     p.add_argument("--model", default="auto")
