@@ -78,7 +78,8 @@ _NIX_USER_PATH = re.compile(r"/(?:home/([^/\s\"'<>]+)|Users/([^/\"'<>|*?\r\n]+))
 _EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 _IPV4 = re.compile(r"(?<![\w.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\w.])")
 
-_SAFE_USERS = {"<user>", "user", "username", "public", "default", "you", "me", "shared"}
+_SAFE_USERS = {"<user>", "user", "username", "public", "default", "you", "me", "shared",
+               "runner", "runneradmin"}  # CI service accounts (GitHub Actions): not personal, and "runner" is a common word
 _SAFE_EMAIL_DOMAINS = ("example.com", "example.org", "anthropic.com", "users.noreply.github.com",
                        "noreply.github.com")
 
