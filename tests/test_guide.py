@@ -93,6 +93,50 @@ class GuideTests(unittest.TestCase):
         self.assertEqual(fail("flutter analyze")[2], 0)   # a different command breaks the streak
 
 
+class EnforcementTests(GuideTests):
+    def _ev(self, conn, event, tool=None, summary=None, err=0):
+        conn.execute("INSERT INTO live_events (ts, session_id, event, tool, summary, is_error) VALUES "
+                     "('t','s1',?,?,?,?)", (event, tool, summary, err))
+
+    def _hook(self, conn, event, **extra):
+        return guide.hook_feedback(dict({"hook_event_name": event, "session_id": "s1", "cwd": self.project}, **extra), conn)
+
+    def test_read_before_edit(self):
+        conn = db.connect(":memory:")
+        self._session("guide")
+        self._ev(conn, "UserPromptSubmit", summary="fix the bug")
+        self.assertEqual(self._hook(conn, "PreToolUse", tool_name="Edit")[2], 2)
+        self.assertEqual(self._hook(conn, "PreToolUse", tool_name="Read")[2], 0)    # only edits are gated
+        self._ev(conn, "PostToolUse", "Read", "lib/a.dart")
+        self.assertEqual(self._hook(conn, "PreToolUse", tool_name="Edit")[2], 0)
+        self._ev(conn, "UserPromptSubmit", summary="next request")                 # new request: read again
+        self.assertEqual(self._hook(conn, "PreToolUse", tool_name="Write")[2], 2)
+
+    def test_no_done_without_a_passing_check(self):
+        conn = db.connect(":memory:")
+        self._session("guide")
+        self._ev(conn, "UserPromptSubmit", summary="fix")
+        self.assertEqual(self._hook(conn, "Stop")[2], 0)                           # nothing changed: may stop
+        self._ev(conn, "PostToolUse", "Read", "lib/a.dart")
+        self._ev(conn, "PostToolUse", "Edit", "lib/a.dart")
+        out, err, code = self._hook(conn, "Stop")
+        self.assertEqual(code, 2)
+        self.assertIn("UNVERIFIED", err)
+        self.assertEqual(self._hook(conn, "Stop", stop_hook_active=True)[2], 0)    # never loops
+        self._ev(conn, "PostToolUse", "Bash", "flutter test", err=1)
+        self.assertEqual(self._hook(conn, "Stop")[2], 2)                           # failing check is not enough
+        self._ev(conn, "PostToolUse", "Bash", "flutter test", err=0)
+        self.assertEqual(self._hook(conn, "Stop")[2], 0)
+
+    def test_learn_mode_is_never_gated(self):
+        conn = db.connect(":memory:")
+        self._session("learn")
+        self._ev(conn, "UserPromptSubmit", summary="fix")
+        self._ev(conn, "PostToolUse", "Edit", "lib/a.dart")
+        self.assertEqual(self._hook(conn, "PreToolUse", tool_name="Edit")[2], 0)
+        self.assertEqual(self._hook(conn, "Stop")[2], 0)
+
+
 class EffectTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

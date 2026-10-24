@@ -60,6 +60,32 @@ STUCK_MESSAGE = ("TIDOS: the same check failed %d times in a row (`%s`). STOP ch
                  "tried and the exact error, and suggest switching to a stronger model for this step.")
 
 
+EDIT_TOOLS = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
+GROUND_MESSAGE = ("TIDOS: read the file(s) you are about to change first (and search for related code). "
+                  "Never edit from memory or guesswork.")
+VERIFY_MESSAGE = ("TIDOS: you changed code but no check has passed since your last edit. Run the project's checks "
+                  "now and show the output. If no check exists or it cannot run, say clearly that the change is "
+                  "UNVERIFIED and tell the user how to check it.")
+
+
+def _kind(tool):
+    from tidos_brain import scoring
+    return scoring.tool_kind(tool or "")
+
+
+def _is_check(summary):
+    from tidos_brain import scoring
+    return scoring.is_verify_command(summary)
+
+
+def _since_last_prompt(conn, session_id):
+    """Live events of this session since the user's last request."""
+    last = conn.execute("SELECT MAX(id) FROM live_events WHERE session_id = ? AND event = 'UserPromptSubmit'",
+                        (session_id,)).fetchone()[0] or 0
+    return conn.execute("SELECT id, event, tool, summary, is_error FROM live_events WHERE session_id = ? AND id > ? "
+                        "ORDER BY id", (session_id, last)).fetchall()
+
+
 def _active_guide_session(cwd):
     """The current START TIDOS session if it is in GUIDE mode and this hook comes from its project."""
     import json
@@ -87,6 +113,18 @@ def hook_feedback(payload, conn):
     event = payload.get("hook_event_name")
     if event == "UserPromptSubmit" and payload.get("prompt"):
         return guidance(payload["prompt"], session["project"])[1], "", 0
+    if event == "PreToolUse" and payload.get("tool_name") in EDIT_TOOLS:
+        recent = _since_last_prompt(conn, payload.get("session_id"))
+        if not any(r["event"] == "PostToolUse" and _kind(r["tool"]) in ("read", "search") for r in recent):
+            return "", GROUND_MESSAGE, 2
+    if event == "Stop" and not payload.get("stop_hook_active"):
+        recent = _since_last_prompt(conn, payload.get("session_id"))
+        edits = [r["id"] for r in recent if r["event"] == "PostToolUse" and _kind(r["tool"]) == "edit"]
+        if edits:
+            passed = [r for r in recent if r["id"] > edits[-1] and r["event"] == "PostToolUse"
+                      and _kind(r["tool"]) == "exec" and _is_check(r["summary"]) and not r["is_error"]]
+            if not passed:
+                return "", VERIFY_MESSAGE, 2
     if event == "PostToolUse":
         rows = conn.execute("SELECT tool, summary, is_error FROM live_events WHERE session_id = ? AND event = "
                             "'PostToolUse' ORDER BY id DESC LIMIT ?", (payload.get("session_id"), STUCK_REPEAT)).fetchall()

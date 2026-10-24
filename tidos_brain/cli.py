@@ -16,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 
 from . import claude_code, db, opencode
 
-HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PostToolUse", "Stop", "SessionEnd")
+HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop", "SessionEnd")
 HOOK_MARKER = "tidos_brain"
 
 
@@ -127,6 +127,8 @@ def cmd_install_hooks(args):
             group = {"hooks": [{"type": "command", "command": _hook_command(), "timeout": 10}]}
             if event == "PostToolUse":
                 group = {"matcher": "*", **group}
+            elif event == "PreToolUse":  # GUIDE mode: read before edit
+                group = {"matcher": "Edit|Write|MultiEdit|NotebookEdit", **group}
             groups.append(group)
         if groups:
             hooks[event] = groups
