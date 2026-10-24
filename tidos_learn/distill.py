@@ -154,7 +154,14 @@ def _render(scope, ttype, stack_list, examples, failures, project=None):
     reads, edits, checks, check_pass, pitfalls = _summarize(examples, failures, cwd_paths=project is not None)
     verified = sum(1 for t in examples if t["verify_passed"] == 1)
     strong = sum(1 for t in examples if t["strong"])
-    confidence = round(min(1.0, 0.4 + 0.4 * verified / len(examples) + 0.2 * strong / len(examples)), 2)
+    confidence = min(1.0, 0.4 + 0.4 * verified / len(examples) + 0.2 * strong / len(examples))
+    # decay: evidence older than 30 days counts less (projects change); at most halved
+    newest = max((t["started_at"] or "") for t in examples)[:10]
+    try:
+        age = (datetime.now(timezone.utc).date() - datetime.fromisoformat(newest).date()).days
+    except ValueError:
+        age = 0
+    confidence = round(confidence * max(0.5, 1 - max(0, age - 30) / 365), 2)
     models = sorted({t["model"] for t in examples if t["model"]})
     sample = sorted({_short(t["prompt"], 120) for t in examples if t["prompt"] and len(t["prompt"]) > 15},
                     key=len, reverse=True)[:3]
@@ -180,7 +187,7 @@ def _render(scope, ttype, stack_list, examples, failures, project=None):
         "---", GENERATED_MARK, "type: %s" % ttype, "stack: %s" % ", ".join(stack_list),
         "project: %s" % (project or "any"), "confidence: %s" % confidence,
         "evidence: %d tasks (%d verified, %d by strong models)" % (len(examples), verified, strong),
-        "models: %s" % ", ".join(models), "updated: %s" % datetime.now(timezone.utc).date().isoformat(), "---",
+        "models: %s" % ", ".join(models), "newest_evidence: %s" % (newest or "?"), "updated: %s" % datetime.now(timezone.utc).date().isoformat(), "---",
         "# %s: %s%s" % (ttype, scope, " (%s)" % ", ".join(stack_list) if project else ""),
         "", "## How it was done (learned from %d successful tasks, ~%d tool steps each)" % (len(examples), avg_calls),
     ]

@@ -66,7 +66,7 @@
     <button class="tab" data-view="live">Live Monitor</button>
     <button class="tab" data-view="security">Security</button>
     <button class="tab" data-view="dungeons">Dungeons</button>
-    <button class="tab locked" title="Unlocks in Phase 5 — Distillation">🔒 Playbooks</button>
+    <button class="tab" data-view="playbooks">Playbooks</button>
     <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
     <button class="tab locked" title="Unlocks in Phase 9 — Auto-learn">🔒 Memory</button>
     <button class="tab locked" title="Unlocks in Phase 10 — Auto-develop">🔒 Evolution</button>
@@ -131,6 +131,22 @@
         <p class="small faint note">Run a raid from a terminal:
           <code class="sys">python -I tidos_evals/__main__.py run --agent claude:haiku --tidos both</code> ·
           free models: <code class="sys">--agent opencode:opencode/glm-5.3-flash-free</code></p>
+      </div>
+    </div>
+
+    <!-- PLAYBOOKS -->
+    <div id="view-playbooks" class="grid g-2 hidden">
+      <div class="window">
+        <h2>Playbook Library — what TIDOS learned</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Project</th><th>Type</th><th>Rank</th><th>Conf.</th><th>Evidence</th><th>Served</th><th>On</th></tr></thead>
+          <tbody id="pbList"></tbody>
+        </table></div>
+        <p class="small faint note" id="pbMeta"></p>
+      </div>
+      <div class="window">
+        <h2 id="pbTitle">Select a playbook</h2>
+        <pre class="console pb-view" id="pbView"></pre>
       </div>
     </div>
 

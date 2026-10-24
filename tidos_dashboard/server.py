@@ -151,6 +151,11 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
             if path == "/api/dungeons":
                 return self._json(200, stats.dungeons(conn))
+            if path == "/api/playbooks":
+                return self._json(200, stats.playbooks(conn))
+            if path == "/api/playbook":
+                text = stats.playbook_text((query.get("path") or [""])[0])
+                return self._json(200, {"text": text}) if text is not None else self._json(404, {"error": "not found"})
             if path == "/api/security":
                 db_file = self.server.db_path or db.default_path()
                 return self._json(200, {"log": stats.security_log(conn), "switches": control.describe(),
@@ -225,6 +230,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/auth/google": self._auth_google, "/api/auth/password": self._auth_password,
             "/api/auth/setup": self._auth_setup, "/api/auth/logout": self._auth_logout,
             "/api/auth/change": self._auth_change, "/api/switches": self._switches,
+            "/api/playbooks/toggle": self._playbook_toggle,
         }
         handler = routes.get(urlparse(self.path).path)
         if not handler:
@@ -309,6 +315,18 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": problem})
         self.server.fb.set_password_doc(self.server.cfg, session["id_token"], auth.hash_password(new))
         self.server.lockout.log("password_changed", session["email"])
+        return self._json(200, {"ok": True})
+
+    def _playbook_toggle(self, body):
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        from tidos_session import pbstate
+        relpath = str(body.get("path") or "")
+        if stats.playbook_text(relpath) is None:
+            return self._json(400, {"error": "unknown playbook"})
+        pbstate.set_disabled(relpath, bool(body.get("disabled")))
+        self.server.lockout.log("playbook", "%s %s" % ("disabled" if body.get("disabled") else "enabled", relpath))
         return self._json(200, {"ok": True})
 
     def _switches(self, body):

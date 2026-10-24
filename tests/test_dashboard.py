@@ -166,6 +166,28 @@ class DashboardTests(unittest.TestCase):
         self.req("POST", "/api/auth/logout", {})
         self.assertEqual(self.req("GET", "/api/status")[0], 401)
 
+    def test_playbook_library(self):
+        home = os.path.join(self.tmp.name, "tidoshome")
+        with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):
+            pb = os.path.join(home, "playbooks", "app", "bugfix.md")
+            os.makedirs(os.path.dirname(pb))
+            with open(pb, "w", encoding="utf-8") as f:
+                f.write("---\ntype: bugfix\nstack: python\nproject: APP\nconfidence: 0.8\n---\n# body\n")
+            with open(os.path.join(home, "secret.txt"), "w") as f:
+                f.write("x")
+            self.assertEqual(self.req("GET", "/api/playbooks")[0], 401)
+            self.assertEqual(self.req("POST", "/api/playbooks/toggle", {"path": "app/bugfix.md", "disabled": True})[0], 401)
+            self.login_with_setup()
+            status, body, _ = self.req("GET", "/api/playbooks")
+            self.assertEqual([(p["path"], p["project"], p["disabled"]) for p in body["playbooks"]],
+                             [("app/bugfix.md", "APP", False)])
+            self.assertIn("# body", self.req("GET", "/api/playbook?path=app/bugfix.md")[1]["text"])
+            for bad in ("../secret.txt", "..%2Fsecret.txt", "app/../../secret.txt"):
+                self.assertEqual(self.req("GET", "/api/playbook?path=" + bad)[0], 404, bad)
+            self.assertEqual(self.req("POST", "/api/playbooks/toggle", {"path": "../secret.txt", "disabled": True})[0], 400)
+            self.assertEqual(self.req("POST", "/api/playbooks/toggle", {"path": "app/bugfix.md", "disabled": True})[0], 200)
+            self.assertTrue(self.req("GET", "/api/playbooks")[1]["playbooks"][0]["disabled"])
+
     def test_session_expiry(self):
         now = [1000.0]
         sessions = auth.Sessions(clock=lambda: now[0])

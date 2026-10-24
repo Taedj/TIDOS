@@ -139,9 +139,10 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
     if (tab.dataset.view === "live") loadLive();
     if (tab.dataset.view === "dungeons") loadDungeons();
+    if (tab.dataset.view === "playbooks") loadPlaybooks();
     if (tab.dataset.view === "security") loadSecurity();
   }));
 document.querySelectorAll(".tab.locked").forEach((tab) =>
@@ -272,6 +273,37 @@ async function loadDungeons() {
     <tr><td><span class="rank ${esc(t.difficulty)}">${esc(t.difficulty)}</span> <span title="${esc(t.title)}">${esc(t.id)}</span></td>
     ${d.columns.map((c) => { const x = d.cells[t.id + "|" + c];
       return `<td>${!x ? '<span class="cell none">·</span>' : x.passed ? `<span class="cell ok" title="${x.seconds}s">✓</span>` : `<span class="cell bad" title="${esc(x.error || "failed")}">✗</span>`}</td>`; }).join("")}</tr>`).join("");
+}
+
+// ---- playbooks
+async function showPlaybook(path) {
+  const r = await api("/api/playbook?path=" + encodeURIComponent(path));
+  $("pbTitle").textContent = path;
+  $("pbView").textContent = r.ok ? r.data.text : "Not found.";
+  document.querySelectorAll("#pbList tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.path === path));
+}
+
+async function loadPlaybooks() {
+  const r = await api("/api/playbooks");
+  if (!r.ok) return;
+  const items = r.data.playbooks;
+  $("pbList").innerHTML = items.map((p) => `
+    <tr data-path="${esc(p.path)}" class="${p.disabled ? "off" : ""}">
+      <td>${esc(p.project)}</td><td>${esc(p.type)}</td>
+      <td>${/^[EDCBAS]$/.test(p.rank) ? `<span class="rank ${esc(p.rank)}">${esc(p.rank)}</span>` : `<span class="pill">${esc(p.rank)}</span>`}</td>
+      <td>${esc(p.confidence)}</td><td class="small">${esc(p.evidence)}</td>
+      <td>${p.served ? `${p.served}x` : '<span class="faint">0</span>'}</td>
+      <td><button class="toggle ${p.disabled ? "" : "on"}" data-path="${esc(p.path)}" aria-label="toggle playbook"></button></td></tr>`).join("")
+    || `<tr><td colspan="7" class="muted">Nothing learned yet. Work with a strong model, then START TIDOS.</td></tr>`;
+  $("pbMeta").textContent = `${items.length} playbooks in ${r.data.dir} · served = times a GUIDE brief gave it to a weaker model · switched off = never served.`;
+  $("pbList").querySelectorAll("tr[data-path]").forEach((tr) => tr.addEventListener("click", (ev) => {
+    if (!ev.target.classList.contains("toggle")) showPlaybook(tr.dataset.path);
+  }));
+  $("pbList").querySelectorAll(".toggle").forEach((btn) => btn.addEventListener("click", async () => {
+    const disabled = btn.classList.contains("on");
+    const res = await api("/api/playbooks/toggle", { path: btn.dataset.path, disabled });
+    if (res.ok) { toast(`<b>[SYSTEM]</b> Playbook ${disabled ? "switched off" : "switched on"}.`); loadPlaybooks(); }
+  }));
 }
 
 // ---- security

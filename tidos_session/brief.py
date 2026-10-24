@@ -11,6 +11,7 @@ import glob
 import os
 import re
 
+from . import pbstate
 from .detect import tidos_home
 
 GUIDE_LIMIT = 4096
@@ -43,7 +44,7 @@ def _compact(text):
     return body.strip()
 
 
-def _playbooks(stack, project=None, limit=3):
+def _playbooks(stack, project=None, limit=3, with_paths=False):
     """Playbooks learned from earlier sessions: this project's first, then same-stack general ones."""
     found = []
     wanted = {s.lower() for s in stack}
@@ -53,6 +54,8 @@ def _playbooks(stack, project=None, limit=3):
                 text = f.read()
         except OSError:
             continue
+        if pbstate.is_disabled(path):
+            continue  # turned off by the user in /TIDOSZIT
         tags = {t.strip().lower() for t in _front(text, "stack").split(",") if t.strip()}
         same_project = bool(project) and _front(text, "project").lower() == project.lower()
         overlap = len(tags & wanted)
@@ -66,9 +69,9 @@ def _playbooks(stack, project=None, limit=3):
         score = (3 if same_project else 0) + overlap + confidence + (2 if kind == "notes" and same_project else 0) \
             + (0.5 if kind in ("bugfix", "feature") else 0)
         name = "%s / %s" % (_front(text, "project") or "any", kind or os.path.basename(path)[:-3])
-        found.append((score, name, _compact(text)))
+        found.append((score, name, _compact(text), path))
     found.sort(key=lambda x: -x[0])
-    return found[:limit]
+    return found[:limit] if with_paths else [f[:3] for f in found[:limit]]
 
 
 def _cap(text, limit):
@@ -105,7 +108,10 @@ def guide_brief(session, facts):
     checks = "\n".join("- `%s`" % c for c in facts["checks"]) or \
         "- No test command detected: ask the user how they check this project, or write a small check script."
     notes = "".join("- %s\n" % n for n in facts["notes"])
-    playbooks = _playbooks(facts["stack"], facts["name"], limit=2)
+    selected = _playbooks(facts["stack"], facts["name"], limit=2, with_paths=True)
+    if selected:
+        pbstate.record_served([p for *_, p in selected])
+    playbooks = [s[:3] for s in selected]
     if playbooks:
         pb_text = "\n\n".join("### %s\n%s" % (name, _cap(body, PLAYBOOK_LIMIT))
                               for _, name, body in playbooks).replace("\n# ", "\n#### ")

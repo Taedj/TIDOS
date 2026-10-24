@@ -4,6 +4,7 @@ Provisional until Phase 9 (eval-gated XP engine). Per task:
   success +20, unknown +5, failure -10, last verify passed +5, corrected by user -5
 Level n needs 100 * (n-1)^1.5 XP. Ranks: E 1-4, D 5-9, C 10-19, B 20-34, A 35-49, S 50+.
 """
+import os
 from datetime import datetime, timedelta, timezone
 
 RANKS = [(50, "S"), (35, "A"), (20, "B"), (10, "C"), (5, "D"), (1, "E")]
@@ -164,6 +165,44 @@ def dungeons(conn):
     columns.sort(key=lambda c: (c.split("|")[0], c.split("|")[1]))
     last = conn.execute("SELECT MAX(run_at) FROM evals").fetchone()[0]
     return {"tasks": tasks, "columns": columns, "cells": cells, "leaderboard": leaderboard, "last_run": last}
+
+
+def playbooks(conn):
+    """Playbook Library: every learned playbook + notes, with rank, served counts and disabled flag."""
+    import glob
+    import re as _re
+    from tidos_session import pbstate
+
+    state = pbstate.load()
+    ranks = {r["path"]: r["rank"] for r in conn.execute("SELECT path, rank FROM playbooks")}
+    items = []
+    base = pbstate.playbooks_dir()
+    for path in sorted(glob.glob(os.path.join(base, "**", "*.md"), recursive=True)):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                text = f.read(1500)
+        except OSError:
+            continue
+        front = dict(_re.findall(r"^(\w+):\s*(.+)$", text.split("\n---", 1)[0], _re.M))
+        rel = pbstate.rel(path)
+        served = state["served"].get(rel, {})
+        items.append({"path": rel, "project": front.get("project", "?"), "type": front.get("type", "?"),
+                      "stack": front.get("stack", ""), "confidence": front.get("confidence", ""),
+                      "evidence": front.get("evidence", ""), "rank": ranks.get(path, "notes" if front.get("type") == "notes" else "-"),
+                      "served": served.get("n", 0), "last_served": served.get("last"),
+                      "disabled": rel in state["disabled"]})
+    items.sort(key=lambda i: (i["project"] == "any", i["project"], i["type"]))
+    return {"playbooks": items, "dir": "~/.tidos/playbooks"}
+
+
+def playbook_text(relpath):
+    from tidos_session import pbstate
+    base = os.path.realpath(pbstate.playbooks_dir())
+    full = os.path.realpath(os.path.join(base, relpath))
+    if not full.startswith(base + os.sep) or not full.endswith(".md") or not os.path.isfile(full):
+        return None
+    with open(full, "r", encoding="utf-8") as f:
+        return f.read()
 
 
 def security_log(conn, limit=50):

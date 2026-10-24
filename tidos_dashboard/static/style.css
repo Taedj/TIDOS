@@ -221,3 +221,9 @@ td.prompt { max-width: 520px; overflow: hidden; text-overflow: ellipsis; white-s
 .cell.none { color: var(--faint); }
 .lift-up { color: var(--ok); font-weight: 700; } .lift-down { color: var(--bad); font-weight: 700; }
 code.sys { background: rgba(0,0,0,.35); padding: 1px 6px; border-radius: 3px; font-size: 12px; overflow-wrap: anywhere; }
+
+/* ---- Playbooks -------------------------------------------------------- */
+.pb-view { white-space: pre-wrap; overflow-wrap: anywhere; height: 560px; }
+#pbList tr { cursor: pointer; }
+#pbList tr.sel td { background: rgba(79,176,255,.12); }
+#pbList tr.off td { opacity: .45; }
