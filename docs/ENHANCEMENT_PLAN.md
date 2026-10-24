@@ -12,7 +12,7 @@
 | Phase | Name | Goal | Status |
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
-| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.4 local gitleaks, 1.20 history purge, 1.27 first CI run on push) |
+| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.20 history purge, 1.27 first CI run on push) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.5 Gemini, 2.7 router) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | ✅ Done (15/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
@@ -46,7 +46,7 @@
 - [x] **1.1** `scripts/sanitizer.py:43` — fix `\U` bad-escape crash in `sanitize_text()` (`--sanitize` mode crashes on every input) — done 2026-10-24 (regression test `test_does_not_crash_on_plain_text`; also fixed Windows user names with spaces, e.g. `C:\Users\Dr Jane Doe`)
 - [x] **1.2** `scripts/sanitizer.py:161` — fix `%e` format bug in error handler (use `%s`) — done 2026-10-24
 - [x] **1.3** `scripts/sanitizer.py` — use `ALLOWED_DIRECTORIES`; add path/PII checks to `--check` mode — done 2026-10-24 (dir whitelist on by default, `--any-dir` to scan elsewhere; user paths, e-mails, non-loopback IPs flagged)
-- [ ] **1.4** *(partial: new patterns + false-positive fixes tested; gitleaks layer runs in CI (secrets job) - still not installed on this machine)* Sanitizer detection: integrate **gitleaks** (or trufflehog) as primary scanner; keep regex as fallback; add patterns for `sk-ant-`, `AKIA…`, JWT `eyJ…`, Slack `xox?-`; remove false positives on prose ("Bearer tokens", "password: never hardcode")
+- [x] **1.4** Sanitizer detection: integrate **gitleaks** (or trufflehog) as primary scanner; keep regex as fallback; add patterns for `sk-ant-`, `AKIA…`, JWT `eyJ…`, Slack `xox?-`; remove false positives on prose ("Bearer tokens", "password: never hardcode") — done 2026-10-25 (gitleaks 8.30.1 installed by Tool Scout (verified download); the firewall runs it as its first layer: a planted AWS key is caught by both gitleaks and the regex layer; whole working tree: no leaks (owner UID in firestore.rules allowlisted as an identifier))
 - [x] **1.5** Add `tests/test_sanitizer.py` covering crash, true positives, false positives — done 2026-10-24 (13 tests + 19 subtests pass; full suite 102/102)
 - [x] **1.6** `scripts/update.ps1` / `update.sh` — remove `"."` from candidate paths; refuse to run if the directory is not a genuine TIDOS checkout — done 2026-10-24 (markers: `TIDSTART.md` + `core/kernel.md` + `config/framework.md`; git must be the directory's own top-level, never a parent project)
 - [x] **1.7** `scripts/update.ps1` / `update.sh` — never `git remote set-url`; abort with a clear message if `origin` is not TIDOS (protects forks and user projects) — done 2026-10-24

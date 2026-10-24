@@ -13,4 +13,7 @@ regexes = [
   # Firebase Web SDK apiKey of the tidos-framework project: public by design (shipped in web clients);
   # access is controlled by Firestore rules (firebase/firestore.rules), not by this key.
   '''AIzaSyDzbyda_7ygLaWtqjLZtiHrqSd0b_CYBQk''',
+  # Owner Firebase UID in the security rules: an identifier, not a credential (it grants nothing without
+  # the owner's own Google sign-in). The rules must name it.
+  '''YTU4IuDy3SaGKOPt9E34iSge8Mo1''',
 ]
