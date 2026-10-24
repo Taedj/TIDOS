@@ -13,7 +13,7 @@
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.4 local gitleaks, 1.20 history purge, 1.27 first CI run on push) |
-| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.3 install, 2.5 Gemini, 2.7 router) |
+| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.5 Gemini, 2.7 router) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🟢 Built (13/15) - 3.2 deploy + 3.15 first login need the user |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | ✅ Done (9/9) |
@@ -88,7 +88,7 @@
 
 - [x] **2.1** Design `~/.tidos/brain.db` SQLite schema: `sessions`, `tasks`, `steps`, `tool_calls`, `verifications`, `corrections`, `playbooks`, `facts`, `models`, `evals`, `xp_events`, `security_log` — done 2026-10-24 (`tidos_brain/db.py`, schema v1 via `PRAGMA user_version`; corrections stored as `tasks.corrected`, steps as `tool_calls`; also `live_events` for the Live Monitor; WAL mode for hooks + dashboard)
 - [x] **2.2** Implement `tidos_brain` Python package (stdlib `sqlite3`, migrations, typed API) — done 2026-10-24 (CLI: `hook`, `import-claude`, `stats`, `prune`, `install-hooks`)
-- [ ] **2.3** *(built and tested; install needs the user (Claude Code blocks agents from editing their own settings): python -I tidos_brain/__main__.py install-hooks. START TIDOS already imports transcripts incrementally, so learning works without it; hooks only add the live monitor)* Trace collector — **Claude Code**: `PostToolUse` / `Stop` / `UserPromptSubmit` hooks writing to brain.db
+- [x] **2.3** Trace collector — **Claude Code**: `PostToolUse` / `Stop` / `UserPromptSubmit` hooks writing to brain.db — done 2026-10-24 (installed by the user's request: 6 hooks in ~/.claude/settings.json, backup kept)
 - [x] **2.4** Trace collector — Claude Code transcript importer (`~/.claude/projects/*.jsonl`) — done 2026-10-24 (real history: 11 sessions → 248 tasks in 3.3 s; skips sidechains/injected messages; dedupes split messages; counts cached tokens)
 - [ ] **2.5** *(deferred: Gemini CLI is not installed here and there is no session data to build and test a parser against; user mostly uses Claude Code + OpenCode)* Trace collector — Gemini CLI session logs
 - [x] **2.6** Trace collector — OpenAI Codex / OpenCode session logs — done 2026-10-24 (tidos_brain/opencode.py reads OpenCode's SQLite (session/message/part only, never account/credential tables, read-only), same task scoring as Claude Code; real data: 64 sessions / 1,086 tasks (muse-spark-free, big-pickle...); incremental (unchanged sessions skipped, 0 s); wired into START TIDOS, tidos_learn and the `import-opencode` CLI command; tests/test_opencode.py)
