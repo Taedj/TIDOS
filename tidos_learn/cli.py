@@ -60,6 +60,34 @@ def cmd_note(args):
     return 0
 
 
+def cmd_proposals(args):
+    """Evolution queue: list, add, accept/reject, or draft a GitHub issue for a proposal."""
+    from . import evolve
+    if args.add:
+        item = evolve.add(args.add, args.reason or args.add, args.priority)
+        print("Added proposal #%d" % item["id"])
+        return 0
+    for flag, status in ((args.accept, "accepted"), (args.reject, "rejected")):
+        if flag:
+            evolve.set_status(flag, status)
+            print("Proposal #%d %s" % (flag, status))
+            return 0
+    if args.issue:
+        item = next((i for i in evolve.load() if i["id"] == args.issue), None)
+        if not item:
+            print("No proposal #%d" % args.issue)
+            return 1
+        path, command = evolve.issue_draft(item)
+        print("Issue draft: %s\nTo publish it on GitHub (your decision), run:\n  %s" % (path, command))
+        return 0
+    items = evolve.ranked()
+    for i in items:
+        print("#%-3d %-11s %-6s %s" % (i["id"], i["status"], i["priority"], i["title"][:90]))
+    if not items:
+        print("No proposals yet. Add one with: tidos_learn proposals --add \"title\" --reason \"why\"")
+    return 0
+
+
 def cmd_status(args):
     """TIDOS STATUS - the Solo Leveling status window in the terminal."""
     from tidos_dashboard import stats
@@ -118,6 +146,14 @@ def main(argv=None):
     p.set_defaults(func=cmd_distill)
     sub.add_parser("list").set_defaults(func=cmd_list)
     sub.add_parser("status", help="TIDOS STATUS: level, rank, stats, domains, quests").set_defaults(func=cmd_status)
+    p = sub.add_parser("proposals", help="evolution queue for improving TIDOS itself")
+    p.add_argument("--add", metavar="TITLE")
+    p.add_argument("--reason")
+    p.add_argument("--priority", default="medium", choices=["high", "medium", "low"])
+    p.add_argument("--accept", type=int, metavar="ID")
+    p.add_argument("--reject", type=int, metavar="ID")
+    p.add_argument("--issue", type=int, metavar="ID", help="write a GitHub issue draft + the gh command")
+    p.set_defaults(func=cmd_proposals)
     p = sub.add_parser("show")
     p.add_argument("name")
     p.set_defaults(func=cmd_show)

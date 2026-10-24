@@ -176,12 +176,9 @@ def tool_note(args):
 
 
 def tool_propose(args):
-    path = os.path.join(detect.tidos_home(), "proposals.jsonl")
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
-        f.write(json.dumps({"at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
-                            "title": args["title"][:200], "reason": args["reason"][:2000], "status": "new"}) + "\n")
-    return _text("Proposal recorded for review (not applied).")
+    from tidos_learn import evolve
+    item = evolve.add(args["title"], args["reason"], args.get("priority", "medium"))
+    return _text("Proposal #%d recorded for the user's review (not applied)." % item["id"])
 
 
 HANDLERS = {"tidos_start": tool_start, "tidos_guide": tool_guide, "tidos_verify": tool_verify,
