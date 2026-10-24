@@ -13,7 +13,7 @@
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🔄 In progress (8/29) |
-| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | ⬜ Not started |
+| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | ⬜ Not started |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | ⬜ Not started |
 | 5 | Learn from Strong Models (Distillation) | Turn strong-model traces into playbooks | ⬜ Not started |
@@ -85,17 +85,17 @@
 
 ## Phase 2 — Brain & Traces (foundation for learning + dashboard)
 
-- [ ] **2.1** Design `~/.tidos/brain.db` SQLite schema: `sessions`, `tasks`, `steps`, `tool_calls`, `verifications`, `corrections`, `playbooks`, `facts`, `models`, `evals`, `xp_events`, `security_log`
-- [ ] **2.2** Implement `tidos_brain` Python package (stdlib `sqlite3`, migrations, typed API)
-- [ ] **2.3** Trace collector — **Claude Code**: `PostToolUse` / `Stop` / `UserPromptSubmit` hooks writing to brain.db
-- [ ] **2.4** Trace collector — Claude Code transcript importer (`~/.claude/projects/*.jsonl`)
+- [x] **2.1** Design `~/.tidos/brain.db` SQLite schema: `sessions`, `tasks`, `steps`, `tool_calls`, `verifications`, `corrections`, `playbooks`, `facts`, `models`, `evals`, `xp_events`, `security_log` — done 2026-10-24 (`tidos_brain/db.py`, schema v1 via `PRAGMA user_version`; corrections stored as `tasks.corrected`, steps as `tool_calls`; also `live_events` for the Live Monitor; WAL mode for hooks + dashboard)
+- [x] **2.2** Implement `tidos_brain` Python package (stdlib `sqlite3`, migrations, typed API) — done 2026-10-24 (CLI: `hook`, `import-claude`, `stats`, `prune`, `install-hooks`)
+- [ ] **2.3** *(partial 2026-10-24: hook handler + safe installer built and tested — PostToolUse ~300 ms, Stop returns in ~480 ms with background import, never prints or fails; installer keeps existing hooks, backs up settings, `--uninstall` restores. **Waiting for user approval to install into `~/.claude/settings.json`.**)* Trace collector — **Claude Code**: `PostToolUse` / `Stop` / `UserPromptSubmit` hooks writing to brain.db
+- [x] **2.4** Trace collector — Claude Code transcript importer (`~/.claude/projects/*.jsonl`) — done 2026-10-24 (real history: 11 sessions → 248 tasks in 3.3 s; skips sidechains/injected messages; dedupes split messages; counts cached tokens)
 - [ ] **2.5** Trace collector — Gemini CLI session logs
 - [ ] **2.6** Trace collector — OpenAI Codex / OpenCode session logs
 - [ ] **2.7** Trace collector — API router (LiteLLM proxy) for Grok / OpenRouter / Ollama requests
-- [ ] **2.8** Outcome scoring: verify-pass, user-accepted, retries, reverts, user corrections → `task.score`
-- [ ] **2.9** Privacy: sanitizer runs on every trace before storage; secrets never stored
-- [ ] **2.10** Retention & size limits (rotate/compact old traces)
-- [ ] **2.11** Tests for brain package and collectors
+- [x] **2.8** Outcome scoring: verify-pass, user-accepted, retries, reverts, user corrections → `task.score` — done 2026-10-24 (v1 heuristics in `tidos_brain/scoring.py`: tests/lint/build detection, pass/fail parsing, EN+FR correction detection, tool errors; first run on real history: 56 success / 25 failure / 167 unknown)
+- [x] **2.9** Privacy: sanitizer runs on every trace before storage; secrets never stored — done 2026-10-24 (scan of the real import: **0 leaks**; sanitizer extended to redact this machine's user name in every spelling — spaces, dashes, Claude's `C--Users-…` encoding, 8.3 short name; home-folder sessions stored as project `~`)
+- [x] **2.10** Retention & size limits (rotate/compact old traces) — done 2026-10-24 (`prune --live-days 14 --session-days N` + VACUUM; tested)
+- [x] **2.11** Tests for brain package and collectors — done 2026-10-24 (`tests/test_brain.py`; full suite 116 passed, 23 subtests)
 
 ---
 

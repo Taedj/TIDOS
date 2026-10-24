@@ -3,6 +3,7 @@ import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "scripts"))
 import sanitizer  # noqa: E402
@@ -44,6 +45,19 @@ class SanitizeTextTests(unittest.TestCase):
 
     def test_redacts_unix_home_path(self):
         self.assertIn("/home/<USER>", sanitizer.sanitize_text("/home/alice/code"))
+
+    def test_redacts_git_bash_path_with_spaces(self):
+        self.assertEqual(sanitizer.sanitize_text('cd "/c/Users/Dr Jane Doe/AppData"'), 'cd "/c/Users/<USER>/AppData"')
+
+    def test_local_user_name_in_every_spelling(self):
+        home = os.path.join("C:" + os.sep, "Users", "Dr Jane Doe")
+        with mock.patch.dict(os.environ, {"USERNAME": "Dr Jane Doe", "USER": ""}), \
+                mock.patch("os.path.expanduser", return_value=home):
+            pat = sanitizer._local_user_names()
+        for text in ("C--Users-Dr-Jane-Doe-Desktop-SYLLAB", "dr_jane_doe", "DrJaneDoe", "by Dr Jane Doe"):
+            with self.subTest(text=text):
+                self.assertTrue(pat.search(text), text)
+        self.assertIsNone(pat.search("Dr Janet"))
 
     def test_redacts_secrets_and_email_and_ip(self):
         out = sanitizer.sanitize_text("k=" + SECRETS["anthropic"] + " mail bob@corp.io host 10.1.2.3")

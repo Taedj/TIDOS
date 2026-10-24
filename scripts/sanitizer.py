@@ -73,7 +73,8 @@ SECRET_PATTERNS = [p for _, p in TOKEN_PATTERNS] + [ASSIGNMENT_PATTERN]
 # PII / local machine fingerprints
 # Windows user names may contain spaces ("Dr Jane Doe"): match up to the next separator
 _WIN_USER_PATH = re.compile(r"[A-Za-z]:[\\/]+Users[\\/]+([^\\/\"'<>|*?\r\n]+)", re.IGNORECASE)
-_NIX_USER_PATH = re.compile(r"/(?:home|Users)/([^/\s\"'<>]+)")
+# /Users/ (macOS, Git Bash "/c/Users/Dr Jane Doe") may contain spaces; /home/ names cannot
+_NIX_USER_PATH = re.compile(r"/(?:home/([^/\s\"'<>]+)|Users/([^/\"'<>|*?\r\n]+))")
 _EMAIL = re.compile(r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b")
 _IPV4 = re.compile(r"(?<![\w.])(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})(?![\w.])")
 
@@ -117,13 +118,48 @@ def find_secrets(text):
     return hits
 
 
+def _path_user(m):
+    return next(g for g in m.groups() if g is not None)
+
+
+def _local_user_names():
+    """This machine's own user name(s) in every spelling tools use (spaces, dashes, 8.3 short name)."""
+    names = {os.path.basename(os.path.expanduser("~")), os.environ.get("USERNAME", ""), os.environ.get("USER", "")}
+    if os.name == "nt":
+        try:
+            import ctypes
+            buf = ctypes.create_unicode_buffer(260)
+            if ctypes.windll.kernel32.GetShortPathNameW(os.path.expanduser("~"), buf, 260):
+                names.add(os.path.basename(buf.value))  # e.g. DRTIDJ~1
+        except (AttributeError, OSError):
+            pass
+    variants = set()
+    for name in names:
+        if len(name) < 3 or name.lower() in _SAFE_USERS:
+            continue
+        for sep in (" ", "-", "_", ""):
+            variants.add(re.sub(r"[\s~]+", sep, name))
+        # Claude Code encodes "C:\Users\Dr Jane" as "C--Users-Dr-Jane": every non-alnum -> "-"
+        variants.add(re.sub(r"[^A-Za-z0-9]", "-", name))
+    variants = sorted((v for v in variants if len(v) >= 3), key=len, reverse=True)
+    if not variants:
+        return None
+    return re.compile(r"(?<![A-Za-z0-9])(?:%s)(?![A-Za-z0-9])" % "|".join(map(re.escape, variants)), re.IGNORECASE)
+
+
+_LOCAL_USER = _local_user_names()
+
+
 def find_pii(text):
-    """Return [(kind, sample)] for local paths, e-mails and IPs found in text."""
+    """Return [(kind, sample)] for local paths, user names, e-mails and IPs found in text."""
     hits = []
     for pat in (_WIN_USER_PATH, _NIX_USER_PATH):
         for m in pat.finditer(text):
-            if m.group(1).lower() not in _SAFE_USERS:
+            if _path_user(m).lower() not in _SAFE_USERS:
                 hits.append(("user-path", m.group(0)[:60]))
+    if _LOCAL_USER:
+        for m in _LOCAL_USER.finditer(text):
+            hits.append(("local-user-name", m.group(0)))
     for m in _EMAIL.finditer(text):
         if not m.group(0).lower().endswith(_SAFE_EMAIL_DOMAINS):
             hits.append(("email", m.group(0)))
@@ -143,9 +179,12 @@ def sanitize_text(text):
         out,
     )
     out = _WIN_USER_PATH.sub(
-        lambda m: m.group(0) if m.group(1).lower() in _SAFE_USERS else m.group(0)[:2] + "\\Users\\<USER>", out)
+        lambda m: m.group(0) if _path_user(m).lower() in _SAFE_USERS else m.group(0)[:2] + "\\Users\\<USER>", out)
     out = _NIX_USER_PATH.sub(
-        lambda m: m.group(0) if m.group(1).lower() in _SAFE_USERS else m.group(0).rsplit("/", 1)[0] + "/<USER>", out)
+        lambda m: m.group(0) if _path_user(m).lower() in _SAFE_USERS
+        else m.group(0)[: m.group(0).index("/", 1)] + "/<USER>", out)
+    if _LOCAL_USER:
+        out = _LOCAL_USER.sub("<USER>", out)
     out = _EMAIL.sub(lambda m: m.group(0) if m.group(0).lower().endswith(_SAFE_EMAIL_DOMAINS) else "<EMAIL_REDACTED>", out)
     out = _IPV4.sub(lambda m: "<IP_REDACTED>" if _is_reportable_ip(m.groups()) else m.group(0), out)
     return out
