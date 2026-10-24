@@ -10,7 +10,7 @@ import glob
 import os
 import sys
 
-from tidos_brain import claude_code, db
+from tidos_brain import claude_code, db, opencode
 
 from . import distill
 
@@ -19,6 +19,7 @@ def cmd_distill(args):
     conn = db.connect(args.db)
     if not args.no_import:
         claude_code.import_all(conn)
+        opencode.import_all(conn)
     written = distill.distill(conn)
     conn.close()
     if not args.quiet:

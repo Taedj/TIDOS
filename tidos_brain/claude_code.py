@@ -167,6 +167,12 @@ def parse_transcript(path):
     if not session["id"]:
         session["id"] = os.path.splitext(os.path.basename(path))[0]
 
+    finalize_tasks(tasks)
+    return session, tasks
+
+
+def finalize_tasks(tasks):
+    """Counts + outcome score for parsed tasks (shared by every collector)."""
     for task in tasks:
         verifs = task["verifications"]
         task["tool_calls"] = len(task["calls"])
@@ -177,7 +183,7 @@ def parse_transcript(path):
         task["score"], task["outcome"] = scoring.score_task(
             None if task["verify_passed"] is None else bool(task["verify_passed"]),
             task["corrected"], task["tool_errors"])
-    return session, tasks
+    return tasks
 
 
 def store(conn, session, tasks):
@@ -211,7 +217,8 @@ def store(conn, session, tasks):
 
 
 # Sessions TIDOS itself started (eval dungeons, driver runs, scratch dirs) are not user work
-_SYNTHETIC_CWD = re.compile(r"(eval-runs|dungeon-runs|[\\/]Temp[\\/]claude[\\/])", re.IGNORECASE)
+# (any temp folder: users do not keep real projects there; TIDOS's probes and tests do)
+_SYNTHETIC_CWD = re.compile(r"(eval-runs|dungeon-runs|[\\/]Temp[\\/]|^/tmp/|[\\/]tmp[\\/])", re.IGNORECASE)
 
 
 def is_synthetic(cwd):
@@ -238,7 +245,12 @@ def import_all(conn, projects_dir=PROJECTS_DIR):
     """Import every top-level transcript (subagent transcripts live in subfolders and are skipped)."""
     purge_synthetic(conn)
     results = []
+    imported = {r[0]: r[1] for r in conn.execute("SELECT transcript, imported_at FROM sessions")}
     for path in sorted(glob.glob(os.path.join(projects_dir, "*", "*.jsonl"))):
+        done = imported.get(path)
+        modified = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc).isoformat(timespec="seconds")
+        if done and modified <= done:
+            continue  # unchanged since the last import
         try:
             session, tasks = import_transcript(conn, path)
             if tasks:

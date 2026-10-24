@@ -13,7 +13,7 @@
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.4 local gitleaks, 1.20 history purge, 1.27 first CI run on push) |
-| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
+| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.3 install, 2.5 Gemini, 2.7 router) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | 🔄 In progress (5/9) |
@@ -88,11 +88,11 @@
 
 - [x] **2.1** Design `~/.tidos/brain.db` SQLite schema: `sessions`, `tasks`, `steps`, `tool_calls`, `verifications`, `corrections`, `playbooks`, `facts`, `models`, `evals`, `xp_events`, `security_log` — done 2026-10-24 (`tidos_brain/db.py`, schema v1 via `PRAGMA user_version`; corrections stored as `tasks.corrected`, steps as `tool_calls`; also `live_events` for the Live Monitor; WAL mode for hooks + dashboard)
 - [x] **2.2** Implement `tidos_brain` Python package (stdlib `sqlite3`, migrations, typed API) — done 2026-10-24 (CLI: `hook`, `import-claude`, `stats`, `prune`, `install-hooks`)
-- [ ] **2.3** *(partial 2026-10-24: hook handler + safe installer built and tested — PostToolUse ~300 ms, Stop returns in ~480 ms with background import, never prints or fails; installer keeps existing hooks, backs up settings, `--uninstall` restores. **Waiting for user approval to install into `~/.claude/settings.json`.**)* Trace collector — **Claude Code**: `PostToolUse` / `Stop` / `UserPromptSubmit` hooks writing to brain.db
+- [ ] **2.3** *(built and tested; install needs the user (Claude Code blocks agents from editing their own settings): python -I tidos_brain/__main__.py install-hooks. START TIDOS already imports transcripts incrementally, so learning works without it; hooks only add the live monitor)* Trace collector — **Claude Code**: `PostToolUse` / `Stop` / `UserPromptSubmit` hooks writing to brain.db
 - [x] **2.4** Trace collector — Claude Code transcript importer (`~/.claude/projects/*.jsonl`) — done 2026-10-24 (real history: 11 sessions → 248 tasks in 3.3 s; skips sidechains/injected messages; dedupes split messages; counts cached tokens)
-- [ ] **2.5** Trace collector — Gemini CLI session logs
-- [ ] **2.6** Trace collector — OpenAI Codex / OpenCode session logs
-- [ ] **2.7** Trace collector — API router (LiteLLM proxy) for Grok / OpenRouter / Ollama requests
+- [ ] **2.5** *(deferred: Gemini CLI is not installed here and there is no session data to build and test a parser against; user mostly uses Claude Code + OpenCode)* Trace collector — Gemini CLI session logs
+- [x] **2.6** Trace collector — OpenAI Codex / OpenCode session logs — done 2026-10-24 (tidos_brain/opencode.py reads OpenCode's SQLite (session/message/part only, never account/credential tables, read-only), same task scoring as Claude Code; real data: 64 sessions / 1,086 tasks (muse-spark-free, big-pickle...); incremental (unchanged sessions skipped, 0 s); wired into START TIDOS, tidos_learn and ; tests/test_opencode.py)
+- [ ] **2.7** *(deferred: no API keys on this machine; agents are driven through their own CLIs (Claude Code, OpenCode) instead)* Trace collector — API router (LiteLLM proxy) for Grok / OpenRouter / Ollama requests
 - [x] **2.8** Outcome scoring: verify-pass, user-accepted, retries, reverts, user corrections → `task.score` — done 2026-10-24 (v1 heuristics in `tidos_brain/scoring.py`: tests/lint/build detection, pass/fail parsing, EN+FR correction detection, tool errors; first run on real history: 56 success / 25 failure / 167 unknown)
 - [x] **2.9** Privacy: sanitizer runs on every trace before storage; secrets never stored — done 2026-10-24 (scan of the real import: **0 leaks**; sanitizer extended to redact this machine's user name in every spelling — spaces, dashes, Claude's `C--Users-…` encoding, 8.3 short name; home-folder sessions stored as project `~`)
 - [x] **2.10** Retention & size limits (rotate/compact old traces) — done 2026-10-24 (`prune --live-days 14 --session-days N` + VACUUM; tested)

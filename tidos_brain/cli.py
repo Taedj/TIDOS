@@ -2,6 +2,7 @@
 
   hook                         read a Claude Code hook event (JSON on stdin); silent, always exit 0
   import-claude [--transcript PATH]   import one transcript, or all of ~/.claude/projects
+  import-opencode              import OpenCode sessions (read-only from its SQLite database)
   stats                        print a summary of what the brain has learned so far
   prune [--live-days N] [--session-days N]   retention: drop old live events / sessions
   install-hooks [--settings PATH] [--dry-run] [--uninstall]   wire the hooks into Claude Code
@@ -13,7 +14,7 @@ import shutil
 import sys
 from datetime import datetime, timedelta, timezone
 
-from . import claude_code, db
+from . import claude_code, db, opencode
 
 HOOK_EVENTS = ("SessionStart", "UserPromptSubmit", "PostToolUse", "Stop", "SessionEnd")
 HOOK_MARKER = "tidos_brain"
@@ -45,6 +46,15 @@ def cmd_import(args):
     if not args.quiet:
         tasks = sum(len(t) for _, t in results)
         print("Imported %d session(s), %d task(s) into %s" % (len(results), tasks, args.db or db.default_path()))
+    return 0
+
+
+def cmd_import_opencode(args):
+    conn = db.connect(args.db)
+    results = opencode.import_all(conn)
+    conn.close()
+    if not args.quiet:
+        print("Imported %d changed OpenCode session(s), %d task(s)" % (len(results), sum(len(t) for _, t in results)))
     return 0
 
 
@@ -144,6 +154,10 @@ def main(argv=None):
     p.add_argument("--projects-dir")
     p.add_argument("--quiet", action="store_true")
     p.set_defaults(func=cmd_import)
+
+    p = sub.add_parser("import-opencode")
+    p.add_argument("--quiet", action="store_true")
+    p.set_defaults(func=cmd_import_opencode)
 
     sub.add_parser("stats").set_defaults(func=cmd_stats)
 

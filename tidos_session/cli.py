@@ -21,10 +21,11 @@ def _session_path():
 def refresh_learning():
     """Import new sessions and regenerate playbooks so the brief uses everything learned so far."""
     try:
-        from tidos_brain import claude_code, db
+        from tidos_brain import claude_code, db, opencode
         from tidos_learn import distill
         conn = db.connect()
         claude_code.import_all(conn)
+        opencode.import_all(conn)
         distill.distill(conn)
         conn.close()
         return True
