@@ -15,7 +15,7 @@
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🔄 In progress (9/30) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
-| 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | ⬜ Not started |
+| 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
 | 5 | Learn from Strong Models (Distillation) | Turn strong-model traces into playbooks | ⬜ Not started |
 | 6 | Weak-Model Driver | TIDOS drives weak models to strong-model results | ⬜ Not started |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ⬜ Not started |
@@ -126,11 +126,11 @@
 ## Phase 4 — v4.5: Measure (Evals = "Dungeons")
 
 - [x] **4.1** Eval task format (task prompt, repo fixture, verify command, expected outcome) — done 2026-10-24 (`evals/dungeons/<suite>/<name>/` = `task.json` + `fixture/` + `hidden/` (tests copied in only AFTER the agent finishes, so they cannot be read or gamed) + `solution/`)
-- [ ] **4.2** *(partial 2026-10-24: 17/30 tasks — python 10, teaching 2, javascript 2, sql 1, powershell 1, dart 1; difficulties E-B; built from the user's real stacks and lessons: TP DRIVER `choix` interpolation, cp1252/BOM Excel CSV, day-first dates, Windows paths with spaces, university timetable)* Write 30–50 golden tasks across user stacks: Python, Flutter/Android, Firebase/Firestore, Tkinter desktop, PowerShell, TP DRIVER/teaching builders
+- [x] **4.2** Write 30–50 golden tasks across user stacks — done 2026-10-24 (30 tasks E..S: python 17, teaching 4, javascript 3, sql 2, powershell 2, dart 2; all validated fail-untouched / pass-with-solution)
 - [x] **4.3** Eval runner (sandboxed worktree/Docker, runs any model through the router, records results in brain.db) — done 2026-10-24 (`tidos_evals/`: isolated workdirs in `~/.tidos/eval-runs/`, agents `claude:<model>` (restricted tools, budget cap) and `opencode:<provider/model>` (per-run sandbox config, `--dir` + pinned PWD), results in `brain.evals` (schema v2) + per-run logs; `validate` proves every task fails untouched and passes with its reference solution (17/17 valid))
-- [ ] **4.4** Baseline: strong models (Claude, Gemini, Grok, GPT) **without** TIDOS
-- [ ] **4.5** Baseline: weak/local models (Ollama 7B/8B) **without** TIDOS
-- [ ] **4.6** Baseline: same models **with** current TIDOS v4.1 — real answer to the "Big Idea" claim
+- [ ] **4.4** *(partial 2026-10-24: Claude Haiku 32/32 without TIDOS; Opus/Sonnet/Gemini still to run)* Baseline: strong models (Claude, Gemini, Grok, GPT) **without** TIDOS
+- [ ] **4.5** *(in progress 2026-10-24: free `opencode/glm-5.3-flash-free` clean run on 30 tasks; no local Ollama installed)* Baseline: weak/local models (Ollama 7B/8B) **without** TIDOS
+- [ ] **4.6** *(partial 2026-10-24: Haiku with TIDOS 31/32 vs 32/32 without, +55% cost, +60% time — no measurable gain from the v4 prose protocol; needs --repeat 3 for significance)* Baseline: same models **with** current TIDOS v4.1 — real answer to the "Big Idea" claim
 - [x] **4.7** "Turn a fixed bug into a golden task" helper (every real bug grows the dungeon) — done 2026-10-24 (`tidos_evals new --suite S --name N --source <buggy project>` scaffolds a task (copies the project without .git/node_modules/.env), then `validate`)
 - [x] **4.8** Panel: 🏰 **Dungeons** (suites, pass/fail history, regressions, "Run" button) — done 2026-10-24 (Dungeons tab: Arena leaderboard (pass rate without / with TIDOS, lift, cost) + Dungeon map (task x agent matrix); verified with Playwright, no overflow, 0 console errors)
 
