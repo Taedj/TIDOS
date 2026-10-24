@@ -93,6 +93,7 @@ def load_tasks(conn):
         t["cwd"] = session["cwd"]
         t["calls"] = [dict(c) for c in conn.execute("SELECT * FROM tool_calls WHERE task_id = ? ORDER BY id", (r["id"],))]
         t["checks"] = [dict(v) for v in conn.execute("SELECT * FROM verifications WHERE task_id = ? ORDER BY id", (r["id"],))]
+        _attribute_subrepo(t)
         t["type"] = classify.task_type(t["prompt"], t["calls"])
         t["stacks"] = classify.stacks(t["calls"])
         t["strong"] = tier_for(t["model"] or "unknown")[0] == "frontier"
@@ -102,6 +103,24 @@ def load_tasks(conn):
         nxt = by_session[t["session_id"]].get(t["seq"] + 1)
         t["correction"] = nxt["prompt"] if (t["corrected"] and nxt) else None
     return tasks
+
+
+def _attribute_subrepo(t):
+    """A session started in a parent folder (D:\\work\\Dev) often works inside one repo (TIDOS, ZTAP...):
+    credit the task to that repo when most of its files live there and it has its own .git."""
+    tops = Counter()
+    for c in t["calls"]:
+        if c["kind"] in ("read", "edit"):
+            p = relpath(c["summary"], t["cwd"])
+            if p and "/" in p:
+                tops[p.split("/", 1)[0]] += 1
+    if not tops:
+        return
+    top, n = tops.most_common(1)[0]
+    sub = os.path.join(t["cwd"] or "", top)
+    if n >= 0.6 * sum(tops.values()) and os.path.isdir(os.path.join(sub, ".git")):
+        t["project"] = top
+        t["cwd"] = sub
 
 
 def is_learning_example(t):
