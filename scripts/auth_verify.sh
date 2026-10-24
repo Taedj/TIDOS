@@ -23,6 +23,7 @@
 # Requires: curl + jq.
 # ============================================================================
 
+PY="$(command -v python3 || command -v python)"   # Git Bash on Windows has no python3
 API_KEY="${FIREBASE_API_KEY:-}"
 if [ -z "$API_KEY" ] && [ -f "$(dirname "$0")/../.env" ]; then
   API_KEY=$(grep -E '^\s*FIREBASE_API_KEY\s*=' "$(dirname "$0")/../.env" | head -n1 | sed 's/^[^=]*=//' | tr -d "'\" ")
@@ -62,7 +63,7 @@ case "$1" in
     exit 0
     ;;
   -GoogleLogin|google)
-    python3 "$(dirname "$0")/google_auth_server.py" || python "$(dirname "$0")/google_auth_server.py"
+    "$PY" "$(dirname "$0")/google_auth_server.py" || python "$(dirname "$0")/google_auth_server.py"
     exit $?
     ;;
   -Logout|logout)

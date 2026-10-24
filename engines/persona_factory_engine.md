@@ -22,7 +22,7 @@ registers it, and ships it to the central brain (`main` on GitHub) so every TIDO
 3. GUARDRAILS: if the candidate name/stack already has coverage (any active persona), the factory SKIPS and reasons why.
 4. WEB-GROUNDED: newly drafted personas must be grounded by live internet research on modern standards, avoiding outdated training memory.
 5. NEGATIVE-CONSTRAINTS-MANDATORY: generated personas must feature explicit "NEVER DO" rules to keep weak models aligned.
-6. SYNC-DISCIPLINE: every factory run ends with `scripts/factory_sync.ps1`/`.sh` (commit + push to `main`). No other repo content is auto-committed.
+6. SYNC-DISCIPLINE: every factory run ends with `scripts/factory_sync.ps1`/`.sh`: privacy firewall, commit on a `persona/<name>-<date>` branch and a pull request. Nothing reaches `main` without a human merge.
 7. TIDOS remains final authority; generated personas are advisors, same governance as hand-crafted ones.
 
 ---

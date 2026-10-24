@@ -20,7 +20,7 @@ while [ $# -gt 0 ]; do
 done
 URL="http://localhost:$PORT/"
 PIDFILE="$HOME/.tidos/tidoszit.pid"
-PY="$(command -v python3 || command -v python)"
+PY="$(command -v python3 || command -v python)"   # Git Bash on Windows has no python3
 
 running() { "$PY" -c "import urllib.request,sys; urllib.request.urlopen(sys.argv[1]+'api/boot', timeout=2)" "$URL" 2>/dev/null; }
 

@@ -191,7 +191,8 @@ def sanitize_text(text):
 
 
 def _top_level_dir(filepath, root=REPO_ROOT):
-    rel = os.path.relpath(os.path.abspath(filepath), root)
+    # realpath: on Windows the same folder can appear as "DRTIDJ~1" (8.3) or "Dr Jane Doe" (long name)
+    rel = os.path.relpath(os.path.realpath(filepath), os.path.realpath(root))
     if rel.startswith(".."):
         return None
     return rel.replace("\\", "/").split("/", 1)[0]

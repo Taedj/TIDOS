@@ -2,6 +2,7 @@
 # ============================================================================
 # TIDOS Community Contribution Sync (Linux / macOS)
 # ============================================================================
+PY="$(command -v python3 || command -v python)"   # Git Bash on Windows has no python3
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
@@ -11,7 +12,7 @@ CANONICAL_REPO="Taedj/TIDOS"
 PERSONA="${1:-}"
 
 # Kill switch (~/.tidos/control.json, /TIDOSZIT)
-rc=0; python3 -I "$ROOT/tidos_brain/control.py" get community_sync >/dev/null 2>&1 || rc=$?
+rc=0; "$PY" -I "$ROOT/tidos_brain/control.py" get community_sync >/dev/null 2>&1 || rc=$?
 if [[ "$rc" -eq 1 ]]; then echo "Community sync is switched OFF in the TIDOS control center (/TIDOSZIT)." >&2; exit 1; fi
 
 if [[ -z "$PERSONA" ]]; then
@@ -24,7 +25,7 @@ if [[ -z "$PERSONA" || ! -f "$PERSONA" ]]; then
 fi
 
 echo "[1/4] Running Privacy Firewall audit on $PERSONA..."
-python3 "$ROOT/scripts/sanitizer.py" --check "$PERSONA"
+"$PY" "$ROOT/scripts/sanitizer.py" --check "$PERSONA"
 echo "[✓] Privacy Firewall PASSED: Zero secrets or prohibited code found."
 
 PERSONA_NAME=$(basename "$PERSONA" .md)

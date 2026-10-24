@@ -55,7 +55,7 @@
 
 ### 1B. Security
 - [x] **1.10** Update gate: pin to **signed release tags** instead of `main`; show a diff and require user approval before applying — done 2026-10-24 (channel `release` = newest vX.Y.Z tag by default, `main` for maintainers; update is REPORTED (commits, diffstat, tag signature) and installed only with `-Apply`/`-ApplyUpdate`; `TIDOS_REQUIRE_SIGNED=1` refuses unsigned tags; never downgrades a newer checkout; scenarios sh 12/12, ps1 12/12)
-- [ ] **1.11** `scripts/factory_sync.ps1` / `.sh` — stop auto-pushing to `main`; open a PR instead
+- [x] **1.11** `scripts/factory_sync.ps1` / `.sh` — stop auto-pushing to `main`; open a PR instead — done 2026-10-24 (persona on a `persona/<name>-<date>` branch + `gh pr create` or compare link; firewall on all 3 files in both scripts. Found and fixed on the way: bash version never ran the firewall, never detected new personas (`sed` `\?` bug), PowerShell crashed on git push output under `ErrorActionPreference=Stop`, bash scripts called `python3` which does not exist in Git Bash on Windows, sanitizer whitelist broke on 8.3 short paths. Verified in a temp repo with a fake remote: sh + ps1 open a branch, main untouched, leaked key rejected)
 - [ ] **1.12** `scripts/google_auth_server.py` — add `state` nonce to `/callback`, verify the ID token server-side, reject unexpected origins
 - [ ] **1.13** Store the refresh token securely (OS keyring via `keyring`, or at least restricted file permissions)
 - [ ] **1.14** `scripts/auth_verify.ps1` / `.sh` — remove `-Password` CLI argument (shell history leak); prompt securely instead

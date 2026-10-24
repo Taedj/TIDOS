@@ -32,7 +32,7 @@ persona_factory:
     domain_recurrence: true      # domain vocab recurs across >= 2 user requests, no active coverage
   depth_threshold: 2             # sessions/sources needed before generation
   one_run_per_boot: true
-  auto_sync: true                # factory_sync commits persona+registry+evolution, pushes to main
+  auto_sync: true                # factory_sync commits persona+registry+evolution on a review branch + opens a PR (never pushes main)
   auto_sync_force: false         # NEVER force-push
 ```
 

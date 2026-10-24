@@ -6,6 +6,7 @@
 # and initializes the TIDOS Operating System session.
 # ============================================================================
 
+PY="$(command -v python3 || command -v python)"   # Git Bash on Windows has no python3
 set -e
 
 PROJECT_DIR="$(pwd)"   # the user's project: where START TIDOS was run
@@ -32,7 +33,7 @@ echo ""
 SKIP_UPDATE=0
 [ "${1:-}" = "--skip-update" ] && SKIP_UPDATE=1
 if [ "$SKIP_UPDATE" = 0 ]; then
-    rc=0; python3 -I "$TIDOS_ROOT/tidos_brain/control.py" get auto_update >/dev/null 2>&1 || rc=$?
+    rc=0; "$PY" -I "$TIDOS_ROOT/tidos_brain/control.py" get auto_update >/dev/null 2>&1 || rc=$?
     if [ "$rc" -eq 1 ]; then
         echo ">>> [STEP 0] Auto-update is switched OFF in the control center (/TIDOSZIT). Skipping."
         SKIP_UPDATE=1
@@ -72,5 +73,5 @@ echo "=========================================================="
 echo "  TIDOS READY (v$VER)"
 echo "=========================================================="
 # Session mode: LEARN on strong models, GUIDE on weak/free models
-"$(command -v python3 || command -v python)" -I "$TIDOS_ROOT/tidos_session/__main__.py" start     --tool "$TOOL" --model "$MODEL" --project "$PROJECT_DIR"
+"$PY" -I "$TIDOS_ROOT/tidos_session/__main__.py" start     --tool "$TOOL" --model "$MODEL" --project "$PROJECT_DIR"
 echo "Follow the TIDOS brief above for this whole session."
