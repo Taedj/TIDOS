@@ -418,6 +418,18 @@ def _ensure_user_path(path):
     return True
 
 
+def _pip_user_scripts_on_path():
+    """pip falls back to a per-user install when the Python folder is read-only (e.g. C:\\Python314); its
+    commands (ruff.exe...) then land in the user Scripts folder, which is often not on PATH. Add it."""
+    import sysconfig
+    scripts = sysconfig.get_path("scripts", "nt_user" if os.name == "nt" else "posix_user")
+    if not scripts or not os.path.isdir(scripts):
+        return False
+    if scripts not in os.environ.get("PATH", "").split(os.pathsep):
+        os.environ["PATH"] = os.pathsep.join([scripts, os.environ.get("PATH", "")])
+    return _ensure_user_path(scripts)
+
+
 def _log(line):
     os.makedirs(detect.tidos_home(), exist_ok=True)
     with open(_home_file("tool_installs.log"), "a", encoding="utf-8") as f:
@@ -482,6 +494,8 @@ def install(name, runner=subprocess.run, downloader=_download):
             if code:
                 return {"ok": False, "detail": "install failed (exit %d)" % code, "output": output}
             record.update(package=spec["package"])
+            if spec["method"] == "pip":
+                record.update(path_added=_pip_user_scripts_on_path())
         _MODULES.clear()
         data = state()
         data[name] = dict(data.get(name, {}), status="approved", installed_by_tidos=record)
