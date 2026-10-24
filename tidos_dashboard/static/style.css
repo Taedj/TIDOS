@@ -246,3 +246,27 @@ code.sys { background: rgba(0,0,0,.35); padding: 1px 6px; border-radius: 3px; fo
 @media (max-width: 760px) { .askbar { padding: 12px 16px 0; flex-wrap: wrap; } .askbar input { flex-basis: 100%; }
   #askOut { margin: 12px 16px 0; } .hit { grid-template-columns: 1fr; gap: 2px; } }
 #backupBtn { margin-top: 12px; }
+
+/* ---- Language switch + Arabic (right-to-left) ------------------------- */
+.lang-switch { text-transform: none; letter-spacing: 0; }
+.login-lang { float: inline-end; margin: -6px -6px 0 0; padding: 6px 10px; }
+[dir=rtl] .login-lang { margin: -6px 0 0 -6px; }
+html[lang=ar] {
+  --mono: "Cascadia Mono", Consolas, "Segoe UI", Tahoma, "Noto Sans Arabic", monospace;
+  --sans: "Segoe UI", Tahoma, "Noto Sans Arabic", system-ui, sans-serif;
+}
+/* Arabic letters join: letter spacing breaks them apart, and there is no upper case */
+html[lang=ar] *, html[lang=ar] *::before, html[lang=ar] *::after { letter-spacing: 0 !important; text-transform: none !important; }
+html[lang=ar] code, html[lang=ar] pre, html[lang=ar] .console, html[lang=ar] input { direction: ltr; unicode-bidi: plaintext; }
+[dir=rtl] .kv, [dir=rtl] th, [dir=rtl] .matrix td:first-child, [dir=rtl] .matrix th:first-child { text-align: right; }
+[dir=rtl] .kv b, [dir=rtl] .stat .v { text-align: left; }
+[dir=rtl] .quest .p { margin-left: 0; margin-right: auto; }
+[dir=rtl] .player-chip { margin-left: 0; margin-right: auto; }
+[dir=rtl] .brand small { margin-left: 0; margin-right: 8px; }
+[dir=rtl] .log-item .sys, [dir=rtl] .live-dot { margin-right: 0; margin-left: 6px; }
+[dir=rtl] #toasts { right: auto; left: 18px; }
+@media (max-width: 760px) { [dir=rtl] .player-chip { margin-right: 0; } }
+@media (max-width: 760px) { .player-chip { flex-wrap: wrap; gap: 8px; } }
+/* your data (prompts, names, notes) is mostly English: each paragraph takes the direction of its own text */
+[dir=rtl] .log-item, [dir=rtl] td, [dir=rtl] .kv b, [dir=rtl] .answer, [dir=rtl] .hit, [dir=rtl] .quest { unicode-bidi: plaintext; }
+[dir=rtl] .row .name { direction: ltr; text-align: right; }

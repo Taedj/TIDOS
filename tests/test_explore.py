@@ -57,6 +57,13 @@ class ExploreTests(unittest.TestCase):
         self.assertEqual(result["source"], "local")
         self.assertIn("local facts only", result["answer"])
 
+    def test_ask_answer_language(self):
+        seen = []
+        explore.ask(self.conn, "why?", llm=lambda p: (seen.append(p), ("ok", None))[1], lang="ar")
+        explore.ask(self.conn, "why?", llm=lambda p: (seen.append(p), ("ok", None))[1], lang="xx")
+        self.assertIn("Write the answer in Arabic", seen[0])
+        self.assertNotIn("Write the answer in", seen[1])  # unknown language -> English, nothing injected
+
     def test_ask_falls_back_when_model_fails(self):
         result = explore.ask(self.conn, "anything", llm=lambda p: (None, "claude CLI not found"))
         self.assertEqual(result["source"], "local")

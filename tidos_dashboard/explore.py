@@ -105,7 +105,7 @@ def digest(conn, query, days=30):
 
 ASK_PROMPT = """You are TIDOS's analyst. Answer the owner's question using ONLY the data below (traces of their
 coding sessions). Be concrete: name projects, task types, numbers. If the data cannot answer it, say what is
-missing. At most 8 short lines, plain text.
+missing. At most 8 short lines, plain text.{language}
 
 QUESTION: {question}
 
@@ -113,13 +113,17 @@ DATA:
 {data}"""
 
 
-def ask(conn, question, llm=None):
+LANGUAGES = {"ar": "Arabic"}  # dashboard language -> answer language (English when absent)
+
+
+def ask(conn, question, llm=None, lang=None):
     """Returns {answer, source: llm|local, digest}. llm(prompt) -> (text, error)."""
     data = digest(conn, question)
     if control.is_on("ask_llm"):
         if llm is None:
             from tidos_learn.summarize import ask_strong_model as llm  # noqa: N813  (tools disabled below)
-        text, err = llm(ASK_PROMPT.format(question=question[:500], data=data))
+        language = " Write the answer in %s (keep project names, commands and numbers as they are)."             % LANGUAGES[lang] if lang in LANGUAGES else ""
+        text, err = llm(ASK_PROMPT.format(question=question[:500], data=data, language=language))
         if text:
             return {"answer": text.strip(), "source": "llm", "digest": data}
         note = "(Model unavailable: %s. Showing the local facts.)" % err

@@ -5,6 +5,7 @@ Runs against a temp brain, a fake Firebase, a temp copy of config/framework.md a
 nothing real is read, written or sent.
 """
 import os
+import re
 import shutil
 import sys
 import tempfile
@@ -104,7 +105,7 @@ class DashboardE2E(unittest.TestCase):
         page.goto(self.base + "/")
         page.fill("#pw", "wrong-password-1A")
         page.click("#stage-password button[type=submit]")
-        page.wait_for_function("document.getElementById('loginMsg').textContent.length > 0")
+        page.locator("#loginMsg").filter(has_text=re.compile(".+")).wait_for()  # no string eval: the CSP forbids it
         self.assertTrue(page.is_hidden("#app"))
         ctx.close()
 
@@ -125,7 +126,7 @@ class DashboardE2E(unittest.TestCase):
         kinds = page.eval_on_selector_all("#askBody .hit .pill", "els => els.map(e => e.textContent)")
         self.assertEqual(sorted(kinds), ["memory", "task"])
         page.click("#askBody .hitlink[data-kind=memory]")
-        page.wait_for_function("document.getElementById('memView').textContent.includes('null token')")
+        page.locator("#memView", has_text="null token").wait_for()
 
         page.fill("#askQ", "why did APP tasks fail?")
         page.click("#askBar button[data-mode=ask]")
@@ -153,6 +154,26 @@ class DashboardE2E(unittest.TestCase):
             page.wait_for_timeout(400)
             overflow = page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1")
             self.assertFalse(overflow, view)
+        self.assertEqual(errors, [])
+        ctx.close()
+
+    def test_arabic_interface_is_rtl_and_switches_back(self):
+        ctx, page, errors = self.open(390, 844)
+        page.click("#app .lang-switch")  # reloads in Arabic; the session survives
+        page.wait_for_selector("html[dir=rtl] #app:not(.hidden)")
+        self.assertEqual(page.text_content(".tab[data-view=status]"), "الحالة")
+        self.assertEqual(page.text_content("#app .lang-switch"), "English")
+        page.locator("#quests", has_text="أنجز 3 مهام").wait_for()  # server text translated
+        for view in ("status", "live", "security", "tools", "evolution", "playbooks", "memory", "dungeons"):
+            page.click(".tab[data-view=%s]" % view)
+            page.wait_for_timeout(300)
+            self.assertFalse(page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"), view)
+        page.fill("#askQ", "why did APP fail?")
+        page.click("#askBar button[data-mode=ask]")
+        page.locator("#askBody .answer").wait_for()
+        page.click("#app .lang-switch")
+        page.wait_for_selector("html[dir=ltr] #app:not(.hidden)")
+        self.assertEqual(page.text_content(".tab[data-view=status]"), "Status")
         self.assertEqual(errors, [])
         ctx.close()
 

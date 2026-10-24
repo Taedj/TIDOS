@@ -367,7 +367,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "empty question"})
         conn = db.connect(self.server.db_path)
         try:
-            result = explore.ask(conn, question)
+            result = explore.ask(conn, question, lang=str(body.get("lang") or ""))
         finally:
             conn.close()
         self.server.lockout.log("ask", result["source"])  # never the question itself

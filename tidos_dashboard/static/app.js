@@ -1,6 +1,7 @@
 // TIDOSZIT Control Center — client
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import { getAuth, signInWithPopup, signOut, GoogleAuthProvider } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+import { t, lang, applyStatic, wireSwitches } from "./i18n.js";
 
 const $ = (id) => document.getElementById(id);
 const esc = (v) => String(v ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
@@ -30,7 +31,7 @@ function toast(html, cls = "") {
 let firebaseAuth = null;
 let lockTimer = null;
 
-function setMsg(text, cls = "info") { const m = $("loginMsg"); m.className = "msg " + cls; m.textContent = text; }
+function setMsg(text, cls = "info") { const m = $("loginMsg"); m.className = "msg " + cls; m.textContent = t(text); }
 
 function showLogin(stage, info = {}) {
   stopApp();
@@ -50,7 +51,7 @@ function showLock(info) {
   const until = new Date(info.locked_until);
   const tick = () => {
     const s = Math.max(0, Math.round((until - new Date()) / 1000));
-    setMsg(`[LOCKED] Too many wrong passwords. Try again in ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}.`, "err");
+    setMsg(t("[LOCKED] Too many wrong passwords. Try again in {t}.", { t: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` }), "err");
     if (!s) { clearInterval(lockTimer); setMsg("Lock lifted. You may try again.", "info"); }
   };
   tick();
@@ -86,7 +87,7 @@ $("stage-password").addEventListener("submit", async (ev) => {
   pw.value = "";
   if (r.ok) return startApp(true);
   if (r.status === 401 && r.data.failures_left !== undefined && !r.data.locked_until) {
-    setMsg(`${r.data.error} ${r.data.failures_left} attempt(s) left before lockout.`, "err");
+    setMsg(`${t(r.data.error)} ${t("{n} attempt(s) left before lockout.", { n: r.data.failures_left })}`, "err");
   } else if (r.data.locked_until) {
     showLock(r.data);
   } else {
@@ -101,7 +102,7 @@ $("stage-setup").addEventListener("submit", async (ev) => {
   if (a !== b) return setMsg("Passwords do not match.", "err");
   const r = await api("/api/auth/setup", { password: a });
   $("newpw").value = $("newpw2").value = "";
-  if (r.ok) { toast("<b>[SYSTEM]</b> Control password set. Only its hash is stored."); return startApp(true); }
+  if (r.ok) { toast(`<b>[SYSTEM]</b> ${t("Control password set. Only its hash is stored.")}`); return startApp(true); }
   setMsg(r.data.error || "Setup failed.", "err");
 });
 
@@ -117,7 +118,7 @@ function stopApp() {
 async function startApp(fresh = false) {
   $("login").classList.add("hidden");
   $("app").classList.remove("hidden");
-  if (fresh) toast("<b>[SYSTEM]</b> Welcome back, Player. Control center unlocked.");
+  if (fresh) toast(`<b>[SYSTEM]</b> ${t("Welcome back, Player. Control center unlocked.")}`);
   await loadStatus();
   loadArmy();
   loadNotifications();
@@ -129,7 +130,7 @@ async function startApp(fresh = false) {
       $("backupBtn").disabled = true;
       const r = await api("/api/backups", {});
       $("backupBtn").disabled = false;
-      if (r.ok) { renderBackups(r.data.backups); toast("<b>[SYSTEM]</b> Brain backed up."); }
+      if (r.ok) { renderBackups(r.data.backups); toast(`<b>[SYSTEM]</b> ${t("Brain backed up.")}`); }
     });
   }
   loadLive();
@@ -142,10 +143,10 @@ function startTimer(seconds) {
   clearInterval(sessionTimer);
   sessionTimer = setInterval(() => {
     const s = Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
-    const t = $("timer");
-    t.textContent = `session ${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-    t.classList.toggle("low", s < 120);
-    if (!s) { toast("<b>[SYSTEM]</b> Session expired. Verify again."); showLogin("login"); }
+    const el = $("timer");
+    el.textContent = t("session {t}", { t: `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}` });
+    el.classList.toggle("low", s < 120);
+    if (!s) { toast(`<b>[SYSTEM]</b> ${t("Session expired. Verify again.")}`); showLogin("login"); }
   }, 1000);
 }
 
@@ -168,7 +169,8 @@ $("logoutBtn").addEventListener("click", async () => { await api("/api/auth/logo
 
 // ---- status
 const fmt = (n) => Number(n || 0).toLocaleString();
-const when = (iso) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleDateString(undefined, { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", hour12: false }); };
+const LOCALE = lang === "ar" ? "ar-u-nu-latn" : undefined; // Arabic month names, Western digits (match the data)
+const when = (iso) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleDateString(LOCALE, { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit", hour12: false }); };
 
 async function loadStatus() {
   const r = await api("/api/status");
@@ -182,47 +184,47 @@ async function loadStatus() {
   $("pXp").textContent = fmt(p.xp); $("pNext").textContent = fmt(p.next_xp);
 
   const prev = Number(store.get("tidoszit.level") || 0);
-  if (prev && p.level > prev) toast(`<b>[SYSTEM] LEVEL UP!</b><br>Level ${prev} → ${p.level} · Rank ${esc(p.rank)}`, "levelup");
+  if (prev && p.level > prev) toast(`<b>[SYSTEM] ${t("LEVEL UP!")}</b><br>${esc(t("Level {a} → {b} · Rank {r}", { a: prev, b: p.level, r: p.rank }))}`, "levelup");
   store.set("tidoszit.level", String(p.level));
 
-  const t = d.totals;
+  const tot = d.totals;
   $("pTotals").innerHTML = [
-    ["Sessions", fmt(t.sessions)], ["Tasks", fmt(t.tasks)], ["Cleared", fmt(t.success)], ["Failed", fmt(t.failure)],
-    ["Tokens in", fmt(t.tokens_in)], ["Tokens out", fmt(t.tokens_out)], ["Player", esc(d.session.email)],
-  ].map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("");
+    ["Sessions", fmt(tot.sessions)], ["Tasks", fmt(tot.tasks)], ["Cleared", fmt(tot.success)], ["Failed", fmt(tot.failure)],
+    ["Tokens in", fmt(tot.tokens_in)], ["Tokens out", fmt(tot.tokens_out)], ["Player", esc(d.session.email)],
+  ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
 
   $("stats").innerHTML = d.stats.map((s) => `
-    <div class="stat" title="${esc(s.hint)}"><span class="k">${esc(s.key)}</span>
+    <div class="stat" title="${esc(t(s.hint))}"><span class="k">${esc(s.key)}</span>
       <span class="bar"><i></i></span><span class="v">${Number(s.value)}</span>
-      <span class="stat-name">${esc(s.name)} — ${esc(s.hint)}</span></div>`).join("");
+      <span class="stat-name">${esc(t(s.name))} — ${esc(t(s.hint))}</span></div>`).join("");
   // style attributes in HTML are blocked by the CSP; widths are applied through CSSOM instead
   $("stats").querySelectorAll(".bar i").forEach((el, i) => { el.style.width = Number(d.stats[i].value) + "%"; });
 
   $("quests").innerHTML = d.quests.map((q) => `
     <div class="quest ${q.done ? "done" : ""} ${q.failed ? "failed" : ""}">
-      <span class="box">${q.done ? "✓" : q.failed ? "✕" : ""}</span>${esc(q.title)}
+      <span class="box">${q.done ? "✓" : q.failed ? "✕" : ""}</span>${esc(t(q.title))}
       <span class="p">${Math.min(q.progress, q.goal)}/${q.goal}</span></div>`).join("")
-    + `<p class="small faint note">Quests reset daily (UTC).</p>`;
+    + `<p class="small faint note">${t("Quests reset daily (UTC).")}</p>`;
 
   $("domains").innerHTML = d.domains.map((dm) => `
     <div class="row"><span class="rank ${esc(dm.rank)}">${esc(dm.rank)}</span>
       <span class="name">${esc(dm.name)}</span><span class="pill">Lv ${dm.level}</span>
-      <span class="pill">${fmt(dm.xp)} XP</span><span class="pill ok">${dm.success}/${dm.tasks}</span></div>`).join("") || `<p class="muted">No domains yet.</p>`;
+      <span class="pill">${fmt(dm.xp)} XP</span><span class="pill ok">${dm.success}/${dm.tasks}</span></div>`).join("") || `<p class="muted">${t("No domains yet.")}</p>`;
 
   $("models").innerHTML = d.models.map((m) => `
-    <div class="row"><span class="name">${esc(m.model)}</span><span class="pill">${fmt(m.tasks)} tasks</span>
-      <span class="pill ${m.avg_score >= 0.6 ? "ok" : m.avg_score <= 0.4 ? "bad" : ""}">avg ${m.avg_score.toFixed(2)}</span></div>`).join("") || `<p class="muted">No models yet.</p>`;
+    <div class="row"><span class="name">${esc(m.model)}</span><span class="pill">${t("{n} tasks", { n: fmt(m.tasks) })}</span>
+      <span class="pill ${m.avg_score >= 0.6 ? "ok" : m.avg_score <= 0.4 ? "bad" : ""}">${t("avg {v}", { v: m.avg_score.toFixed(2) })}</span></div>`).join("") || `<p class="muted">${t("No models yet.")}</p>`;
 
   $("cleared").innerHTML = d.cleared.map((c) => `
-    <div class="log-item"><span class="sys">[QUEST CLEARED]</span><span class="faint">${esc(when(c.ts))} · ${esc(c.project)}</span><br>${esc(c.prompt)}</div>`).join("") || `<p class="muted">No cleared quests yet.</p>`;
+    <div class="log-item"><span class="sys">${t("[QUEST CLEARED]")}</span><span class="faint">${esc(when(c.ts))} · ${esc(c.project)}</span><br>${esc(c.prompt)}</div>`).join("") || `<p class="muted">${t("No cleared quests yet.")}</p>`;
 }
 
 // ---- live
 function eventLine(ev, isNew) {
   const div = document.createElement("div");
   div.className = "ev" + (ev.is_error ? " err" : "") + (isNew ? " new" : "");
-  const t = ev.ts ? new Date(ev.ts).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "";
-  div.innerHTML = `<span class="t">${esc(t)}</span><span class="e">${esc(ev.tool || ev.event)}</span><span class="s" title="${esc(ev.summary)}">${esc(ev.summary || ev.event)}</span>`;
+  const ts = ev.ts ? new Date(ev.ts).toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }) : "";
+  div.innerHTML = `<span class="t">${esc(ts)}</span><span class="e">${esc(ev.tool || ev.event)}</span><span class="s" title="${esc(ev.summary)}">${esc(ev.summary || ev.event)}</span>`;
   return div;
 }
 
@@ -241,15 +243,15 @@ async function loadSessionInfo() {
   if (!r.ok) return;
   const s = r.data.session;
   $("sessInfo").innerHTML = s ? [
-    ["Mode", `<span class="pill ${s.mode === "guide" ? "warn" : "ok"}">${esc((s.mode || "").toUpperCase())}</span>`],
+    ["Mode", `<span class="pill ${s.mode === "guide" ? "warn" : "ok"}">${esc(t((s.mode || "").toUpperCase()))}</span>`],
     ["Model", esc(s.model)], ["Tier", esc(s.tier)], ["Tool", esc(s.tool)], ["Project", esc(s.project)],
     ["Started", esc(when(s.started_at))],
-  ].map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("") : `<span class="muted">No START TIDOS yet.</span><b></b>`;
+  ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("") : `<span class="muted">${t("No START TIDOS yet.")}</span><b></b>`;
   const pct = (x) => x.pass_rate === null ? '<span class="faint">—</span>' : `${x.pass_rate}%`;
   $("effectRows").innerHTML = r.data.effect.map((e) => `
     <tr><td>${esc(e.model.replace("opencode/", ""))}</td><td>${fmt(e.guided.tasks)}</td><td>${pct(e.guided)}</td>
     <td>${fmt(e.unguided.tasks)}</td><td>${pct(e.unguided)}</td></tr>`).join("")
-    || `<tr><td colspan="5" class="muted">No weak-model work recorded yet.</td></tr>`;
+    || `<tr><td colspan="5" class="muted">${t("No weak-model work recorded yet.")}</td></tr>`;
 }
 
 async function loadLive() {
@@ -258,24 +260,25 @@ async function loadLive() {
   if (live.ok) {
     $("console").innerHTML = "";
     pushEvents(live.data.events, false);
-    if (!live.data.events.length) $("console").innerHTML = `<p class="muted">No live events yet. Install the brain hooks, then use Claude Code — events stream here in real time.</p>`;
+    if (!live.data.events.length) $("console").innerHTML = `<p class="muted">${t("No live events yet. Install the brain hooks, then use Claude Code — events stream here in real time.")}</p>`;
     $("activeSessions").innerHTML = live.data.active.map((s) => `
       <div class="session-card"><span class="live-dot"></span><b>${esc(String(s.session_id || "?").slice(0, 8))}</b>
         <span class="faint"> · ${esc(s.cwd || "")}</span><br>
-        last: ${esc(s.last_tool || "—")} · ${fmt(s.events)} events · <span class="${s.errors ? "pill bad" : "pill"}">${fmt(s.errors)} errors</span></div>`).join("")
-      || `<p class="muted">No session active in the last 10 minutes.</p>`;
+        ${esc(t("last: {t}", { t: s.last_tool || "—" }))} · ${t("{n} events", { n: fmt(s.events) })} · <span class="${s.errors ? "pill bad" : "pill"}">${t("{n} errors", { n: fmt(s.errors) })}</span></div>`).join("")
+      || `<p class="muted">${t("No session active in the last 10 minutes.")}</p>`;
   }
   if (tasks.ok) {
+    const tr = t; // `t` is a task row below
     $("tasks").innerHTML = tasks.data.tasks.map((t) => `
       <tr><td>${esc(when(t.started_at))}</td><td>${esc(t.project)}</td><td class="prompt" title="${esc(t.prompt)}">${esc(t.prompt)}</td>
-      <td>${esc((t.model || "").replace("claude-", ""))}</td><td>${t.tool_calls}${t.tool_errors ? ` <span class="pill bad">${t.tool_errors} err</span>` : ""}</td>
-      <td>${t.verify_passed === null ? '<span class="faint">—</span>' : t.verify_passed ? '<span class="pill ok">pass</span>' : '<span class="pill bad">fail</span>'}</td>
+      <td>${esc((t.model || "").replace("claude-", ""))}</td><td>${t.tool_calls}${t.tool_errors ? ` <span class="pill bad">${tr("{n} err", { n: t.tool_errors })}</span>` : ""}</td>
+      <td>${t.verify_passed === null ? '<span class="faint">—</span>' : t.verify_passed ? `<span class="pill ok">${tr("pass")}</span>` : `<span class="pill bad">${tr("fail")}</span>`}</td>
       <td>${t.score === null ? "" : Number(t.score).toFixed(2)}</td>
-      <td><span class="pill ${t.outcome === "success" ? "ok" : t.outcome === "failure" ? "bad" : ""}">${esc(t.outcome)}</span>${t.corrected ? ' <span class="pill warn">corrected</span>' : ""}</td></tr>`).join("");
+      <td><span class="pill ${t.outcome === "success" ? "ok" : t.outcome === "failure" ? "bad" : ""}">${esc(tr(t.outcome))}</span>${t.corrected ? ` <span class="pill warn">${tr("corrected")}</span>` : ""}</td></tr>`).join("");
   }
   if (sec.ok) {
-    const tr = sec.data.switches.find((s) => s.name === "tracing");
-    $("tracingState").textContent = tr && tr.on ? "ON" : "PAUSED";
+    const sw = sec.data.switches.find((s) => s.name === "tracing");
+    $("tracingState").textContent = t(sw && sw.on ? "ON" : "PAUSED");
   }
 }
 
@@ -296,16 +299,16 @@ async function loadDungeons() {
   const pct = (v, n) => v === null ? '<span class="faint">—</span>' : `${v}% <span class="faint">(${n[0]}/${n[1]})</span>`;
   $("leaderboard").innerHTML = d.leaderboard.map((b) => `
     <tr><td>${esc(b.model)}</td><td>${pct(b.off, b.off_n)}</td><td>${pct(b.on, b.on_n)}</td>
-    <td>${b.lift === null ? '<span class="faint">—</span>' : `<span class="${b.lift > 0 ? "lift-up" : b.lift < 0 ? "lift-down" : ""}">${b.lift > 0 ? "+" : ""}${b.lift} pts</span>`}</td>
-    <td>${b.cost ? "$" + b.cost.toFixed(2) : '<span class="faint">free</span>'}</td></tr>`).join("")
-    || `<tr><td colspan="5" class="muted">No raids yet. Run the command below.</td></tr>`;
-  $("dungeonMeta").textContent = `${d.tasks.length} dungeons · last raid ${d.last_run ? when(d.last_run) : "never"} · lift = pass rate with TIDOS minus without.`;
-  const label = (c) => { const [m, t] = c.split("|"); return `${esc(m.replace("opencode:", "").replace("opencode/", ""))}<br>${t === "1" ? "+TIDOS" : "plain"}`; };
-  $("matrixHead").innerHTML = `<tr><th>Dungeon</th>${d.columns.map((c) => `<th>${label(c)}</th>`).join("")}</tr>`;
-  $("matrixBody").innerHTML = d.tasks.map((t) => `
-    <tr><td><span class="rank ${esc(t.difficulty)}">${esc(t.difficulty)}</span> <span title="${esc(t.title)}">${esc(t.id)}</span></td>
-    ${d.columns.map((c) => { const x = d.cells[t.id + "|" + c];
-      return `<td>${!x ? '<span class="cell none">·</span>' : x.passed ? `<span class="cell ok" title="${x.seconds}s">✓</span>` : `<span class="cell bad" title="${esc(x.error || "failed")}">✗</span>`}</td>`; }).join("")}</tr>`).join("");
+    <td>${b.lift === null ? '<span class="faint">—</span>' : `<span class="${b.lift > 0 ? "lift-up" : b.lift < 0 ? "lift-down" : ""}">${t("{n} pts", { n: (b.lift > 0 ? "+" : "") + b.lift })}</span>`}</td>
+    <td>${b.cost ? "$" + b.cost.toFixed(2) : `<span class="faint">${t("free")}</span>`}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">${t("No raids yet. Run the command below.")}</td></tr>`;
+  $("dungeonMeta").textContent = t("{n} dungeons · last raid {w} · lift = pass rate with TIDOS minus without.", { n: d.tasks.length, w: d.last_run ? when(d.last_run) : t("never") });
+  const label = (c) => { const [m, x] = c.split("|"); return `${esc(m.replace("opencode:", "").replace("opencode/", ""))}<br>${x === "1" ? "+TIDOS" : t("plain")}`; };
+  $("matrixHead").innerHTML = `<tr><th>${t("Dungeon")}</th>${d.columns.map((c) => `<th>${label(c)}</th>`).join("")}</tr>`;
+  $("matrixBody").innerHTML = d.tasks.map((k) => `
+    <tr><td><span class="rank ${esc(k.difficulty)}">${esc(k.difficulty)}</span> <span title="${esc(k.title)}">${esc(k.id)}</span></td>
+    ${d.columns.map((c) => { const x = d.cells[k.id + "|" + c];
+      return `<td>${!x ? '<span class="cell none">·</span>' : x.passed ? `<span class="cell ok" title="${x.seconds}s">✓</span>` : `<span class="cell bad" title="${esc(x.error || t("failed"))}">✗</span>`}</td>`; }).join("")}</tr>`).join("");
 }
 
 // ---- evolution + notifications
@@ -313,8 +316,8 @@ async function loadNotifications() {
   const r = await api("/api/notifications");
   if (!r.ok) return;
   $("notes").innerHTML = r.data.notifications.map((n) => `
-    <div class="log-item"><span class="sys">[SYSTEM]</span><span class="${n.level === "bad" ? "lift-down" : n.level === "ok" ? "lift-up" : ""}">${esc(n.text)}</span></div>`).join("")
-    || `<p class="muted">Nothing needs your attention.</p>`;
+    <div class="log-item"><span class="sys">[SYSTEM]</span><span class="${n.level === "bad" ? "lift-down" : n.level === "ok" ? "lift-up" : ""}">${esc(t(n.text))}</span></div>`).join("")
+    || `<p class="muted">${t("Nothing needs your attention.")}</p>`;
 }
 
 async function loadEvolution() {
@@ -323,33 +326,34 @@ async function loadEvolution() {
   const d = r.data;
   $("evoList").innerHTML = d.proposals.map((p) => `
     <tr><td>${p.id}</td><td><b>${esc(p.title)}</b><br><span class="small faint">${esc(p.reason)}</span>${p.branch ? `<br><code class="sys">${esc(p.branch)}</code>` : ""}</td>
-    <td><span class="pill ${p.priority === "high" ? "warn" : ""}">${esc(p.priority)}</span></td>
-    <td><span class="pill ${p.status === "accepted" || p.status === "implemented" ? "ok" : p.status === "rejected" ? "bad" : ""}">${esc(p.status)}</span></td>
-    <td>${p.status === "new" ? `<button class="btn ghost evo" data-id="${p.id}" data-s="accepted">Accept</button> <button class="btn ghost evo" data-id="${p.id}" data-s="rejected">Reject</button>` : ""}</td></tr>`).join("")
-    || `<tr><td colspan="5" class="muted">No proposals yet. Agents add them with tidos_propose; you with tidos_learn proposals --add.</td></tr>`;
+    <td><span class="pill ${p.priority === "high" ? "warn" : ""}">${esc(t(p.priority))}</span></td>
+    <td><span class="pill ${p.status === "accepted" || p.status === "implemented" ? "ok" : p.status === "rejected" ? "bad" : ""}">${esc(t(p.status))}</span></td>
+    <td>${p.status === "new" ? `<button class="btn ghost evo" data-id="${p.id}" data-s="accepted">${t("Accept")}</button> <button class="btn ghost evo" data-id="${p.id}" data-s="rejected">${t("Reject")}</button>` : ""}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">${t("No proposals yet. Agents add them with tidos_propose; you with tidos_learn proposals --add.")}</td></tr>`;
   $("evoList").querySelectorAll(".evo").forEach((b) => b.addEventListener("click", async () => {
     const res = await api("/api/evolution/status", { id: Number(b.dataset.id), status: b.dataset.s });
-    if (res.ok) { toast(`<b>[SYSTEM]</b> Proposal #${esc(b.dataset.id)} ${esc(b.dataset.s)}.`); loadEvolution(); loadNotifications(); }
+    if (res.ok) { toast(`<b>[SYSTEM]</b> ${esc(t("Proposal #{id} {s}.", { id: b.dataset.id, s: t(b.dataset.s) }))}`); loadEvolution(); loadNotifications(); }
   }));
-  $("evoReport").innerHTML = d.report ? `<span class="muted">Last run</span><b>${esc(d.report.name)}</b><span class="muted">Result</span><b>${esc(d.report.result)}</b>`
-    : `<span class="muted">Last run</span><b>never</b>`;
+  $("evoReport").innerHTML = d.report ? `<span class="muted">${t("Last run")}</span><b>${esc(d.report.name)}</b><span class="muted">${t("Result")}</span><b>${esc(d.report.result)}</b>`
+    : `<span class="muted">${t("Last run")}</span><b>${t("never")}</b>`;
   $("evoDrafts").innerHTML = [["Skill drafts", d.drafts.skills], ["Specialist drafts", d.drafts.agents], ["Issue drafts", d.drafts.issues]]
-    .map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("");
+    .map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
 }
 
 // ---- tool scout
 async function loadTools() {
   const r = await api("/api/tools");
   if (!r.ok) return;
-  const btn = (t, action, label) => `<button class="btn ghost tool" data-n="${esc(t.name)}" data-a="${action}">${label}</button>`;
+  const btn = (x, action, label) => `<button class="btn ghost tool" data-n="${esc(x.name)}" data-a="${action}">${t(label)}</button>`;
+  const tr = t; // `t` is a tool row below
   $("toolList").innerHTML = r.data.tools.map((t) => `
     <tr><td><b>${esc(t.name)}</b><br><span class="small faint">${esc(t.why)}</span>
       ${t.status === "approved" && !t.installed ? `<br><code class="sys">${esc(t.install)}</code>` : ""}</td>
     <td>${esc(t.capability)}</td>
-    <td>${t.installed ? `<span class="pill ok">yes</span>` : `<span class="pill">no</span>`}</td>
+    <td>${t.installed ? `<span class="pill ok">${tr("yes")}</span>` : `<span class="pill">${tr("no")}</span>`}</td>
     <td title="${esc(t.trust_reasons.join(" · "))}">${t.trust == null ? "?" : `<span class="pill ${t.trust >= 70 ? "ok" : t.trust >= 40 ? "warn" : "bad"}">${t.trust}</span>`}</td>
     <td>${t.usage ? `${t.usage.passed}/${t.usage.runs}` : "-"}</td>
-    <td>${t.status ? `<span class="pill ${t.status === "blacklisted" ? "bad" : "ok"}">${esc(t.status)}</span>` : "-"}</td>
+    <td>${t.status ? `<span class="pill ${t.status === "blacklisted" ? "bad" : "ok"}">${esc(tr(t.status))}</span>` : "-"}</td>
     <td>${btn(t, "trust", "Trust")} ${t.installed ? btn(t, "vet", "Vet") : ""}
       ${t.status !== "approved" && !t.installed ? btn(t, "approved", "Approve") : ""}
       ${t.status === "blacklisted" ? btn(t, "none", "Unban") : btn(t, "blacklisted", "Ban")}</td></tr>`).join("");
@@ -372,15 +376,15 @@ async function loadArmy() {
   $("army").innerHTML = r.data.units.map((u) => `
     <div class="row"><span class="rank ${esc(u.rank)}">${esc(u.rank)}</span>
       <span class="name"><b>${esc(u.name)}</b> <span class="faint small">${esc(u.description)}</span></span>
-      <span class="pill ${u.state === "draft" ? "warn" : "ok"}">${esc(u.state)}</span>
-      <span class="pill">${u.missions} mission${u.missions === 1 ? "" : "s"}</span></div>`).join("")
-    || `<p class="muted">No subagents yet.</p>`;
+      <span class="pill ${u.state === "draft" ? "warn" : "ok"}">${esc(t(u.state))}</span>
+      <span class="pill">${lang === "ar" ? t("{n} mission(s)", { n: u.missions }) : `${u.missions} mission${u.missions === 1 ? "" : "s"}`}</span></div>`).join("")
+    || `<p class="muted">${t("No subagents yet.")}</p>`;
 }
 
 async function showMemory(path) {
   const r = await api("/api/memory/file?path=" + encodeURIComponent(path));
   $("memTitle").textContent = path;
-  $("memView").textContent = r.ok ? r.data.text : "Not found.";
+  $("memView").textContent = r.ok ? r.data.text : t("Not found.");
   document.querySelectorAll("#memList tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.path === path));
 }
 
@@ -389,7 +393,7 @@ async function loadMemory() {
   if (!r.ok) return;
   $("memList").innerHTML = r.data.items.map((m) => `
     <tr data-path="${esc(m.path)}"><td>${esc(m.path)}</td><td><span class="pill">${esc(m.kind)}</span></td><td>${m.lines}</td></tr>`).join("")
-    || `<tr><td colspan="3" class="muted">Memory is empty.</td></tr>`;
+    || `<tr><td colspan="3" class="muted">${t("Memory is empty.")}</td></tr>`;
   $("memList").querySelectorAll("tr[data-path]").forEach((tr) => tr.addEventListener("click", () => showMemory(tr.dataset.path)));
 }
 
@@ -397,7 +401,7 @@ async function loadMemory() {
 async function showPlaybook(path) {
   const r = await api("/api/playbook?path=" + encodeURIComponent(path));
   $("pbTitle").textContent = path;
-  $("pbView").textContent = r.ok ? r.data.text : "Not found.";
+  $("pbView").textContent = r.ok ? r.data.text : t("Not found.");
   document.querySelectorAll("#pbList tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.path === path));
 }
 
@@ -412,15 +416,15 @@ async function loadPlaybooks() {
       <td>${esc(p.confidence)}</td><td class="small">${esc(p.evidence)}</td>
       <td>${p.served ? `${p.served}x` : '<span class="faint">0</span>'}</td>
       <td><button class="toggle ${p.disabled ? "" : "on"}" data-path="${esc(p.path)}" aria-label="toggle playbook"></button></td></tr>`).join("")
-    || `<tr><td colspan="7" class="muted">Nothing learned yet. Work with a strong model, then START TIDOS.</td></tr>`;
-  $("pbMeta").textContent = `${items.length} playbooks in ${r.data.dir} · served = times a GUIDE brief gave it to a weaker model · switched off = never served.`;
+    || `<tr><td colspan="7" class="muted">${t("Nothing learned yet. Work with a strong model, then START TIDOS.")}</td></tr>`;
+  $("pbMeta").textContent = t("{n} playbooks in {dir} · served = times a GUIDE brief gave it to a weaker model · switched off = never served.", { n: items.length, dir: r.data.dir });
   $("pbList").querySelectorAll("tr[data-path]").forEach((tr) => tr.addEventListener("click", (ev) => {
     if (!ev.target.classList.contains("toggle")) showPlaybook(tr.dataset.path);
   }));
   $("pbList").querySelectorAll(".toggle").forEach((btn) => btn.addEventListener("click", async () => {
     const disabled = btn.classList.contains("on");
     const res = await api("/api/playbooks/toggle", { path: btn.dataset.path, disabled });
-    if (res.ok) { toast(`<b>[SYSTEM]</b> Playbook ${disabled ? "switched off" : "switched on"}.`); loadPlaybooks(); }
+    if (res.ok) { toast(`<b>[SYSTEM]</b> ${t(disabled ? "Playbook switched off." : "Playbook switched on.")}`); loadPlaybooks(); }
   }));
 }
 
@@ -434,23 +438,23 @@ async function runAsk() {
   if (!q) return;
   $("askOut").classList.remove("hidden");
   if (askMode === "ask") {
-    $("askTitle").textContent = "Ask TIDOS";
-    $("askBody").innerHTML = `<p class="muted">Thinking over your traces…</p>`;
-    const r = await api("/api/ask", { question: q });
-    if (!r.ok) { $("askBody").innerHTML = `<p class="lift-down">${esc(r.data.error || "failed")}</p>`; return; }
+    $("askTitle").textContent = t("Ask TIDOS");
+    $("askBody").innerHTML = `<p class="muted">${t("Thinking over your traces…")}</p>`;
+    const r = await api("/api/ask", { question: q, lang });
+    if (!r.ok) { $("askBody").innerHTML = `<p class="lift-down">${esc(t(r.data.error || "failed"))}</p>`; return; }
     $("askBody").innerHTML = `<div class="answer">${esc(r.data.answer)}</div>
-      <details class="mt"><summary class="small faint">Data TIDOS used (${r.data.source === "llm" ? "sent to the model" : "local only"})</summary>
+      <details class="mt"><summary class="small faint">${t(r.data.source === "llm" ? "Data TIDOS used (sent to the model)" : "Data TIDOS used (local only)")}</summary>
       <pre class="console">${esc(r.data.digest)}</pre></details>`;
     return;
   }
-  $("askTitle").textContent = "Search";
+  $("askTitle").textContent = t("Search");
   const r = await api("/api/search?q=" + encodeURIComponent(q));
   if (!r.ok) return;
   $("askBody").innerHTML = r.data.results.map((h) => `
     <div class="hit"><span><span class="pill">${esc(h.kind)}</span></span>
       <div><a href="#" class="hitlink" data-kind="${esc(h.kind)}" data-path="${esc(h.path || "")}">${esc(h.title)}</a>
       <div class="detail">${esc([h.project, h.when, h.detail].filter(Boolean).join(" · "))}</div></div></div>`).join("")
-    || `<p class="muted">No match for: ${esc(r.data.words.join(" "))}</p>`;
+    || `<p class="muted">${esc(t("No match for: {w}", { w: r.data.words.join(" ") }))}</p>`;
   $("askBody").querySelectorAll(".hitlink").forEach((a) => a.addEventListener("click", (e) => {
     e.preventDefault();
     const tab = document.querySelector(`.tab[data-view=${KIND_VIEW[a.dataset.kind]}]`);
@@ -468,20 +472,20 @@ async function loadSettings() {
     if (s.type === "bool") input = `<select data-key="${esc(s.key)}" data-type="bool"><option value="true" ${s.value ? "selected" : ""}>true</option><option value="false" ${s.value ? "" : "selected"}>false</option></select>`;
     else if (s.type === "int") input = `<input type="number" data-key="${esc(s.key)}" data-type="int" min="${s.range[0]}" max="${s.range[1]}" value="${s.value}">`;
     else input = `<select data-key="${esc(s.key)}" data-type="str">${s.choices.map((c) => `<option ${c === s.value ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>`;
-    return `<div class="setting"><div><b>${esc(s.key)}</b><div class="small muted">${esc(s.help)}</div></div>${input}</div>`;
+    return `<div class="setting"><div><b>${esc(s.key)}</b><div class="small muted">${esc(t(s.help))}</div></div>${input}</div>`;
   }).join("");
   $("settings").querySelectorAll("[data-key]").forEach((el) => el.addEventListener("change", async () => {
     const value = el.dataset.type === "bool" ? el.value === "true" : el.dataset.type === "int" ? Number(el.value) : el.value;
     const res = await api("/api/settings", { key: el.dataset.key, value });
     $("settingsMsg").className = "msg " + (res.ok ? "ok" : "err");
-    $("settingsMsg").textContent = res.ok ? `Saved ${el.dataset.key} = ${value}` : res.data.error;
+    $("settingsMsg").textContent = res.ok ? t("Saved {k} = {v}", { k: el.dataset.key, v: value }) : t(res.data.error);
     if (!res.ok) loadSettings();
   }));
 }
 
 function renderBackups(list) {
   $("backups").innerHTML = list.length ? `<div class="kv">${list.map((b) => `<span class="muted">${esc(b.name)}</span><b>${(b.bytes / 1e6).toFixed(1)} MB</b>`).join("")}</div>`
-    : `<p class="muted">No backups yet.</p>`;
+    : `<p class="muted">${t("No backups yet.")}</p>`;
 }
 
 async function loadBackups() {
@@ -496,19 +500,19 @@ async function loadSecurity() {
   if (!r.ok) return;
   const d = r.data;
   $("switches").innerHTML = d.switches.map((s) => `
-    <div class="switch"><div class="d"><b>${esc(s.name)}</b><span class="small muted">${esc(s.description)}</span></div>
-      <span class="pill ${s.on === s.default ? "" : "warn"}">${s.on === s.default ? "default" : "changed"}</span>
+    <div class="switch"><div class="d"><b>${esc(s.name)}</b><span class="small muted">${esc(t(s.description))}</span></div>
+      <span class="pill ${s.on === s.default ? "" : "warn"}">${t(s.on === s.default ? "default" : "changed")}</span>
       <button class="toggle ${s.on ? "on" : ""}" data-name="${esc(s.name)}" aria-label="toggle ${esc(s.name)}" aria-pressed="${s.on}"></button></div>`).join("");
   $("switches").querySelectorAll(".toggle").forEach((btn) => btn.addEventListener("click", async () => {
     const on = !btn.classList.contains("on");
     const res = await api("/api/switches", { name: btn.dataset.name, on });
-    if (res.ok) { toast(`<b>[SYSTEM]</b> ${esc(btn.dataset.name)} → ${on ? "ON" : "OFF"}`); loadSecurity(); }
+    if (res.ok) { toast(`<b>[SYSTEM]</b> ${esc(btn.dataset.name)} → ${on ? t("ON") : "OFF"}`); loadSecurity(); }
   }));
   $("secInfo").innerHTML = [
-    ["Player", esc(d.session.email)], ["Session ends in", `${Math.floor(d.session.expires_in / 60)} min`],
-    ["Lock", d.locked_until ? `<span class="pill bad">locked until ${esc(when(d.locked_until))}</span>` : '<span class="pill ok">open</span>'],
+    ["Player", esc(d.session.email)], ["Session ends in", t("{n} min", { n: Math.floor(d.session.expires_in / 60) })],
+    ["Lock", d.locked_until ? `<span class="pill bad">${esc(t("locked until {w}", { w: when(d.locked_until) }))}</span>` : `<span class="pill ok">${t("open")}</span>`],
     ["Attempts before lockout", d.failures_left], ["Brain", `${esc(d.brain.path)} · ${fmt(d.brain.size_kb)} KB`],
-  ].map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("");
+  ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
   $("secLog").innerHTML = d.log.map((e) => `
     <tr><td>${esc(e.ts)}</td><td><span class="pill ${/fail|mismatch|rejected|lockout|blocked/.test(e.event) ? "bad" : /ok|set|changed/.test(e.event) ? "ok" : ""}">${esc(e.event)}</span></td><td>${esc(e.detail)}</td></tr>`).join("");
 }
@@ -516,16 +520,18 @@ async function loadSecurity() {
 $("changeForm").addEventListener("submit", async (ev) => {
   ev.preventDefault();
   const msg = $("changeMsg");
-  if ($("chgpw").value !== $("chgpw2").value) { msg.className = "msg err"; msg.textContent = "New passwords do not match."; return; }
+  if ($("chgpw").value !== $("chgpw2").value) { msg.className = "msg err"; msg.textContent = t("New passwords do not match."); return; }
   const r = await api("/api/auth/change", { current: $("curpw").value, new: $("chgpw").value });
   for (const id of ["curpw", "chgpw", "chgpw2"]) $(id).value = "";
   msg.className = "msg " + (r.ok ? "ok" : "err");
-  msg.textContent = r.ok ? "Password changed." : (r.data.error || "Failed.");
+  msg.textContent = r.ok ? t("Password changed.") : t(r.data.error || "Failed.");
   loadSecurity();
 });
 
 // ---------------------------------------------------------------- boot
 (async function boot() {
+  applyStatic();
+  wireSwitches();
   const r = await api("/api/boot");
   if (!r.ok) { setMsg("Control center unavailable.", "err"); return; }
   firebaseAuth = getAuth(initializeApp(r.data.firebase));
