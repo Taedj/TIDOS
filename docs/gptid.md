@@ -1,5 +1,14 @@
 # GPTID Operator Guide (v1.0): local ChatGPT Free browser relay & partner system
 
+> **Status: EXPERIMENTAL — OFF by default (v4.1).**
+> - It drives the ChatGPT **web UI** with browser automation. OpenAI's Terms of Use restrict automated access to
+>   their services; using GPTID may breach them and can get the account limited. Use it at your own risk.
+> - It is fragile by nature (DOM changes, Cloudflare checks) and sends project context to a third party.
+> - It only runs when the `gptid` switch is ON in `/TIDOSZIT` → Security (`scripts/gptid.*` refuse otherwise;
+>   `status`/`stop` always work).
+> - Preferred alternative for a second opinion: a second model through its official API or CLI (see the plan,
+>   Phase 7 "second-opinion reviewer"), which is supported, stable and auditable.
+
 GPTID connects TIDOS to your own ChatGPT Free web session through a **local-only**
 relay using Google Chrome. No OpenAI API, no API key. You stay logged in; the relay never sees your credentials.
 When invoked, GPTID automatically opens Google Chrome to ChatGPT and acts as an engineering partner
