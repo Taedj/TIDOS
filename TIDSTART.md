@@ -61,7 +61,7 @@ OpenCode state) and treats unknown models as weak. The model → tier table is `
 - [ ] **5. Architecture & Security Rules**: Read [rules/architecture_rules.md](file:///d:/work/Dev/TIDOS/rules/architecture_rules.md), [rules/security_rules.md](file:///d:/work/Dev/TIDOS/rules/security_rules.md), and [rules/coding_standards.md](file:///d:/work/Dev/TIDOS/rules/coding_standards.md).
 - [ ] **6. Personas**: Load Virtual AI Company roles from [personas/roles.md](file:///d:/work/Dev/TIDOS/personas/roles.md).
 - [ ] **7. Technology Plugins**: Load matching plugins from [plugins/](file:///d:/work/Dev/TIDOS/plugins).
-- [ ] **8. Memory & User Profile**: Hydrate [memory/USER_PROFILE.md](file:///d:/work/Dev/TIDOS/memory/USER_PROFILE.md), [memory/PREFERENCES.md](file:///d:/work/Dev/TIDOS/memory/PREFERENCES.md), [memory/PATTERNS.md](file:///d:/work/Dev/TIDOS/memory/PATTERNS.md), and [memory/LESSONS.md](file:///d:/work/Dev/TIDOS/memory/LESSONS.md).
+- [ ] **8. Memory & User Profile**: Hydrate `~/.tidos/memory/` (`USER_PROFILE.md`, `PREFERENCES.md`, `PATTERNS.md`, `LESSONS.md`). User memory is private and lives outside the repository; `memory/X.md` in any spec means `~/.tidos/memory/X.md`.
 - [ ] **9. Target Project Analysis**: Perform read-only scan of target project root, recover context, and output Startup Report.
 
 ---

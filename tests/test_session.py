@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from tidos_session import brief, cli, detect  # noqa: E402
+from tidos_session import brief, cli, detect, memory  # noqa: E402
 
 
 def write(path, text):
@@ -123,6 +123,28 @@ class BriefTests(Isolated):
         self.assertEqual(saved["model"], "opencode/glm-5.3-flash-free")
         with open(os.path.join(self.tidos, "brief.md"), encoding="utf-8") as f:
             self.assertEqual(f.read(), text)
+
+
+class MemoryMigrationTests(Isolated):
+    def test_personal_memory_leaves_the_repo(self):
+        repo_mem = os.path.join(self.tmp.name, "repo-memory")
+        write(os.path.join(repo_mem, "LESSONS.md"), "# Lessons\n- my private lesson\n")
+        write(os.path.join(repo_mem, "SECRET_persona.md"), "password 1234\n")
+        write(os.path.join(repo_mem, "README.md"), "readme\n")
+        write(os.path.join(repo_mem, "PATTERNS.md"), memory.template_text("PATTERNS.md"))
+        write(os.path.join(self.tidos, "memory", "LESSONS.md"), "# existing private lessons\n")
+        moved, kept = memory.migrate(repo_mem)
+        self.assertEqual((moved, kept), (["LESSONS.md", "SECRET_persona.md"], ["LESSONS.md"]))
+        private = os.path.join(self.tidos, "memory")
+        with open(os.path.join(private, "LESSONS.md"), encoding="utf-8") as f:
+            self.assertIn("existing private lessons", f.read())          # never overwritten
+        with open(os.path.join(private, "LESSONS.from-repo.md"), encoding="utf-8") as f:
+            self.assertIn("my private lesson", f.read())                  # repo version kept too
+        self.assertTrue(memory.is_template(os.path.join(repo_mem, "LESSONS.md")))
+        self.assertFalse(os.path.exists(os.path.join(repo_mem, "SECRET_persona.md")))
+        self.assertTrue(os.path.exists(os.path.join(private, "SECRET_persona.md")))
+        self.assertTrue(os.path.exists(os.path.join(private, "USER_PROFILE.md")))  # created privately
+        self.assertEqual(memory.migrate(repo_mem), ([], []))               # idempotent
 
 
 if __name__ == "__main__":

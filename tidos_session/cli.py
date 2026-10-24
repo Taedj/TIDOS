@@ -11,7 +11,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from . import brief, detect
+from . import brief, detect, memory
 
 
 def _session_path():
@@ -34,6 +34,10 @@ def refresh_learning():
 
 def start(tool=None, model=None, project=".", env=None, learn=False):
     project = os.path.abspath(project)
+    try:
+        memory.migrate()  # personal memory never stays in the repository
+    except OSError:
+        pass
     if learn:
         refresh_learning()
     tool = detect.detect_tool(tool, env)
