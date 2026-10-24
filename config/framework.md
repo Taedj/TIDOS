@@ -16,9 +16,9 @@ repository:
 
 ```yaml
 version:
-  current: 4.0.0
-  codename: Federated Cognitive Operating System
-  release_date: 2026-10-11
+  current: 4.1.0
+  codename: Learn & Guide
+  release_date: 2026-10-24
 ```
 
 ## Persona Factory (self-learning persona generation)

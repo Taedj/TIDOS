@@ -12,7 +12,7 @@
 | Phase | Name | Goal | Status |
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
-| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🔄 In progress (9/30) |
+| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.4 local gitleaks, 1.20 history purge, 1.27 first CI run on push) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🔄 In progress (5/8) |
@@ -80,7 +80,7 @@
 - [x] **1.30** *(found and fixed 2026-10-24)* `scripts/factory_sync.ps1` never parsed on Windows since v4.0 (unclosed `if` block + UTF-8 `✓` read as a smart quote by PowerShell 5.1) — fixed; all `.ps1` files now parse and are ASCII-only. CI should run a PowerShell parse check (see 1.27)
 - [ ] **1.27** *(written 2026-10-24: .github/workflows/ci.yml = tests on Linux + Windows, spec validator, update-gate scenarios (sh + ps1), dungeon validation (node/dart/PowerShell), .ps1 parse + ASCII check, PSScriptAnalyzer and shellcheck (errors only), gitleaks on the working tree with .gitleaks.toml allowlist. Every step that can run locally passes; the workflow itself runs for the first time when the branch is pushed)* Add `.github/workflows/ci.yml`: pytest, ruff, markdown-lint, link check, gitleaks secret scan, PowerShell lint (PSScriptAnalyzer), shellcheck
 - [x] **1.28** Add persona/skill schema validator (required sections, routing signals) to CI — done 2026-10-24 (scripts/validate_specs.py: persona title + registration, factory schema for generated personas, registry links, VERSION vs config, models.json, dungeon task.json, repo-relative Markdown links; 0 errors; in CI and tests/test_specs.py)
-- [ ] **1.29** Release v4.1.0 (changelog, tag)
+- [x] **1.29** Release v4.1.0 (changelog, tag) — done 2026-10-24 (VERSION.md + config/framework.md 4.1.0 (status Beta), CHANGELOG + ROADMAP entries, annotated tag v4.1.0 created locally (unsigned, not pushed))
 
 ---
 

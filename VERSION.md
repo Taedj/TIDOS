@@ -1,10 +1,10 @@
 # Version
 
-**Current Version**: 4.0.0
-**Release Date**: 2026-10-11
-**Status**: Production Ready
+**Current Version**: 4.1.0
+**Release Date**: 2026-10-24
+**Status**: Beta — learn/guide modes are new; open items in docs/ENHANCEMENT_PLAN.md
 
-**Codename**: Federated Cognitive Operating System
+**Codename**: Learn & Guide
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

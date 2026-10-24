@@ -41,6 +41,11 @@
 - Community upstream sync and Zero-Leakage Privacy Firewall (`scripts/sanitizer.py`, `scripts/community_sync.ps1`).
 - Colored live terminal streaming & consultation UI (`browser_relay/terminal_ui.py`) with headless default execution.
 
+### v4.1.0 — Learn & Guide (2026-10-24, beta)
+- START TIDOS detects the model: LEARN mode on strong models, GUIDE mode (short brief + learned playbooks) on weak ones.
+- Private brain and playbooks in `~/.tidos/`, /TIDOSZIT control center, 30 verified dungeons, CI.
+- Safety fixes: update gate, privacy firewall, opt-in auth, PR-based persona sync, memory out of the repository.
+
 ### Future — Planned
 - Native MCP Server implementation (`tidos-mcp-server`) for direct tool-based OS context hydration across all MCP-compatible AI clients.
 - Automated GitHub Actions sync bot for cross-repository memory consolidation.
