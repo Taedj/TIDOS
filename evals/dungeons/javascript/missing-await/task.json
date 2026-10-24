@@ -1,0 +1,17 @@
+{
+  "suite": "javascript",
+  "name": "missing-await",
+  "difficulty": "D",
+  "title": "Fix async/await bugs",
+  "prompt": "In `users.js`, `loadUser` returns users with `undefined` fields and never throws `\"not found\"`, and\n`loadAll` returns pending promises instead of users. `db.find(id)` is asynchronous.\n\nFix `users.js`: `loadUser` must resolve to `{ id, name }` or reject with `Error(\"not found\")`;\n`loadAll` must load all users concurrently (not one after another) and keep the input order.\n",
+  "verify": [
+    "node",
+    "--test",
+    "hidden_tests/*.test.js"
+  ],
+  "tags": [
+    "bugfix",
+    "async"
+  ],
+  "timeout": 600
+}

@@ -1,0 +1,22 @@
+{
+  "suite": "python",
+  "name": "cron-next",
+  "difficulty": "S",
+  "title": "Next run time of a cron expression",
+  "prompt": "Implement `next_run(expression, after)` in `cron.py`: return the first `datetime` STRICTLY after\n`after` (seconds and microseconds = 0, same tzinfo) that matches a 5-field cron expression\n`minute hour day-of-month month day-of-week`.\n- ranges: minute 0-59, hour 0-23, day-of-month 1-31, month 1-12, day-of-week 0-7 (0 and 7 = Sunday)\n- each field supports `*`, numbers, ranges `a-b`, lists `a,b,c`, and steps `*/n`, `a-b/n`, `a/n`\n  (`a/n` means from a to the end of the range every n)\n- Vixie-cron rule: if BOTH day-of-month and day-of-week are restricted (neither starts with `*`),\n  a day matches when EITHER matches; otherwise both must match\n- raise `ValueError` for invalid expressions (wrong field count, out-of-range values, step 0,\n  reversed ranges like `5-1`, garbage) and when no time matches within 8 years (e.g. `0 0 30 2 *`)\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "algorithm",
+    "spec"
+  ],
+  "timeout": 900
+}

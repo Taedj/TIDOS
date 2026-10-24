@@ -1,0 +1,22 @@
+{
+  "suite": "teaching",
+  "name": "exam-seating",
+  "difficulty": "A",
+  "title": "Exam seating plan",
+  "prompt": "Implement `assign(students, rooms)` in `seating.py` for exam seating.\n- `students`: list of `{\"id\": str, \"group\": str}`; `rooms`: list of `{\"name\": str, \"rows\": int, \"cols\": int}`\n- return a dict `student id -> (room name, row, col)` (0-based row/col)\n- every student gets exactly one seat inside a room's bounds; no seat is used twice\n- two students of the SAME group must never sit side by side in the same row\n  (same room, same row, columns differing by 1); seats may be left empty to achieve this\n- raise `ValueError` if a valid plan is impossible (not enough seats, or a group too large to\n  separate), if a student id is duplicated, or if a room has rows/cols < 1\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "algorithm",
+    "teaching"
+  ],
+  "timeout": 900
+}

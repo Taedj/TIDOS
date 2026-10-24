@@ -1,0 +1,22 @@
+{
+  "suite": "python",
+  "name": "rate-limiter",
+  "difficulty": "A",
+  "title": "Sliding-window rate limiter",
+  "prompt": "Implement `SlidingWindowLimiter(limit, window, clock=time.monotonic)` in `limiter.py`:\n- `allow(key)` returns True and records the event if fewer than `limit` events for `key` happened\n  in the last `window` seconds (an event at time t still counts while `now - t < window`);\n  otherwise returns False. Rejected calls are NOT recorded.\n- `retry_after(key)`: seconds until `allow(key)` would succeed (0 if it would succeed now)\n- keys are independent; `clock` is a zero-argument function returning seconds (tests inject a fake)\n- `limit` must be an int >= 1 and `window` a number > 0, otherwise `ValueError`\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "algorithm",
+    "time"
+  ],
+  "timeout": 900
+}

@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "slugify-accents",
+  "difficulty": "D",
+  "title": "Accent-aware slugify",
+  "prompt": "Make `slugify()` in `text_utils.py` produce clean URL slugs:\n- lowercase ASCII only, accents removed (é→e, ç→c, à→a, ï→i)\n- every run of characters that are not letters or digits becomes a single `-`\n- no leading or trailing `-`\n\nExample: `\"  Écoles d'Été — Algérie 2026! \"` → `\"ecoles-d-ete-algerie-2026\"`\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "i18n"
+  ],
+  "timeout": 600
+}

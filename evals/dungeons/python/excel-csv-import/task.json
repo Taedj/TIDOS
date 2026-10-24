@@ -1,0 +1,22 @@
+{
+  "suite": "python",
+  "name": "excel-csv-import",
+  "difficulty": "C",
+  "title": "Robust Excel CSV import",
+  "prompt": "`load_students(path)` in `importer.py` must handle CSV files exported from Excel:\n- UTF-8 with or without a BOM\n- delimiter `,` or `;` — detect it from the header line\n- fields may be quoted when they contain the delimiter (e.g. `\"Zitouni, Lina\"`)\n- grades may use a decimal comma (`12,5`) or a dot (`12.5`)\n- blank lines are ignored; surrounding spaces in fields are stripped\nHeader is always `name<delim>group<delim>grade`. Return a list of dicts\n`{\"name\": str, \"group\": str, \"grade\": float}` in file order.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "windows",
+    "i18n"
+  ],
+  "timeout": 600
+}

@@ -1,0 +1,19 @@
+{
+  "suite": "dart",
+  "name": "json-model",
+  "difficulty": "B",
+  "title": "Robust JSON model (Dart)",
+  "prompt": "Fix `Student.fromJson` / `toJson` in `student.dart` (keep the class fields and constructor):\n- `id` may arrive as an int or a numeric string (`\"42\"`)\n- `birth` may be missing or null (-> null) or an ISO date/date-time string\n- `grades` may be missing or null (-> empty list) and may mix ints and doubles (-> doubles)\n- `toJson` writes `birth` as `YYYY-MM-DD` (zero-padded) or null, `grades` as doubles, `id` as int,\n  so that `Student.fromJson(s.toJson())` round-trips\n",
+  "verify": [
+    "dart",
+    "run",
+    "hidden_tests/hidden_student_test.dart"
+  ],
+  "tags": [
+    "bugfix",
+    "dart",
+    "null-safety",
+    "json"
+  ],
+  "timeout": 900
+}

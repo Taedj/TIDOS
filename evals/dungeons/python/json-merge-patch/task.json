@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "json-merge-patch",
+  "difficulty": "B",
+  "title": "RFC 7396 JSON Merge Patch",
+  "prompt": "`merge_patch(target, patch)` in `patching.py` must implement RFC 7396 (JSON Merge Patch):\n- if `patch` is not an object (dict), the result is `patch` itself\n- otherwise the result is an object: start from `target` if it is an object, else from `{}`;\n  for each key of `patch`, a `None` value removes the key, any other value is merged recursively\n- arrays are replaced, never merged\n- neither `target` nor `patch` may be modified (return new data)\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "spec"
+  ],
+  "timeout": 900
+}

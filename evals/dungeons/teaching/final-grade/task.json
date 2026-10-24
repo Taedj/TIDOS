@@ -1,0 +1,22 @@
+{
+  "suite": "teaching",
+  "name": "final-grade",
+  "difficulty": "D",
+  "title": "Final grade out of 20",
+  "prompt": "`final_grade(marks, weights)` in `grades.py` computes a student's weighted grade out of 20. Make it:\n- round the result to the nearest 0.25, halves rounding up (12.125 → 12.25, 12.12 → 12.0)\n- treat `None` marks as absences counted as 0\n- raise `ValueError` if the lists have different lengths, if any weight is negative, if all\n  weights are 0, or if any mark is outside 0..20\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "teaching",
+    "money-like-rounding"
+  ],
+  "timeout": 600
+}

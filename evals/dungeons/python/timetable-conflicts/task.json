@@ -1,0 +1,22 @@
+{
+  "suite": "python",
+  "name": "timetable-conflicts",
+  "difficulty": "B",
+  "title": "University timetable conflict detection",
+  "prompt": "`find_conflicts(sessions)` in `timetable.py` must report every pair of sessions that conflict.\n\nEach session is a dict: `id`, `day`, `start`, `end`, `room`, `teacher` (times like `\"8:00\"` or `\"09:40\"`).\nTwo sessions conflict when they are on the same day, their time ranges overlap, AND they share the\nsame room or the same teacher. Back-to-back sessions (one ends exactly when the other starts) do NOT\nconflict.\n\nReturn a list of `(id_a, id_b)` tuples with `id_a < id_b`, sorted, without duplicates.\nThe current implementation gives wrong answers.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "algorithm",
+    "teaching"
+  ],
+  "timeout": 600
+}

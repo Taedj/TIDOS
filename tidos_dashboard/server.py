@@ -149,6 +149,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"events": stats.live(conn, since), "active": stats.active_sessions(conn)})
             if path == "/api/tasks":
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
+            if path == "/api/dungeons":
+                return self._json(200, stats.dungeons(conn))
             if path == "/api/security":
                 db_file = self.server.db_path or db.default_path()
                 return self._json(200, {"log": stats.security_log(conn), "switches": control.describe(),

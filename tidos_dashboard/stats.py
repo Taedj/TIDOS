@@ -131,5 +131,40 @@ def recent_tasks(conn, limit=40):
     return [dict(r) for r in rows]
 
 
+def dungeons(conn):
+    """Dungeon (eval) board: per-agent pass rates with/without TIDOS + latest result per task."""
+    from tidos_evals import dungeon  # local import: the dashboard must start even without evals
+
+    tasks = [{"id": t.id, "suite": t.suite, "name": t.name, "title": t.title, "difficulty": t.difficulty}
+             for t in dungeon.load_tasks()]
+    rows = conn.execute(
+        "SELECT e.* FROM evals e JOIN (SELECT MAX(id) id FROM evals WHERE agent NOT IN ('reference', 'noop')"
+        " AND COALESCE(error, '') NOT LIKE 'contaminated%'"
+        " GROUP BY suite, task_name, model, with_tidos) latest ON latest.id = e.id").fetchall()
+    columns, cells, board = [], {}, {}
+    for r in rows:
+        col = "%s|%d" % (r["model"], r["with_tidos"])
+        if col not in columns:
+            columns.append(col)
+        cells["%s/%s|%s" % (r["suite"], r["task_name"], col)] = {"passed": r["passed"], "seconds": r["duration_s"],
+                                                                 "cost": r["cost_usd"], "error": r["error"]}
+        b = board.setdefault(r["model"], {"model": r["model"], "off": [0, 0], "on": [0, 0], "cost": 0.0})
+        side = b["on" if r["with_tidos"] else "off"]
+        side[0] += r["passed"]
+        side[1] += 1
+        b["cost"] += r["cost_usd"] or 0
+    leaderboard = []
+    for b in board.values():
+        off = round(100 * b["off"][0] / b["off"][1]) if b["off"][1] else None
+        on = round(100 * b["on"][0] / b["on"][1]) if b["on"][1] else None
+        leaderboard.append({"model": b["model"], "off": off, "on": on, "off_n": b["off"], "on_n": b["on"],
+                            "lift": on - off if off is not None and on is not None else None,
+                            "cost": round(b["cost"], 3)})
+    leaderboard.sort(key=lambda b: max(b["on"] or 0, b["off"] or 0), reverse=True)
+    columns.sort(key=lambda c: (c.split("|")[0], c.split("|")[1]))
+    last = conn.execute("SELECT MAX(run_at) FROM evals").fetchone()[0]
+    return {"tasks": tasks, "columns": columns, "cells": cells, "leaderboard": leaderboard, "last_run": last}
+
+
 def security_log(conn, limit=50):
     return [dict(r) for r in conn.execute("SELECT * FROM security_log ORDER BY id DESC LIMIT ?", (limit,)).fetchall()]

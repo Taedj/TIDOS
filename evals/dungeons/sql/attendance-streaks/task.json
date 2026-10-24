@@ -1,0 +1,22 @@
+{
+  "suite": "sql",
+  "name": "attendance-streaks",
+  "difficulty": "A",
+  "title": "Longest attendance streak (gaps and islands)",
+  "prompt": "Write `query.sql`: one SQLite `SELECT` over `attendance(student_id, day, present)` (schema in\n`school.sql`; `day` is `YYYY-MM-DD`, `present` is 1 or 0, at most one row per student and day) that\nreturns, for every student with at least one present day, their longest streak of CONSECUTIVE\nCALENDAR DAYS present.\n- a streak breaks on an absent day AND on a missing calendar day (e.g. a weekend with no row)\n- columns: `student_id`, `longest_streak`, `streak_start` (first day of that streak; on ties, the earliest)\n- order by `longest_streak` descending, then `student_id`\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "sql",
+    "teaching"
+  ],
+  "timeout": 900
+}

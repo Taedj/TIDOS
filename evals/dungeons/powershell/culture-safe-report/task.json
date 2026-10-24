@@ -1,0 +1,23 @@
+{
+  "suite": "powershell",
+  "name": "culture-safe-report",
+  "difficulty": "B",
+  "title": "Grade report that survives French Windows",
+  "prompt": "`report.ps1 -Path <file.csv>` must print the average grade per group from an Excel-exported CSV:\n- file: UTF-8 with BOM, delimiter `;`, header `name;group;grade`, grades with a decimal comma\n  (`12,5`) or a dot, blank lines ignored\n- one line per group, groups sorted by name: `G1: 12.75 (2 students)` — average with exactly two\n  decimals and a DOT, whatever the Windows regional settings (it must give the same output on a\n  French `fr-FR` system and an English `en-US` system); always the word `students`\nIt must run on Windows PowerShell 5.1.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "windows",
+    "powershell",
+    "i18n"
+  ],
+  "timeout": 900
+}

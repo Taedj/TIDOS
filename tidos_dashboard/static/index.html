@@ -65,7 +65,7 @@
     <button class="tab active" data-view="status">Status</button>
     <button class="tab" data-view="live">Live Monitor</button>
     <button class="tab" data-view="security">Security</button>
-    <button class="tab locked" title="Unlocks in Phase 4 — Evals">🔒 Dungeons</button>
+    <button class="tab" data-view="dungeons">Dungeons</button>
     <button class="tab locked" title="Unlocks in Phase 5 — Distillation">🔒 Playbooks</button>
     <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
     <button class="tab locked" title="Unlocks in Phase 9 — Auto-learn">🔒 Memory</button>
@@ -109,6 +109,28 @@
           <thead><tr><th>When</th><th>Project</th><th>Task</th><th>Model</th><th>Tools</th><th>Verify</th><th>Score</th><th>Outcome</th></tr></thead>
           <tbody id="tasks"></tbody>
         </table></div>
+      </div>
+    </div>
+
+    <!-- DUNGEONS -->
+    <div id="view-dungeons" class="grid hidden">
+      <div class="window">
+        <h2>Arena Leaderboard — does TIDOS make models stronger?</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Agent</th><th>Without TIDOS</th><th>With TIDOS</th><th>TIDOS lift</th><th>Cost</th></tr></thead>
+          <tbody id="leaderboard"></tbody>
+        </table></div>
+        <p class="small faint note" id="dungeonMeta"></p>
+      </div>
+      <div class="window">
+        <h2>Dungeon Map</h2>
+        <div class="table-wrap"><table class="matrix">
+          <thead id="matrixHead"></thead>
+          <tbody id="matrixBody"></tbody>
+        </table></div>
+        <p class="small faint note">Run a raid from a terminal:
+          <code class="sys">python -I tidos_evals/__main__.py run --agent claude:haiku --tidos both</code> ·
+          free models: <code class="sys">--agent opencode:opencode/glm-5.3-flash-free</code></p>
       </div>
     </div>
 

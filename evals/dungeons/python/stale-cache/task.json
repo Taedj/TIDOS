@@ -1,0 +1,22 @@
+{
+  "suite": "python",
+  "name": "stale-cache",
+  "difficulty": "A",
+  "title": "Stale prices after update (multi-file)",
+  "prompt": "Bug report from the shop team: \"After `update_price`, `get_product` sometimes still returns the OLD\nprice — especially when the code is typed differently, like `' ab-1 '` vs `'AB-1'`. We also see the\nsame product twice in `list_products`.\"\n\nProduct codes are case-insensitive and surrounding spaces do not matter. Codes are stored and returned\ntrimmed and upper-case. Adding a product with an existing code replaces it. `update_price` on an\nunknown code raises `KeyError`. Fix the `shop` package (look at all its modules).\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "multi-file",
+    "state"
+  ],
+  "timeout": 900
+}

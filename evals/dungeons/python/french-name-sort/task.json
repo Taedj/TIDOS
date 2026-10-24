@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "french-name-sort",
+  "difficulty": "B",
+  "title": "French alphabetical order",
+  "prompt": "`sort_names(names)` in `names.py` must sort names the way a French class list is ordered:\n- comparison ignores letter case, accents (é, è, ê, ç, ï, ô...) and surrounding spaces\n- ligatures compare as two letters: œ = oe, æ = ae\n- if two names are equal under those rules, the one with FEWER accented letters comes first;\n  if still equal, keep the input order\n- return the original strings (unchanged) in a new list\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "i18n"
+  ],
+  "timeout": 900
+}

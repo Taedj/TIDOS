@@ -1,0 +1,22 @@
+{
+  "suite": "teaching",
+  "name": "gift-parser",
+  "difficulty": "S",
+  "title": "Moodle GIFT quiz parser",
+  "prompt": "Implement `parse_gift(text)` in `gift.py` for this subset of Moodle's GIFT quiz format:\n- lines whose first non-space characters are `//` are comments and are ignored\n- questions are separated by one or more blank lines; a question's lines are joined with one space\n- an optional title at the start: `::Title::`\n- the question text is everything before the answer block `{...}` (stripped); anything after `}` is ignored\n- answer block:\n  * `T`, `TRUE`, `F`, `FALSE` (any case) -> true/false question\n  * otherwise options start with `=` (correct) or `~` (wrong). If any `~` option exists it is a\n    multiple-choice question that needs EXACTLY one `=` option; if all options start with `=` it is a\n    short-answer question (all of them are accepted answers)\n  * inside an option, an unescaped `#` starts feedback, which is dropped; option texts are stripped\n- escapes `\\~ \\= \\# \\{ \\} \\: \\\\` produce the literal character, in titles, texts and answers\nEach question is a dict: `{\"title\": str or None, \"text\": str, \"type\": \"tf\"|\"mc\"|\"short\",\n\"answers\": list, \"correct\": ...}` where tf -> answers `[]`, correct `True/False`; mc -> answers = all\noption texts in order, correct = the `=` option text; short -> answers = accepted answers,\ncorrect = the same list. Raise `ValueError` for a question without an answer block or text, or an\nmc question without exactly one `=` option.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "parser",
+    "teaching"
+  ],
+  "timeout": 900
+}

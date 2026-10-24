@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "rename-api",
+  "difficulty": "C",
+  "title": "Rename an API with a deprecated alias",
+  "prompt": "In the `school` package, rename `get_user` to `fetch_user` everywhere in the package code.\n- `fetch_user` must be importable from the package root (`from school import fetch_user`).\n- Keep `get_user` working as a deprecated alias: it returns the same result and emits a\n  `DeprecationWarning`. It must also stay importable from the package root.\n- Internal code (e.g. `school/service.py`) must call `fetch_user`, not the alias.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "refactor",
+    "multi-file"
+  ],
+  "timeout": 600
+}

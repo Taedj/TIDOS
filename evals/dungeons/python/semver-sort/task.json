@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "semver-sort",
+  "difficulty": "A",
+  "title": "Semantic Versioning 2.0.0 ordering",
+  "prompt": "Implement `sort_versions(versions)` in `semver.py`. It returns a NEW list sorted ascending by\nSemantic Versioning 2.0.0 precedence (https://semver.org §11):\n- compare MAJOR, MINOR, PATCH numerically\n- a pre-release version (`1.0.0-alpha`) has LOWER precedence than the release (`1.0.0`)\n- pre-release identifiers are compared dot by dot: numeric identifiers numerically, alphanumeric ones\n  lexically in ASCII order, numeric < alphanumeric, and a longer list wins if all previous are equal\n- build metadata (`+build.5`) is ignored for ordering but kept in the output\n- versions with equal precedence keep their input order\nInvalid versions (e.g. `1.0`, `01.0.0`, `1.0.0-`, `1.0.0-01`, `v1.0.0`) raise `ValueError`.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "spec"
+  ],
+  "timeout": 900
+}

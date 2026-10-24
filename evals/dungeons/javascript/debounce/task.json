@@ -1,0 +1,17 @@
+{
+  "suite": "javascript",
+  "name": "debounce",
+  "difficulty": "C",
+  "title": "Implement debounce with leading option",
+  "prompt": "Implement `debounce(fn, wait, options)` in `debounce.js` (CommonJS export):\n- returns a function; calls are delayed until `wait` ms have passed without a new call, then `fn`\n  runs ONCE with the latest arguments and the latest `this`\n- `options.leading === true`: the first call of a burst runs `fn` immediately; further calls during\n  the burst are delayed, and `fn` runs once more at the end only if there were further calls\n- the returned function has a `cancel()` method that drops any pending call\n",
+  "verify": [
+    "node",
+    "--test",
+    "hidden_tests/*.test.js"
+  ],
+  "tags": [
+    "feature",
+    "async"
+  ],
+  "timeout": 600
+}

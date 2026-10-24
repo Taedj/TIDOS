@@ -1,0 +1,18 @@
+{
+  "suite": "dart",
+  "name": "null-safe-average",
+  "difficulty": "D",
+  "title": "Null-safe average (Dart)",
+  "prompt": "`average()` in `average.dart` crashes on `null` or empty lists. Negative marks mean \"absent\" and\nmust be ignored. Make `average` return `0.0` for `null`, empty, or all-negative input, and otherwise\nthe mean of the non-negative marks. Keep the function signature.\n",
+  "verify": [
+    "dart",
+    "run",
+    "hidden_tests/hidden_average_test.dart"
+  ],
+  "tags": [
+    "bugfix",
+    "dart",
+    "null-safety"
+  ],
+  "timeout": 600
+}

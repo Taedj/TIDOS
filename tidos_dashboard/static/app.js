@@ -139,8 +139,9 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
     if (tab.dataset.view === "live") loadLive();
+    if (tab.dataset.view === "dungeons") loadDungeons();
     if (tab.dataset.view === "security") loadSecurity();
   }));
 document.querySelectorAll(".tab.locked").forEach((tab) =>
@@ -251,6 +252,26 @@ function connectStream() {
   eventSource.addEventListener("live", (e) => pushEvents(JSON.parse(e.data), true));
   eventSource.addEventListener("expired", () => { eventSource.close(); showLogin("login"); });
   eventSource.addEventListener("error", () => $("liveDot").classList.add("off"));
+}
+
+// ---- dungeons
+async function loadDungeons() {
+  const r = await api("/api/dungeons");
+  if (!r.ok) return;
+  const d = r.data;
+  const pct = (v, n) => v === null ? '<span class="faint">—</span>' : `${v}% <span class="faint">(${n[0]}/${n[1]})</span>`;
+  $("leaderboard").innerHTML = d.leaderboard.map((b) => `
+    <tr><td>${esc(b.model)}</td><td>${pct(b.off, b.off_n)}</td><td>${pct(b.on, b.on_n)}</td>
+    <td>${b.lift === null ? '<span class="faint">—</span>' : `<span class="${b.lift > 0 ? "lift-up" : b.lift < 0 ? "lift-down" : ""}">${b.lift > 0 ? "+" : ""}${b.lift} pts</span>`}</td>
+    <td>${b.cost ? "$" + b.cost.toFixed(2) : '<span class="faint">free</span>'}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">No raids yet. Run the command below.</td></tr>`;
+  $("dungeonMeta").textContent = `${d.tasks.length} dungeons · last raid ${d.last_run ? when(d.last_run) : "never"} · lift = pass rate with TIDOS minus without.`;
+  const label = (c) => { const [m, t] = c.split("|"); return `${esc(m.replace("opencode:", "").replace("opencode/", ""))}<br>${t === "1" ? "+TIDOS" : "plain"}`; };
+  $("matrixHead").innerHTML = `<tr><th>Dungeon</th>${d.columns.map((c) => `<th>${label(c)}</th>`).join("")}</tr>`;
+  $("matrixBody").innerHTML = d.tasks.map((t) => `
+    <tr><td><span class="rank ${esc(t.difficulty)}">${esc(t.difficulty)}</span> <span title="${esc(t.title)}">${esc(t.id)}</span></td>
+    ${d.columns.map((c) => { const x = d.cells[t.id + "|" + c];
+      return `<td>${!x ? '<span class="cell none">·</span>' : x.passed ? `<span class="cell ok" title="${x.seconds}s">✓</span>` : `<span class="cell bad" title="${esc(x.error || "failed")}">✗</span>`}</td>`; }).join("")}</tr>`).join("");
 }
 
 // ---- security

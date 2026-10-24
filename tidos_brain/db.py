@@ -6,7 +6,7 @@ The update gate never touches it, and it is never committed or synced.
 import os
 import sqlite3
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 # Version 1: traces (sessions/tasks/tool_calls/verifications/live_events) are
 # filled now; playbooks/facts/models/evals/xp_events/security_log are created
@@ -132,6 +132,15 @@ MIGRATIONS = {
     CREATE INDEX idx_tasks_session ON tasks(session_id);
     CREATE INDEX idx_tool_calls_task ON tool_calls(task_id);
     CREATE INDEX idx_live_events_ts ON live_events(ts);
+    """,
+    # Version 2: eval runs ("dungeons") carry the agent, run id, difficulty and failure reason
+    2: """
+    ALTER TABLE evals ADD COLUMN run_id TEXT;
+    ALTER TABLE evals ADD COLUMN agent TEXT;
+    ALTER TABLE evals ADD COLUMN difficulty TEXT;
+    ALTER TABLE evals ADD COLUMN turns INTEGER;
+    ALTER TABLE evals ADD COLUMN error TEXT;
+    CREATE INDEX idx_evals_suite ON evals(suite, task_name);
     """,
 }
 

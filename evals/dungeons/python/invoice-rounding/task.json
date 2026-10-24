@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "invoice-rounding",
+  "difficulty": "C",
+  "title": "Exact money rounding",
+  "prompt": "Invoice totals in `invoice.py` are sometimes off by one cent. Fix the money handling:\n- use `decimal.Decimal` everywhere and round with `ROUND_HALF_UP` to 2 decimals\n- each line total (quantity × unit price × (1 + VAT rate)) is rounded to cents BEFORE summing\n- inputs may be `int`, `float`, `str` or `Decimal`; convert floats through `str()` (so `0.1` means 0.1)\n- both functions return `Decimal`\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "money"
+  ],
+  "timeout": 600
+}

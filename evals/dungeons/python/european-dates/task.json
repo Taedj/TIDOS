@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "european-dates",
+  "difficulty": "D",
+  "title": "Day-first dates",
+  "prompt": "The app is used in Algeria and France, where dates are written day/month/year (e.g. `25/12/2026`).\nIn `dates.py`, `parse_date` fails or swaps day and month, and `format_date` prints the month first.\n\nFix both:\n- `parse_date` accepts `25/12/2026`, `25-12-2026` and `25.12.2026`, single-digit day/month\n  (`1/2/2026` is 1 February), and ignores surrounding spaces. It returns a `datetime.date`.\n- Invalid dates (e.g. `31/02/2026`, `hello`) raise `ValueError`.\n- `format_date` returns `DD/MM/YYYY` with zero padding.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "i18n"
+  ],
+  "timeout": 600
+}

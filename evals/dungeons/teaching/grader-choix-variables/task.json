@@ -1,0 +1,21 @@
+{
+  "suite": "teaching",
+  "name": "grader-choix-variables",
+  "difficulty": "C",
+  "title": "TP grader: 'choix' must interpolate variables",
+  "prompt": "`grader.py` grades student answers against rules. Rules can contain `{variables}` that depend on\nthe student (for example `{D}`, the last digit of their ID).\n\nBug: the `choix` (multiple choice) rule ignores variables — its expected answer and options are not\nrendered — so student-specific multiple-choice questions are always graded wrong.\n\nFix `choix` so that BOTH the expected answer and every option are rendered with the student's\nvariables, like the other rule types. For `choix`, the comparison ignores surrounding spaces and\nletter case, and the answer must be one of the rendered options. Do not change the behavior of\nthe other rule types.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "teaching"
+  ],
+  "timeout": 600
+}

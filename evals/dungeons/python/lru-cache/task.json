@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "lru-cache",
+  "difficulty": "C",
+  "title": "Implement an LRU cache",
+  "prompt": "Implement the `LRUCache` class in `cache.py`:\n- `LRUCache(capacity)`: capacity must be an int >= 1, otherwise raise `ValueError`.\n- `get(key, default=None)`: return the value (or `default`) and mark the key as most recently used.\n- `put(key, value)`: insert or update; updating also marks the key as most recently used.\n  When the cache is full, evict the least recently used key.\n- `len(cache)` returns the number of stored keys; `key in cache` must work and must NOT change\n  the usage order.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "data-structure"
+  ],
+  "timeout": 600
+}

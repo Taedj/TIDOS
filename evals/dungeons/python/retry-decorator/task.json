@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "retry-decorator",
+  "difficulty": "B",
+  "title": "Fix a retry decorator",
+  "prompt": "The `retry` decorator in `retrying.py` misbehaves: it retries on every exception, swallows the final\nerror (returns None), always waits the same delay and breaks `__name__`/`__doc__`.\n\nRequired behavior of `retry(times=3, exceptions=(Exception,), base_delay=0.1, sleep=time.sleep)`:\n- `times` = total number of attempts; must be an int >= 1, otherwise `ValueError` when `retry(...)`\n  is called\n- only exceptions listed in `exceptions` (a class or a tuple of classes) are retried; any other\n  exception propagates immediately\n- before attempt n+1 it calls `sleep(base_delay * 2 ** n)` (n = 0, 1, ...); no sleep after the last attempt\n- when every attempt fails, the LAST exception is re-raised\n- the decorated function keeps its `__name__` and `__doc__` and works on methods\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "decorator"
+  ],
+  "timeout": 900
+}

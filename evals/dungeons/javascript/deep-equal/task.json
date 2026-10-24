@@ -1,0 +1,17 @@
+{
+  "suite": "javascript",
+  "name": "deep-equal",
+  "difficulty": "A",
+  "title": "Structural deep equality",
+  "prompt": "Replace the `JSON.stringify`-based `deepEqual(a, b)` in `deepEqual.js` (CommonJS export) with a real\nstructural comparison:\n- primitives: `NaN` equals `NaN`, `+0` equals `-0`, no type coercion (`1` is not `\"1\"`)\n- objects must have the same prototype (`[]` is not `{}`, a class instance is not a plain object)\n- plain objects: same own enumerable keys (order does not matter); a key set to `undefined` is\n  different from a missing key\n- arrays: same length, element-wise; `Date`: same time; `RegExp`: same source and flags\n- `Map`: same size, same keys (SameValueZero), deep-equal values; `Set`: same size and every element of\n  one has a deep-equal element in the other\n- cyclic structures must not overflow the stack\n",
+  "verify": [
+    "node",
+    "--test",
+    "hidden_tests/*.test.js"
+  ],
+  "tags": [
+    "feature",
+    "javascript"
+  ],
+  "timeout": 900
+}

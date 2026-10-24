@@ -1,0 +1,22 @@
+{
+  "suite": "powershell",
+  "name": "paths-with-spaces",
+  "difficulty": "C",
+  "title": "Backup script that survives spaces and brackets",
+  "prompt": "`backup.ps1 -Source <dir> -Destination <dir>` fails when a folder contains spaces\n(e.g. `C:\\Users\\Dr X\\My Docs`) or special characters such as `[ ]` and `'`.\n\nFix it so that it:\n- copies every `.txt` file directly inside `-Source` (not in subfolders) to `-Destination`\n- creates `-Destination` if it does not exist\n- works with spaces, brackets and apostrophes in both paths\n- prints exactly `Copied N files` (N = number of files copied)\nIt must run on Windows PowerShell 5.1.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "bugfix",
+    "windows",
+    "powershell"
+  ],
+  "timeout": 600
+}

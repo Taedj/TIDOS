@@ -1,0 +1,21 @@
+{
+  "suite": "python",
+  "name": "cli-options",
+  "difficulty": "D",
+  "title": "Add CLI options without breaking defaults",
+  "prompt": "`report.py` is a CLI: `python report.py data.json` prints students sorted by grade (highest first),\none per line as `name: grade`.\n\nAdd two options:\n- `--limit N`: print only the first N lines (default: all). N must be >= 1, otherwise argparse must\n  reject it (exit code 2).\n- `--min-grade X`: only include students with grade >= X (default: no filter).\nThe default output (no options) must stay exactly the same.\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "cli"
+  ],
+  "timeout": 600
+}

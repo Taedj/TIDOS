@@ -1,0 +1,21 @@
+{
+  "suite": "sql",
+  "name": "top-students-per-class",
+  "difficulty": "B",
+  "title": "Top-3 ranking per class (SQLite)",
+  "prompt": "Write `query.sql`: a single SQLite `SELECT` over the schema in `school.sql` that returns, for each\nclass, the students ranked in the top 3 by average grade.\n- columns, in order: `class`, `name`, `avg_grade` (rounded to 2 decimals), `rank`\n- ties share the same rank and ranks have no gaps (dense ranking); return every student whose rank\n  is 1, 2 or 3 (so a class can have more than 3 rows)\n- students without any grade are excluded\n- order by `class`, then `rank`, then `name`\n",
+  "verify": [
+    "{python}",
+    "-m",
+    "pytest",
+    "-q",
+    "-p",
+    "no:cacheprovider",
+    "hidden_tests"
+  ],
+  "tags": [
+    "feature",
+    "sql"
+  ],
+  "timeout": 600
+}
