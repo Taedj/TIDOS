@@ -88,6 +88,19 @@ def check_dungeons(errors):
                 errors.append("%s: missing %s/" % (rel, part))
 
 
+def check_skills(errors):
+    for path in glob.glob(os.path.join(ROOT, ".claude", "skills", "*", "SKILL.md")):
+        rel = os.path.relpath(path, ROOT).replace("\\", "/")
+        text = read(rel)
+        name = re.search(r"^name:\s*(\S+)", text, re.M)
+        desc = re.search(r"^description:\s*(.{40,})$", text, re.M)
+        folder = os.path.basename(os.path.dirname(path))
+        if not text.startswith("---") or not name or name.group(1) != folder:
+            errors.append("%s: front matter 'name' must equal the folder name" % rel)
+        if not desc:
+            errors.append("%s: needs a 'description' that says what it does and when to use it" % rel)
+
+
 def check_links(errors):
     for dirpath, dirnames, files in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
@@ -111,7 +124,7 @@ def check_links(errors):
 
 def main():
     errors = []
-    for check in (check_personas, check_versions, check_models, check_dungeons, check_links):
+    for check in (check_personas, check_versions, check_models, check_dungeons, check_skills, check_links):
         check(errors)
     for e in errors:
         print("ERROR " + e)

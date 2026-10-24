@@ -19,7 +19,7 @@
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | ✅ Done (9/9) |
 | 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 measurement running |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ✅ Done (10/10) |
-| 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ⬜ Not started |
+| 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ✅ Done (20/20) |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | ⬜ Not started |
 | 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | ⬜ Not started |
 | 11 | Tool Scout | Auto-discover, vet, propose tools | ⬜ Not started |
@@ -189,32 +189,32 @@
 ## Phase 8 — Skills Library (`SKILL.md`)
 
 ### Engineering
-- [ ] **8.1** `tdd-loop`
-- [ ] **8.2** `bug-rca` (reproduce → bisect → fix → regression test)
-- [ ] **8.3** `refactor-safely`
-- [ ] **8.4** `dependency-upgrade`
-- [ ] **8.5** `perf-profile`
-- [ ] **8.6** `api-design`
-- [ ] **8.7** `db-migration`
-- [ ] **8.8** `release` (semver + changelog + tag)
+- [x] **8.1** `tdd-loop` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.2** `bug-rca` (reproduce → bisect → fix → regression test) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.3** `refactor-safely` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.4** `dependency-upgrade` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.5** `perf-profile` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.6** `api-design` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.7** `db-migration` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.8** `release` (semver + changelog + tag) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
 
 ### User stacks
-- [ ] **8.9** `flutter-android` (Gradle/AGP traps)
-- [ ] **8.10** `firebase-rules-audit`
-- [ ] **8.11** `supabase-rls`
-- [ ] **8.12** `tkinter-desktop` (from TP DRIVER lessons)
-- [ ] **8.13** `pyinstaller-exe`
-- [ ] **8.14** `windows-powershell-pitfalls` (cp1252, quoting, `python -c`)
+- [x] **8.9** `flutter-android` (Gradle/AGP traps) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.10** `firebase-rules-audit` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.11** `supabase-rls` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.12** `tkinter-desktop` (from TP DRIVER lessons) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.13** `pyinstaller-exe` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.14** `windows-powershell-pitfalls` (cp1252, quoting, `python -c`) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
 
 ### Teaching
-- [ ] **8.15** `tp-builder` (TP DRIVER moteur rules, auto-verification)
-- [ ] **8.16** `exam-generator` with auto-verification
+- [x] **8.15** `tp-builder` (TP DRIVER moteur rules, auto-verification) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.16** `exam-generator` with auto-verification — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
 
 ### Meta
-- [ ] **8.17** `skill-author` (writes new skills)
-- [ ] **8.18** `eval-author` (bug → golden task)
-- [ ] **8.19** `memory-compactor`
-- [ ] **8.20** `tool-scout` (see Phase 11)
+- [x] **8.17** `skill-author` (writes new skills) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.18** `eval-author` (bug → golden task) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.19** `memory-compactor` — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
+- [x] **8.20** `tool-scout` (see Phase 11) — done 2026-10-24 (.claude/skills/<name>/SKILL.md, shipped in the plugin; validated by claude plugin validate + scripts/validate_specs.py; public generic know-how only (project specifics stay in private playbooks))
 
 ---
 

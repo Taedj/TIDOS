@@ -3,7 +3,7 @@
   python scripts/build_plugin.py          write plugin/ files
   python scripts/build_plugin.py --check  exit 1 if plugin/ is out of date (CI)
 
-Sources of truth: .claude/agents/*.md, .claude/commands/{tidos,TIDOSZIT}.md, VERSION.md.
+Sources of truth: .claude/agents/*.md, .claude/skills/*/SKILL.md, .claude/commands/{tidos,TIDOSZIT}.md, VERSION.md.
 """
 import glob
 import json
@@ -27,6 +27,9 @@ def expected_files():
     for path in sorted(glob.glob(os.path.join(ROOT, ".claude", "agents", "tidos-*.md"))):
         with open(path, encoding="utf-8") as f:
             files["agents/" + os.path.basename(path)] = f.read()
+    for path in sorted(glob.glob(os.path.join(ROOT, ".claude", "skills", "*", "SKILL.md"))):
+        with open(path, encoding="utf-8") as f:
+            files["skills/%s/SKILL.md" % os.path.basename(os.path.dirname(path))] = f.read()
     for name in COMMANDS:
         with open(os.path.join(ROOT, ".claude", "commands", name), encoding="utf-8") as f:
             files["commands/" + name] = f.read()
