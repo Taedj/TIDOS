@@ -15,6 +15,9 @@ from datetime import datetime, timezone
 from . import control, privacy, scoring
 
 SOURCE = "claude-code"
+# Bump when parsing changes what is stored: every session is then re-read once (store() replaces it).
+# 2: delegations record their subagent ("general-purpose" when Claude Code got no subagent_type).
+IMPORTER_VERSION = 2
 PROJECTS_DIR = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 
 # Injected, non-human user messages
@@ -60,8 +63,8 @@ def extract_prompt(entry):
 def _summary(tool, tool_input):
     if not isinstance(tool_input, dict):
         return None
-    if tool_input.get("subagent_type"):  # delegations: keep WHICH subagent got the mission
-        return "%s: %s" % (tool_input["subagent_type"], tool_input.get("description", ""))
+    if tool_input.get("subagent_type") or tool in ("Agent", "Task"):  # delegations: keep WHICH subagent got it
+        return "%s: %s" % (tool_input.get("subagent_type") or "general-purpose", tool_input.get("description", ""))
     for key in ("command", "file_path", "notebook_path", "pattern", "url", "query", "description", "skill"):
         if tool_input.get(key):
             return str(tool_input[key])
@@ -247,7 +250,8 @@ def import_all(conn, projects_dir=PROJECTS_DIR):
     """Import every top-level transcript (subagent transcripts live in subfolders and are skipped)."""
     purge_synthetic(conn)
     results = []
-    imported = {r[0]: r[1] for r in conn.execute("SELECT transcript, imported_at FROM sessions")}
+    stale = importer_stale(conn, SOURCE, IMPORTER_VERSION)
+    imported = {} if stale else {r[0]: r[1] for r in conn.execute("SELECT transcript, imported_at FROM sessions")}
     for path in sorted(glob.glob(os.path.join(projects_dir, "*", "*.jsonl"))):
         done = imported.get(path)
         modified = datetime.fromtimestamp(os.path.getmtime(path), tz=timezone.utc).isoformat(timespec="seconds")
@@ -259,7 +263,21 @@ def import_all(conn, projects_dir=PROJECTS_DIR):
                 results.append((session, tasks))
         except (OSError, ValueError) as e:
             print("skip %s: %s" % (path, e), file=sys.stderr)
+    if stale:
+        importer_done(conn, SOURCE, IMPORTER_VERSION)
     return results
+
+
+def importer_stale(conn, source, version):
+    """True when sessions were imported by an older parser (they must all be re-read once)."""
+    conn.execute("CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT)")
+    row = conn.execute("SELECT value FROM meta WHERE key = ?", ("importer:" + source,)).fetchone()
+    return int(row[0]) < version if row else True
+
+
+def importer_done(conn, source, version):
+    with conn:
+        conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES (?, ?)", ("importer:" + source, str(version)))
 
 
 # --- Hook handler -----------------------------------------------------------

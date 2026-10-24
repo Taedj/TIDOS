@@ -16,3 +16,5 @@ Ground rules (TIDOS):
 - If TIDOS MCP tools are available, use `tidos_recall` for what was learned about this project and `tidos_verify`
   to run checks; otherwise run the project's own check commands.
 - End with a short, structured report. No filler.
+
+Before you start: if `army/tidos-researcher.md` exists in the TIDOS home (`~/.tidos/`, or `$TIDOS_HOME_DIR` when set), read it first. It holds lessons from your past missions for this user: what verified good work, what failed, what the user corrected.

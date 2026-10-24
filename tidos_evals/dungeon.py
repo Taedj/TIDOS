@@ -40,8 +40,8 @@ class Task:
         exe = self.verify[0]
         return exe == "{python}" or shutil.which(exe) is not None
 
-    def prepare(self, workdir, with_tidos=False, ablate=None):
-        """Create a fresh workdir: fixture + TASK.md (+ TIDOS_PROTOCOL.md)."""
+    def prepare(self, workdir, with_tidos=False, ablate=None, unit=None):
+        """Create a fresh workdir: fixture + TASK.md (+ TIDOS_PROTOCOL.md / GUIDE.md / UNIT.md)."""
         if os.path.exists(workdir):
             shutil.rmtree(workdir)
         shutil.copytree(os.path.join(self.path, "fixture"), workdir)
@@ -55,6 +55,10 @@ class Task:
             text = text.split("## For EVERY new request")[0] + "\n" + guide.guidance(self.prompt, workdir, record=False)[1]
             with open(os.path.join(workdir, "GUIDE.md"), "w", encoding="utf-8") as f:
                 f.write(text)
+        elif with_tidos == "unit":  # Shadow Army trial: the subagent's own instructions
+            from tidos_learn import army
+            with open(os.path.join(workdir, "UNIT.md"), "w", encoding="utf-8") as f:
+                f.write(army.unit_prompt(unit))
         elif with_tidos:
             shutil.copy(PROTOCOL, os.path.join(workdir, "TIDOS_PROTOCOL.md"))
 

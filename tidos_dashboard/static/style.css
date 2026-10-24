@@ -271,3 +271,11 @@ html[lang=ar] code, html[lang=ar] pre, html[lang=ar] .console, html[lang=ar] inp
 /* your data (prompts, names, notes) is mostly English: each paragraph takes the direction of its own text */
 [dir=rtl] .log-item, [dir=rtl] td, [dir=rtl] .kv b, [dir=rtl] .answer, [dir=rtl] .hit, [dir=rtl] .quest { unicode-bidi: plaintext; }
 [dir=rtl] .row .name { direction: ltr; text-align: right; }
+
+/* ---- Army -------------------------------------------------------------- */
+.g-army { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+.unit-desc { display: block; max-width: 280px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+td.nowrap { white-space: nowrap; }
+#armyList tr { cursor: default; }
+#armyList tr.sel td { background: rgba(79,176,255,.12); }
+@media (max-width: 760px) { .g-army { grid-template-columns: 1fr; } .unit-desc { max-width: 220px; } }

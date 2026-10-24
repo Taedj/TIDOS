@@ -11,9 +11,10 @@ import sqlite3
 from datetime import datetime, timezone
 
 from . import scoring
-from .claude_code import finalize_tasks, is_synthetic, store
+from .claude_code import finalize_tasks, importer_done, importer_stale, is_synthetic, store
 
 SOURCE = "opencode"
+IMPORTER_VERSION = 2  # 2: delegations record their subagent (explore, general...)
 TOOL_KINDS = {"bash": "exec", "read": "read", "edit": "edit", "write": "edit", "patch": "edit", "multiedit": "edit",
               "grep": "search", "glob": "search", "list": "search", "webfetch": "web", "websearch": "web",
               "task": "delegate"}
@@ -31,6 +32,8 @@ def _iso(ms):
 def _summary(tool, inp):
     if not isinstance(inp, dict):
         return None
+    if tool == "task":  # delegations: keep WHICH subagent got the mission
+        return "%s: %s" % (inp.get("subagent_type") or "general", inp.get("description", ""))
     for key in ("command", "filePath", "file_path", "path", "pattern", "url", "query", "description"):
         if inp.get(key):
             return str(inp[key])
@@ -109,7 +112,9 @@ def import_all(conn, path=None):
     try:
         rows = src.execute("SELECT id, directory, title, time_created, time_updated FROM session "
                            "WHERE parent_id IS NULL ORDER BY time_created").fetchall()
-        known = {r[0]: r[1] for r in conn.execute("SELECT id, ended_at FROM sessions WHERE source = ?", (SOURCE,))}
+        stale = importer_stale(conn, SOURCE, IMPORTER_VERSION)
+        known = {} if stale else {r[0]: r[1] for r in conn.execute("SELECT id, ended_at FROM sessions WHERE source = ?",
+                                                                   (SOURCE,))}
         results = []
         for row in rows:
             if is_synthetic(row[1]) or row[1] in ("/", ""):
@@ -120,6 +125,8 @@ def import_all(conn, path=None):
             if tasks:
                 store(conn, session, tasks)
                 results.append((session, tasks))
+        if stale:
+            importer_done(conn, SOURCE, IMPORTER_VERSION)
         return results
     finally:
         src.close()

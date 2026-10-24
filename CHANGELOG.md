@@ -16,6 +16,14 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
   `tool_install` kill switch is on (off by default), the tool is approved, trust >= 70 and not installed.
   Every command is logged (`~/.tidos/tool_installs.log` + security log); Uninstall removes only what TIDOS
   installed. MCP servers and project-local packages stay manual.
+- **Shadow Army v2** (`tidos_learn/army.py`, `tidos_learn army`, Army tab): subagents rank by mission
+  EVIDENCE (each mission earns the XP of the task it served: checks, first try, minus corrections), private
+  lessons per unit (`~/.tidos/army/<unit>.md`, read by TIDOS units before they start), ARISE drafts a
+  specialist for recurring work no unit covers (first run: firebase, python), rework proposals for units
+  that keep failing, dungeon trials (`tidos_evals run --unit NAME`), and one-click activation of a draft
+  into `~/.claude/agents` (personal, never the public repo) with undo. Importers now record WHICH subagent
+  got each delegation (Claude Code default `general-purpose`, OpenCode `explore`/`general`); an importer
+  version re-reads old sessions once, recovering 107 missions.
 - `tidos_verify` also accepts the catalog tools' own checks (`gitleaks detect`, `osv-scanner scan`, `shellcheck`).
 
 ### Fixed

@@ -166,6 +166,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"notifications": stats.notifications(conn)})
             if path == "/api/army":
                 return self._json(200, stats.army(conn))
+            if path == "/api/army/lessons":
+                from tidos_learn import army
+                text = army.lessons((query.get("name") or [""])[0])
+                return self._json(200, {"text": text}) if text is not None else self._json(404, {"error": "not found"})
             if path == "/api/memory":
                 return self._json(200, stats.memory_index())
             if path == "/api/memory/file":
@@ -254,6 +258,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/auth/change": self._auth_change, "/api/switches": self._switches,
             "/api/playbooks/toggle": self._playbook_toggle,
             "/api/evolution/status": self._evolution_status,
+            "/api/army/action": self._army_action,
             "/api/tools/action": self._tool_action,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
@@ -358,6 +363,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "unknown proposal"})
         self.server.lockout.log("proposal", "#%s %s" % (body.get("id"), status))
         return self._json(200, {"ok": True})
+
+    def _army_action(self, body):
+        """ARISE: activate a draft unit (-> ~/.claude/agents, personal) or undo it. Owner only, logged."""
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        from tidos_learn import army
+        name, action = str(body.get("name") or ""), body.get("action")
+        if action not in ("activate", "deactivate"):
+            return self._json(400, {"error": "unknown action"})
+        try:
+            path = army.activate(name) if action == "activate" else army.deactivate(name)
+        except (ValueError, KeyError) as e:
+            return self._json(409, {"error": str(e).strip("'")})
+        self.server.lockout.log("army", "%s %s" % (name, action))
+        return self._json(200, {"ok": True, "path": path})
 
     def _ask(self, body):
         if not self._session():

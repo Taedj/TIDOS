@@ -233,7 +233,7 @@
 - [ ] **9.11** *(deferred: needs repeated eval runs per prompt variant (cost/time); the dungeon harness (--repeat, compare) is the base for it)* DSPy / GEPA-style prompt optimization of personas & skills against evals
 - [x] **9.12** `TIDOS STATUS` command (terminal version of Status Window) — done 2026-10-24 (tidos_learn status: terminal status window (level, rank, XP bar, 5 stats, domains, daily quests, unlocked drafts))
 - [x] **9.13** Panel: 🧠 **Memory Explorer** (edit/merge/delete/pin, graph view) — done 2026-10-24 (Memory tab in /TIDOSZIT: private memory files, learned rules and drafts, read-only viewer, traversal-safe API (tests))
-- [x] **9.14** Panel: "Shadow Army" view (subagents as units with level & specialties) — done 2026-10-24 (Shadow Army on the Status window: active subagents + drafted specialists with missions and E-S rank; the importer now records which subagent each delegation went to)
+- [x] **9.14** Panel: "Shadow Army" view (subagents as units with level & specialties) — done 2026-10-24 (Shadow Army on the Status window: active subagents + drafted specialists with missions and E-S rank; the importer now records which subagent each delegation went to). v2 the same day at the user's request: Army tab + `tidos_learn army`: rank from mission evidence (task XP), private lessons per unit read by TIDOS units, ARISE drafts for uncovered recurring stacks (firebase, python drafted from real data), rework proposals, dungeon trials (`--unit`), activate/undo into ~/.claude/agents; importer v2 recovered 107 missions (tests/test_army.py)
 
 ---
 

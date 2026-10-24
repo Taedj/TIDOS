@@ -153,7 +153,8 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "army", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    if (tab.dataset.view === "army") loadArmyTab();
     if (tab.dataset.view === "tools") loadTools();
     if (tab.dataset.view === "evolution") loadEvolution();
     if (tab.dataset.view === "memory") loadMemory();
@@ -303,7 +304,7 @@ async function loadDungeons() {
     <td>${b.cost ? "$" + b.cost.toFixed(2) : `<span class="faint">${t("free")}</span>`}</td></tr>`).join("")
     || `<tr><td colspan="5" class="muted">${t("No raids yet. Run the command below.")}</td></tr>`;
   $("dungeonMeta").textContent = t("{n} dungeons · last raid {w} · lift = pass rate with TIDOS minus without.", { n: d.tasks.length, w: d.last_run ? when(d.last_run) : t("never") });
-  const label = (c) => { const [m, x] = c.split("|"); return `${esc(m.replace("opencode:", "").replace("opencode/", ""))}<br>${x === "1" ? "+TIDOS" : t("plain")}`; };
+  const label = (c) => { const [m, x] = c.split("|"); return `${esc(m.replace("opencode:", "").replace("opencode/", ""))}<br>${{ 1: "+TIDOS", 2: "+GUIDE", 3: "+UNIT" }[x] || t("plain")}`; };
   $("matrixHead").innerHTML = `<tr><th>${t("Dungeon")}</th>${d.columns.map((c) => `<th>${label(c)}</th>`).join("")}</tr>`;
   $("matrixBody").innerHTML = d.tasks.map((k) => `
     <tr><td><span class="rank ${esc(k.difficulty)}">${esc(k.difficulty)}</span> <span title="${esc(k.title)}">${esc(k.id)}</span></td>
@@ -391,8 +392,52 @@ async function loadArmy() {
     <div class="row"><span class="rank ${esc(u.rank)}">${esc(u.rank)}</span>
       <span class="name"><b>${esc(u.name)}</b> <span class="faint small">${esc(u.description)}</span></span>
       <span class="pill ${u.state === "draft" ? "warn" : "ok"}">${esc(t(u.state))}</span>
+      <span class="pill">LV ${u.level}</span>
       <span class="pill">${lang === "ar" ? t("{n} mission(s)", { n: u.missions }) : `${u.missions} mission${u.missions === 1 ? "" : "s"}`}</span></div>`).join("")
     || `<p class="muted">${t("No subagents yet.")}</p>`;
+}
+
+async function showUnit(name, kind) {
+  $("armyTitle").textContent = name;
+  if (kind === "lessons") {
+    const r = await api("/api/army/lessons?name=" + encodeURIComponent(name));
+    $("armyView").textContent = r.ok ? r.data.text : t("No lessons yet (no recorded missions).");
+  }
+  document.querySelectorAll("#armyList tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.name === name));
+}
+
+async function loadArmyTab() {
+  const r = await api("/api/army");
+  if (!r.ok) return;
+  const activated = new Set(r.data.activated);
+  const units = Object.fromEntries(r.data.units.map((u) => [u.name, u]));
+  const pct = (v) => v === null ? '<span class="faint">—</span>' : `<span class="pill ${v >= 0.6 ? "ok" : v <= 0.4 ? "bad" : "warn"}">${Math.round(v * 100)}%</span>`;
+  const trial = (x) => !x ? '<span class="faint">—</span>'
+    : `<span class="pill ${x.passed ? "ok" : "bad"}" title="${esc(x.agent)} · ${x.tasks} dungeons">${x.unit}% / ${x.plain}%</span>`;
+  $("armyList").innerHTML = r.data.units.map((u) => `
+    <tr data-name="${esc(u.name)}"><td><span class="rank ${esc(u.rank)}">${esc(u.rank)}</span></td>
+      <td><b>${esc(u.name)}</b><br><span class="small faint unit-desc" title="${esc(u.description)}">${esc(u.description || (u.projects || []).join(", "))}</span></td>
+      <td><span class="pill ${u.state === "active" ? "ok" : u.state === "draft" ? "warn" : ""}">${esc(t(u.state))}</span></td>
+      <td class="nowrap">LV ${u.level} · ${fmt(u.xp)}</td><td>${fmt(u.missions)}</td><td>${pct(u.success)}</td><td>${trial(u.trial)}</td>
+      <td>${u.has_lessons ? `<button class="btn ghost unit" data-a="lessons" data-n="${esc(u.name)}">${t("Lessons")}</button>` : ""}
+        ${u.state === "draft" ? `<button class="btn ghost unit" data-a="activate" data-n="${esc(u.name)}">ARISE</button>` : ""}
+        ${activated.has(u.name) ? `<button class="btn ghost unit" data-a="deactivate" data-n="${esc(u.name)}">${t("Deactivate")}</button>` : ""}</td></tr>`).join("")
+    || `<tr><td colspan="8" class="muted">${t("No subagents yet.")}</td></tr>`;
+  $("armyList").querySelectorAll(".unit").forEach((b) => b.addEventListener("click", async () => {
+    const u = units[b.dataset.n];
+    if (b.dataset.a === "lessons") return showUnit(u.name, "lessons");
+    if (b.dataset.a === "activate") {
+      const tr = u.trial;
+      const msg = tr ? t("Activate {name}? Trial: {u}% with it vs {p}% plain on {n} dungeons.", { name: u.name, u: tr.unit, p: tr.plain, n: tr.tasks })
+        : t("Activate {name}? It has NOT been trialled. Trial it first with: tidos_evals run --agent claude:haiku --unit {name}", { name: u.name });
+      if (!confirm(msg)) return;
+    }
+    if (b.dataset.a === "deactivate" && !confirm(t("Deactivate {name}? Its draft is kept.", { name: u.name }))) return;
+    b.disabled = true;
+    const res = await api("/api/army/action", { name: u.name, action: b.dataset.a });
+    toast(`<b>[SYSTEM]</b> ${esc(res.ok ? (b.dataset.a === "activate" ? t("ARISE: {name} joined your army.", { name: u.name }) : t("{name} returned to the drafts.", { name: u.name })) : t(res.data.error || "failed"))}`, res.ok ? "" : "warn");
+    loadArmyTab(); loadArmy();
+  }));
 }
 
 async function showMemory(path) {

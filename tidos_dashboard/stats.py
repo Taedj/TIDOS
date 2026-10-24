@@ -187,31 +187,12 @@ def playbook_text(relpath):
         return f.read()
 
 
-ARMY_RANKS = [(100, "S"), (30, "A"), (10, "B"), (3, "C"), (1, "D"), (0, "E")]
 
 
 def army(conn):
-    """Shadow Army: TIDOS subagents (active + drafted specialists) with missions and rank."""
-    import glob
-    import re as _re
-    from tidos_session import detect
-    missions = {}
-    for (summary,) in conn.execute("SELECT summary FROM tool_calls WHERE kind = 'delegate' AND summary LIKE '%:%'"):
-        name = summary.split(":", 1)[0].strip()
-        missions[name] = missions.get(name, 0) + 1
-    units = []
-    sources = [(p, "active") for p in glob.glob(os.path.join(detect.REPO_ROOT, ".claude", "agents", "*.md"))] +               [(p, "draft") for p in glob.glob(os.path.join(detect.tidos_home(), "drafts", "agents", "*.md"))]
-    for path, state in sources:
-        with open(path, "r", encoding="utf-8") as f:
-            head = f.read(2000)
-        front = dict(_re.findall(r"^(\w+):\s*(.+)$", head.split("\n---", 1)[0], _re.M))
-        name = front.get("name", os.path.basename(path)[:-3])
-        n = missions.get(name, 0)
-        units.append({"name": name, "state": state, "description": front.get("description", "")[:160],
-                      "tools": front.get("tools", ""), "missions": n,
-                      "rank": next(r for t, r in ARMY_RANKS if n >= t)})
-    units.sort(key=lambda u: (u["state"] != "active", -u["missions"], u["name"]))
-    return {"units": units, "other_missions": sum(v for k, v in missions.items() if not k.startswith("tidos-"))}
+    """Shadow Army roster (tidos_learn.army): units ranked by mission evidence, plus which ones TIDOS activated."""
+    from tidos_learn import army as engine
+    return {"units": engine.compute(conn), "activated": sorted(engine.load_state().get("activated", {}))}
 
 
 def evolution():

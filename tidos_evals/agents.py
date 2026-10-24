@@ -17,6 +17,7 @@ import time
 PROMPT = "Complete the task described in TASK.md in the current directory."
 TIDOS_SUFFIX = " Before you start, read TIDOS_PROTOCOL.md and follow it strictly."
 GUIDE_SUFFIX = " Before you start, read GUIDE.md and follow it."
+UNIT_SUFFIX = " Before you start, read UNIT.md: it describes who you are and how you work. Follow it."
 
 # Claude Code: edits + language runners only (no network, no arbitrary shell)
 CLAUDE_TOOLS = ",".join([
@@ -83,7 +84,7 @@ def kill_tree(proc):
 
 
 def attempt(spec, task, workdir, with_tidos, budget_usd=1.0):
-    prompt = PROMPT + (GUIDE_SUFFIX if with_tidos == "guide" else TIDOS_SUFFIX if with_tidos else "")
+    prompt = PROMPT + {"guide": GUIDE_SUFFIX, "unit": UNIT_SUFFIX}.get(with_tidos, TIDOS_SUFFIX if with_tidos else "")
     if spec == "reference":
         task.overlay("solution", workdir)
         return AgentResult()

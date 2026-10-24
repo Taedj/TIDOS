@@ -6,6 +6,7 @@
   show PATH_OR_NAME               print one playbook
   note --project P --stack S "advice"   (LEARN mode) a strong model records advice for weaker models
   summarize [--pending | --session ID]  a cheap strong model turns finished sessions into advice notes
+  army [--lessons NAME | --activate NAME | --deactivate NAME]   Shadow Army: units ranked by mission evidence
 """
 import argparse
 import glob
@@ -98,6 +99,39 @@ def cmd_proposals(args):
     return 0
 
 
+def cmd_army(args):
+    """Shadow Army: roster (XP from mission evidence), a unit's lessons, activate a draft / undo it."""
+    from . import army
+    if args.lessons:
+        text = army.lessons(args.lessons)
+        print(text or "No lessons yet for %s (no recorded missions)." % args.lessons)
+        return 0 if text else 1
+    try:
+        if args.activate:
+            trial = army.load_state().get("trials", {}).get(args.activate)
+            print("Activated: %s\n  trial: %s\n  undo:  tidos_learn army --deactivate %s" % (
+                army.activate(args.activate), "%(unit)d%% vs plain %(plain)d%% on %(tasks)d dungeons" % trial
+                if trial else "none (run: tidos_evals run --agent claude:haiku --unit %s)" % args.activate,
+                args.activate))
+            return 0
+        if args.deactivate:
+            print("Removed %s (its draft is kept)." % army.deactivate(args.deactivate))
+            return 0
+    except (ValueError, KeyError) as e:
+        print("Refused: %s" % e)
+        return 1
+    conn = db.connect(args.db)
+    roster = army.compute(conn)
+    conn.close()
+    print("%-26s %-8s %-4s %-4s %8s %6s %8s  %s" % ("UNIT", "STATE", "LV", "RANK", "MISSIONS", "XP", "SUCCESS", "PROJECTS"))
+    for u in roster:
+        print("%-26s %-8s %-4d %-4s %8d %6d %8s  %s" % (
+            u["name"][:26], u["state"], u["level"], u["rank"], u["missions"], u["xp"],
+            "-" if u["success"] is None else "%d%%" % (100 * u["success"]), ", ".join(u["projects"])))
+    print("\nRank = level from mission XP (same evidence as tidos_learn status). Lessons: --lessons NAME.")
+    return 0
+
+
 def cmd_status(args):
     """TIDOS STATUS - the Solo Leveling status window in the terminal."""
     from tidos_dashboard import stats
@@ -169,6 +203,11 @@ def main(argv=None):
     p.add_argument("--reject", type=int, metavar="ID")
     p.add_argument("--issue", type=int, metavar="ID", help="write a GitHub issue draft + the gh command")
     p.set_defaults(func=cmd_proposals)
+    p = sub.add_parser("army", help="Shadow Army: subagents ranked by mission evidence")
+    p.add_argument("--lessons", metavar="NAME")
+    p.add_argument("--activate", metavar="NAME", help="draft -> ~/.claude/agents (personal, all projects)")
+    p.add_argument("--deactivate", metavar="NAME", help="undo --activate (the draft is kept)")
+    p.set_defaults(func=cmd_army)
     p = sub.add_parser("show")
     p.add_argument("name")
     p.set_defaults(func=cmd_show)

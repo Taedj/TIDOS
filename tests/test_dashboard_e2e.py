@@ -111,7 +111,7 @@ class DashboardE2E(unittest.TestCase):
 
     def test_every_tab_renders_without_errors(self):
         ctx, page, errors = self.open()
-        for view in ("status", "live", "security", "dungeons", "playbooks", "memory", "evolution", "tools"):
+        for view in ("status", "live", "security", "dungeons", "playbooks", "army", "memory", "evolution", "tools"):
             page.click(".tab[data-view=%s]" % view)
             page.wait_for_selector("#view-%s:not(.hidden)" % view)
             page.wait_for_timeout(300)
@@ -164,7 +164,7 @@ class DashboardE2E(unittest.TestCase):
         self.assertEqual(page.text_content(".tab[data-view=status]"), "الحالة")
         self.assertEqual(page.text_content("#app .lang-switch"), "English")
         page.locator("#quests", has_text="أنجز 3 مهام").wait_for()  # server text translated
-        for view in ("status", "live", "security", "tools", "evolution", "playbooks", "memory", "dungeons"):
+        for view in ("status", "live", "security", "tools", "evolution", "playbooks", "army", "memory", "dungeons"):
             page.click(".tab[data-view=%s]" % view)
             page.wait_for_timeout(300)
             self.assertFalse(page.evaluate("document.documentElement.scrollWidth > window.innerWidth + 1"), view)

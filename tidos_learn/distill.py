@@ -273,6 +273,8 @@ def distill(conn, out_dir=None):
     prefs.write(prefs.learn(conn))
     from . import xp  # XP + growth drafts (skill drafts, job change) from the fresh playbooks
     xp.level_up(conn)
+    from . import army  # Shadow Army: unit lessons, ARISE drafts, rework proposals
+    army.refresh(conn, tasks)
     return [(w[0], w[2], w[3], w[4], w[5], w[6]) for w in written]
 
 

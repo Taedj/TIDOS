@@ -69,7 +69,7 @@
     <button class="tab" data-view="security">Security</button>
     <button class="tab" data-view="dungeons">Dungeons</button>
     <button class="tab" data-view="playbooks">Playbooks</button>
-    <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
+    <button class="tab" data-view="army">Army</button>
     <button class="tab" data-view="memory">Memory</button>
     <button class="tab" data-view="evolution">Evolution</button>
     <button class="tab" data-view="tools">Tool Scout</button>
@@ -101,6 +101,25 @@
       <div class="window"><h2>Models</h2><div id="models"></div></div>
       <div class="window"><h2>Quest Log</h2><div id="cleared"></div></div>
       <div class="window span-3"><h2>Shadow Army — your subagents</h2><div id="army"></div></div>
+    </div>
+
+    <!-- ARMY -->
+    <div id="view-army" class="grid g-army hidden">
+      <div class="window">
+        <h2>Shadow Army — rank from mission evidence</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Rank</th><th>Unit</th><th>State</th><th>LV · XP</th><th>Missions</th><th>Success</th><th>Trial</th><th>Actions</th></tr></thead>
+          <tbody id="armyList"></tbody>
+        </table></div>
+        <p class="small faint note">A mission earns the XP of the task it served: checks passed, right first time, minus your corrections.
+          Drafts come from job changes (project level 15) and ARISE (recurring work no unit covers). Activate puts a draft in
+          ~/.claude/agents (your personal units, every project). Trial a unit first:
+          <code class="sys">python -I tidos_evals/__main__.py run --agent claude:haiku --unit NAME</code></p>
+      </div>
+      <div class="window">
+        <h2 id="armyTitle">Select a unit</h2>
+        <pre class="console pb-view" id="armyView"></pre>
+      </div>
     </div>
 
     <!-- EVOLUTION -->

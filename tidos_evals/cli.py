@@ -73,6 +73,10 @@ def cmd_run(args):
              "compare": [False, "guide"]}[args.tidos]
     if args.ablate:
         modes = ["guide"]  # ablation = GUIDE mode with one rule removed, compared against full GUIDE runs
+    if args.unit:
+        from tidos_learn import army
+        army.unit_prompt(args.unit)  # fail fast on an unknown unit
+        modes = [False, "unit"]  # Shadow Army trial: plain vs the unit's instructions, same tasks
     # unique even for parallel runs started in the same second
     slug = "".join(c if c.isalnum() else "-" for c in args.agent)[:40].strip("-")
     run_id = "%s-%s-%s" % (datetime.now().strftime("%Y%m%d-%H%M%S"), slug, os.urandom(2).hex())
@@ -87,19 +91,21 @@ def cmd_run(args):
         for with_tidos in modes:
             for rep in range(args.repeat):
                 n += 1
-                tag = "-guide" if with_tidos == "guide" else "-tidos" if with_tidos else ""
-                label = "%s%s%s" % (t.id, {"-guide": " +GUIDE", "-tidos": " +TIDOS", "": ""}[tag],
+                tag = {"guide": "-guide", "unit": "-unit"}.get(with_tidos, "-tidos" if with_tidos else "")
+                label = "%s%s%s" % (t.id, {"-guide": " +GUIDE", "-unit": " +UNIT", "-tidos": " +TIDOS", "": ""}[tag],
                                     " #%d" % (rep + 1) if args.repeat > 1 else "")
                 work = os.path.join(run_dir, t.suite, "%s%s-%d" % (t.name, tag, rep + 1))
-                t.prepare(work, with_tidos, ablate=args.ablate)
+                t.prepare(work, with_tidos, ablate=args.ablate, unit=args.unit)
                 print("[%d/%d] %-52s ..." % (n, total, label), end="", flush=True)
                 res, seconds = agents.timed_attempt(args.agent, t, work, with_tidos, args.budget)
                 passed, verify_log = t.run_verify(work)
                 with open(os.path.join(work, "_tidos_eval_log.txt"), "w", encoding="utf-8") as f:
                     f.write("AGENT (%s, ok=%s, error=%s)\n%s\n\nVERIFY\n%s" % (
                         args.agent, res.ok, res.error, res.log, verify_log))
-                row = {"suite": t.suite, "task_name": t.name, "model": _ablated(args.agent, args.ablate),
-                       "agent": args.agent.partition(":")[0], "with_tidos": 2 if with_tidos == "guide" else int(with_tidos),
+                model = _unit_label(args.agent, args.unit) if with_tidos == "unit" else _ablated(args.agent, args.ablate)
+                row = {"suite": t.suite, "task_name": t.name, "model": model,
+                       "agent": args.agent.partition(":")[0],
+                       "with_tidos": {"guide": 2, "unit": 3}.get(with_tidos, int(bool(with_tidos))),
                        "passed": int(passed), "duration_s": seconds, "cost_usd": res.cost_usd,
                        "run_at": _now(), "run_id": run_id, "difficulty": t.difficulty,
                        "turns": res.turns, "error": res.error}
@@ -116,8 +122,35 @@ def cmd_run(args):
     _print_report(conn, run_id)
     if args.ablate:
         print(ablation_verdict(conn, args.agent, args.ablate))
+    if args.unit:
+        print(unit_verdict(conn, args.agent, args.unit))
     conn.close()
     return 0
+
+
+def _unit_label(agent, unit):
+    return "%s [unit %s]" % (agent, unit)
+
+
+MIN_TRIAL_TASKS = 5
+
+
+def unit_verdict(conn, agent, unit):
+    """Shadow Army trial: the unit's instructions vs plain on the same dungeons; recorded for activation."""
+    def rates(model, mode):
+        rows = conn.execute("SELECT suite || '/' || task_name t, AVG(passed) p FROM evals WHERE model = ? AND "
+                            "with_tidos = ? AND COALESCE(error, '') NOT LIKE 'contaminated%' GROUP BY t", (model, mode))
+        return {r["t"]: r["p"] for r in rows}
+    plain, with_unit = rates(agent, 0), rates(_unit_label(agent, unit), 3)
+    common = sorted(set(plain) & set(with_unit))
+    if len(common) < MIN_TRIAL_TASKS:
+        return "Unit %s trial: only %d task(s) with both results (need %d)." % (unit, len(common), MIN_TRIAL_TASKS)
+    a = 100.0 * sum(plain[t] for t in common) / len(common)
+    b = 100.0 * sum(with_unit[t] for t in common) / len(common)
+    from tidos_learn import army
+    trial = army.record_trial(unit, agent, len(common), a, b)
+    return "Unit %s trial on %d tasks: plain %.0f%%, as %s %.0f%% (%+.0f points): %s." % (
+        unit, len(common), a, unit, b, b - a, "PASSED (ready to activate)" if trial["passed"] else "did not help")
 
 
 def _ablated(agent, rule):
@@ -170,7 +203,7 @@ def _print_report(conn, run_id=None):
     for r in rows:
         rate = 100.0 * (r["p"] or 0) / r["n"]
         by_model.setdefault(r["model"], {})[r["with_tidos"]] = rate
-        print("%-44s %-6s %5d/%-3d %8.0f%% %8s %8.0f" % (r["model"], {0: "off", 1: "on", 2: "guide"}[r["with_tidos"]],
+        print("%-44s %-6s %5d/%-3d %8.0f%% %8s %8.0f" % (r["model"], {0: "off", 1: "on", 2: "guide", 3: "unit"}[r["with_tidos"]],
                                                        r["p"] or 0, r["n"], rate,
                                                        "$%.2f" % r["c"] if r["c"] else "-", r["d"] or 0))
     for model, rates in by_model.items():
@@ -237,6 +270,8 @@ def main(argv=None):
     run.add_argument("--budget", type=float, default=1.0, help="max USD per Claude attempt")
     run.add_argument("--repeat", type=int, default=1)
     run.add_argument("--min-difficulty", default="E", choices=list("EDCBAS"), help="only tasks of this rank or harder")
+    run.add_argument("--unit", metavar="NAME", help="Shadow Army trial: plain vs this subagent's instructions "
+                     "(active or draft unit), same tasks; the result is shown when you activate it")
     run.add_argument("--ablate", type=int, metavar="N",
                      help="mutation test: GUIDE mode with weak rule N removed; files a deletion proposal if no drop")
     sub.choices["report"].add_argument("--run", help="only this run id")
