@@ -116,6 +116,10 @@ def main(argv=None):
     g = sub.add_parser("guide", help="guidance for one user request (GUIDE mode, just in time)")
     g.add_argument("request")
     g.add_argument("--project", default=".")
+    rv = sub.add_parser("review", help="second opinion on the current git diff from a different model")
+    rv.add_argument("--with", dest="reviewer", default="claude:sonnet")
+    rv.add_argument("--project", default=".")
+    rv.add_argument("--staged", action="store_true")
     sub.add_parser("effect", help="does GUIDE mode help? guided vs unguided weak-model tasks")
     sn = sub.add_parser("snippet", help="START TIDOS instructions to paste into a tool's instruction file")
     sn.add_argument("--tool", default="claude-code")
@@ -131,6 +135,19 @@ def main(argv=None):
             print(report(session, facts))
             print(text)
         return 0
+    if args.command == "review":
+        from . import review
+        text, error = review.second_opinion(os.path.abspath(args.project), args.reviewer, args.staged)
+        try:
+            with open(_session_path(), "r", encoding="utf-8") as f:
+                warning = review.same_family_warning(args.reviewer, json.load(f).get("model"))
+        except (OSError, ValueError):
+            warning = None
+        if warning:
+            print(warning + "\n")
+        print(("Second opinion (%s) - reviewer input only, you decide:\n\n%s" % (args.reviewer, text)) if text
+              else "No review: %s" % error)
+        return 0 if text else 1
     if args.command == "effect":
         from tidos_brain import db
         conn = db.connect()

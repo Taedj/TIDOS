@@ -80,6 +80,15 @@ class ScoringTests(unittest.TestCase):
         self.assertTrue(scoring.verify_passed(False, "12 passed, 0 failed"))
         self.assertFalse(scoring.verify_passed(True, ""))
         self.assertFalse(scoring.verify_passed(False, "Traceback (most recent call last):"))
+        # checkers that report failures without "failed"/"error:" (Bash gives no exit code)
+        for output in ("Analyzing app...\n  error • Undefined name 'x' • lib/a.dart:3:5\n3 issues found.",
+                       "FAIL src/app.test.js\n  x renders", "npm ERR! code ELIFECYCLE",
+                       "src/a.ts(3,5): error TS2322: Type 'string'", "not ok 1 - adds"):
+            self.assertFalse(scoring.verify_passed(False, output), output)
+        for output in ("Analyzing app...\nNo issues found! (ran in 2.1s)", "PASS src/app.test.js", "ok 1 - adds",
+                       "All tests passed!", "0 issues found", "fail-open mode enabled\n3 passed",
+                       "the exit code 1 is handled below\n5 passed"):
+            self.assertTrue(scoring.verify_passed(False, output), output)
 
     def test_correction(self):
         for text in ("no, it still fails", "Wrong file", "ça marche pas", "doesn't work"):

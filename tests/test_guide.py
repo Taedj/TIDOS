@@ -168,3 +168,31 @@ class EffectTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class ReviewTests(unittest.TestCase):
+    def test_second_opinion_plumbing(self):
+        from tidos_session import review
+        with tempfile.TemporaryDirectory() as tmp:
+            import subprocess
+            subprocess.run(["git", "init", "-q"], cwd=tmp, check=True)
+            env = dict(os.environ, GIT_AUTHOR_NAME="t", GIT_AUTHOR_EMAIL="t@example.com",
+                       GIT_COMMITTER_NAME="t", GIT_COMMITTER_EMAIL="t@example.com")
+            write(os.path.join(tmp, "a.py"), "x = 1\n")
+            subprocess.run(["git", "add", "-A"], cwd=tmp, check=True, env=env)
+            subprocess.run(["git", "commit", "-qm", "a"], cwd=tmp, check=True, env=env)
+            self.assertEqual(review.second_opinion(tmp, ask=lambda *a: ("x", None))[1],
+                             "no changes to review (git diff is empty)")
+            write(os.path.join(tmp, "a.py"), "x = 2\nkey = 'sk-ant-api03-AAAAAAAAAAAAAAAAAAAAAAAAAA'\n")
+            seen = {}
+
+            def fake(family, model, prompt):
+                seen.update(family=family, model=model, prompt=prompt)
+                return "No blocking issues", None
+
+            self.assertEqual(review.second_opinion(tmp, "opencode:google/gemini-2.5-flash", ask=fake),
+                             ("No blocking issues", None))
+            self.assertEqual((seen["family"], seen["model"]), ("opencode", "google/gemini-2.5-flash"))
+            self.assertIn("x = 2", seen["prompt"])
+            self.assertNotIn("sk-ant-", seen["prompt"])          # the diff is sanitized before it leaves
+            self.assertEqual(review.second_opinion(tmp, "gpt9:x")[0], None)

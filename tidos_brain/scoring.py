@@ -27,8 +27,13 @@ VERIFY_COMMAND = re.compile(
     r"Invoke-Pester|make (test|check))\b"
 )
 
-_FAILED_OUTPUT = re.compile(r"(?i)(\b\d+ (failed|errors?)\b|\bFAILED\b|\bTraceback \(most recent call last\)|"
-                            r"\berror(\[E\d+\])?:|\bBUILD FAILED\b|\bTests? failed\b)")
+# Bash results carry no exit code, so failures are recognized from the output of common checkers:
+# pytest/unittest, flutter/dart analyze ("3 issues found", "error •"), jest/vitest ("FAIL "), npm, tsc, gradle, cargo
+_FAILED_OUTPUT = re.compile(
+    r"(?i)(\b\d+ (failed|errors?)\b|\bFAILED\b|\bTraceback \(most recent call last\)|"
+    r"\berror(\[E\d+\])?:|\bBUILD FAILED\b|\bTests? failed\b|\b[1-9]\d* issues? found\b|^\s*error •|"
+    r"(?-i:^FAIL\s)|npm ERR!|\berror TS\d+|^(process )?exit(ed with)? code [1-9]|\bSome tests failed\b|"
+    r"^\s*not ok \d+)", re.MULTILINE)
 _ZERO_FAILED = re.compile(r"(?i)\b0 (failed|errors?)\b")
 
 # The user's next prompt says the previous answer was wrong (English + French)
