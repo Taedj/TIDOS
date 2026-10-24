@@ -188,6 +188,24 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(self.req("POST", "/api/playbooks/toggle", {"path": "app/bugfix.md", "disabled": True})[0], 200)
             self.assertTrue(self.req("GET", "/api/playbooks")[1]["playbooks"][0]["disabled"])
 
+    def test_memory_and_army_endpoints(self):
+        home = os.path.join(self.tmp.name, "tidoshome2")
+        with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):
+            os.makedirs(os.path.join(home, "memory"))
+            with open(os.path.join(home, "memory", "LESSONS.md"), "w", encoding="utf-8") as f:
+                f.write("# lessons")
+            with open(os.path.join(home, "control.md"), "w", encoding="utf-8") as f:
+                f.write("outside")
+            self.assertEqual(self.req("GET", "/api/memory")[0], 401)
+            self.login_with_setup()
+            items = self.req("GET", "/api/memory")[1]["items"]
+            self.assertEqual([i["path"] for i in items], ["memory/LESSONS.md"])
+            self.assertIn("lessons", self.req("GET", "/api/memory/file?path=memory/LESSONS.md")[1]["text"])
+            for bad in ("control.md", "memory/../control.md", "../x.md"):
+                self.assertEqual(self.req("GET", "/api/memory/file?path=" + bad)[0], 404, bad)
+            units = self.req("GET", "/api/army")[1]["units"]
+            self.assertTrue(any(u["name"] == "tidos-reviewer" and u["state"] == "active" for u in units))
+
     def test_session_expiry(self):
         now = [1000.0]
         sessions = auth.Sessions(clock=lambda: now[0])

@@ -151,6 +151,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
             if path == "/api/dungeons":
                 return self._json(200, stats.dungeons(conn))
+            if path == "/api/army":
+                return self._json(200, stats.army(conn))
+            if path == "/api/memory":
+                return self._json(200, stats.memory_index())
+            if path == "/api/memory/file":
+                text = stats.memory_text((query.get("path") or [""])[0])
+                return self._json(200, {"text": text}) if text is not None else self._json(404, {"error": "not found"})
             if path == "/api/session":
                 return self._json(200, stats.session_info(conn))
             if path == "/api/playbooks":

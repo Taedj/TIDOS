@@ -60,6 +60,8 @@ def extract_prompt(entry):
 def _summary(tool, tool_input):
     if not isinstance(tool_input, dict):
         return None
+    if tool_input.get("subagent_type"):  # delegations: keep WHICH subagent got the mission
+        return "%s: %s" % (tool_input["subagent_type"], tool_input.get("description", ""))
     for key in ("command", "file_path", "notebook_path", "pattern", "url", "query", "description", "skill"):
         if tool_input.get(key):
             return str(tool_input[key])

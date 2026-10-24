@@ -119,6 +119,7 @@ async function startApp(fresh = false) {
   $("app").classList.remove("hidden");
   if (fresh) toast("<b>[SYSTEM]</b> Welcome back, Player. Control center unlocked.");
   await loadStatus();
+  loadArmy();
   loadLive();
   connectStream();
   refreshTimer = setInterval(() => { loadStatus(); if (!$("view-security").classList.contains("hidden")) loadSecurity(); }, 30000);
@@ -139,7 +140,8 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    if (tab.dataset.view === "memory") loadMemory();
     if (tab.dataset.view === "live") loadLive();
     if (tab.dataset.view === "dungeons") loadDungeons();
     if (tab.dataset.view === "playbooks") loadPlaybooks();
@@ -290,6 +292,34 @@ async function loadDungeons() {
     <tr><td><span class="rank ${esc(t.difficulty)}">${esc(t.difficulty)}</span> <span title="${esc(t.title)}">${esc(t.id)}</span></td>
     ${d.columns.map((c) => { const x = d.cells[t.id + "|" + c];
       return `<td>${!x ? '<span class="cell none">·</span>' : x.passed ? `<span class="cell ok" title="${x.seconds}s">✓</span>` : `<span class="cell bad" title="${esc(x.error || "failed")}">✗</span>`}</td>`; }).join("")}</tr>`).join("");
+}
+
+// ---- shadow army + memory
+async function loadArmy() {
+  const r = await api("/api/army");
+  if (!r.ok) return;
+  $("army").innerHTML = r.data.units.map((u) => `
+    <div class="row"><span class="rank ${esc(u.rank)}">${esc(u.rank)}</span>
+      <span class="name"><b>${esc(u.name)}</b> <span class="faint small">${esc(u.description)}</span></span>
+      <span class="pill ${u.state === "draft" ? "warn" : "ok"}">${esc(u.state)}</span>
+      <span class="pill">${u.missions} mission${u.missions === 1 ? "" : "s"}</span></div>`).join("")
+    || `<p class="muted">No subagents yet.</p>`;
+}
+
+async function showMemory(path) {
+  const r = await api("/api/memory/file?path=" + encodeURIComponent(path));
+  $("memTitle").textContent = path;
+  $("memView").textContent = r.ok ? r.data.text : "Not found.";
+  document.querySelectorAll("#memList tr").forEach((tr) => tr.classList.toggle("sel", tr.dataset.path === path));
+}
+
+async function loadMemory() {
+  const r = await api("/api/memory");
+  if (!r.ok) return;
+  $("memList").innerHTML = r.data.items.map((m) => `
+    <tr data-path="${esc(m.path)}"><td>${esc(m.path)}</td><td><span class="pill">${esc(m.kind)}</span></td><td>${m.lines}</td></tr>`).join("")
+    || `<tr><td colspan="3" class="muted">Memory is empty.</td></tr>`;
+  $("memList").querySelectorAll("tr[data-path]").forEach((tr) => tr.addEventListener("click", () => showMemory(tr.dataset.path)));
 }
 
 // ---- playbooks

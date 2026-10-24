@@ -68,7 +68,7 @@
     <button class="tab" data-view="dungeons">Dungeons</button>
     <button class="tab" data-view="playbooks">Playbooks</button>
     <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
-    <button class="tab locked" title="Unlocks in Phase 9 — Auto-learn">🔒 Memory</button>
+    <button class="tab" data-view="memory">Memory</button>
     <button class="tab locked" title="Unlocks in Phase 10 — Auto-develop">🔒 Evolution</button>
     <button class="tab locked" title="Unlocks in Phase 11 — Tool scout">🔒 Tool Scout</button>
   </nav>
@@ -83,13 +83,30 @@
         <div class="xptext"><span id="pXp">0</span> XP · next level at <span id="pNext">100</span></div>
         <div class="xpbar"><i id="pXpBar"></i></div>
         <div class="kv" id="pTotals"></div>
-        <p class="small faint note">XP is provisional (from task scores) until the eval-gated XP engine (Phase 9).</p>
+        <p class="small faint note">XP = evidence: tasks whose checks passed (bonus when right first time), minus your corrections. Engine: tidos_learn/xp.py.</p>
       </div>
       <div class="window"><h2>Stats</h2><div id="stats"></div></div>
       <div class="window"><h2>Daily Quests</h2><div id="quests"></div></div>
       <div class="window"><h2>Domains</h2><div id="domains"></div></div>
       <div class="window"><h2>Models</h2><div id="models"></div></div>
       <div class="window"><h2>Quest Log</h2><div id="cleared"></div></div>
+      <div class="window span-3"><h2>Shadow Army — your subagents</h2><div id="army"></div></div>
+    </div>
+
+    <!-- MEMORY -->
+    <div id="view-memory" class="grid g-2 hidden">
+      <div class="window">
+        <h2>Memory Explorer — private, in ~/.tidos</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>File</th><th>Kind</th><th>Lines</th></tr></thead>
+          <tbody id="memList"></tbody>
+        </table></div>
+        <p class="small faint note">Read-only. Edit the files themselves; drafts become active only when you move them (see each draft's last line).</p>
+      </div>
+      <div class="window">
+        <h2 id="memTitle">Select a file</h2>
+        <pre class="console pb-view" id="memView"></pre>
+      </div>
     </div>
 
     <!-- LIVE -->

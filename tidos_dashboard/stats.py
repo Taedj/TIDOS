@@ -1,36 +1,13 @@
-"""Status Window data: provisional XP / level / rank computed from scored traces.
-
-Provisional until Phase 9 (eval-gated XP engine). Per task:
-  success +20, unknown +5, failure -10, last verify passed +5, corrected by user -5
-Level n needs 100 * (n-1)^1.5 XP. Ranks: E 1-4, D 5-9, C 10-19, B 20-34, A 35-49, S 50+.
-"""
+"""Control center data. XP, levels and ranks come from the XP engine (tidos_learn/xp.py)."""
 import os
 from datetime import datetime, timedelta, timezone
 
-RANKS = [(50, "S"), (35, "A"), (20, "B"), (10, "C"), (5, "D"), (1, "E")]
-OUTCOME_XP = {"success": 20, "unknown": 5, "failure": -10}
+# One XP formula for the whole system (tidos_learn/xp.py); the dashboard only displays it
+from tidos_learn.xp import level_for, rank_for, task_xp as _task_xp  # noqa: E402
 
 
 def task_xp(row):
-    xp = OUTCOME_XP.get(row["outcome"], 0)
-    if row["verify_passed"] == 1:
-        xp += 5
-    if row["corrected"]:
-        xp -= 5
-    return xp
-
-
-def level_for(xp):
-    level = 1
-    while 100 * level ** 1.5 <= xp:
-        level += 1
-    floor_xp = int(100 * (level - 1) ** 1.5)
-    next_xp = int(100 * level ** 1.5)
-    return level, floor_xp, next_xp
-
-
-def rank_for(level):
-    return next(r for threshold, r in RANKS if level >= threshold)
+    return _task_xp(row)[0]
 
 
 def _pct(num, den):
@@ -41,9 +18,6 @@ def status(conn, now=None):
     now = now or datetime.now(timezone.utc)
     rows = conn.execute(
         "SELECT t.*, s.project FROM tasks t JOIN sessions s ON s.id = t.session_id ORDER BY t.started_at").fetchall()
-    xp = max(0, sum(task_xp(r) for r in rows))
-    level, floor_xp, next_xp = level_for(xp)
-
     total = len(rows)
     edits = [r for r in rows if r["files_edited"]]
     verified = [r for r in rows if r["verify_passed"] is not None]
@@ -61,17 +35,11 @@ def status(conn, now=None):
          "hint": "tasks finished without a tool error"},
     ]
 
-    domains = {}
-    for r in rows:
-        d = domains.setdefault(r["project"] or "?", {"name": r["project"] or "?", "xp": 0, "tasks": 0, "success": 0})
-        d["xp"] += task_xp(r)
-        d["tasks"] += 1
-        d["success"] += r["outcome"] == "success"
-    for d in domains.values():
-        d["xp"] = max(0, d["xp"])
-        d["level"] = level_for(d["xp"])[0]
-        d["rank"] = rank_for(d["level"])
-    top_domains = sorted(domains.values(), key=lambda d: d["xp"], reverse=True)[:8]
+    from tidos_learn import xp as xp_engine  # same domains + XP as `tidos_learn status`
+    summary = xp_engine.compute(conn)
+    xp, level, floor_xp, next_xp = summary["xp"], summary["level"], summary["floor_xp"], summary["next_xp"]
+    top_domains = sorted(({"name": name, **info} for name, info in summary["domains"].items()),
+                         key=lambda d: d["xp"], reverse=True)[:8]
 
     today = now.date().isoformat()
     todays = [r for r in rows if (r["started_at"] or "").startswith(today)]
@@ -103,7 +71,7 @@ def status(conn, now=None):
         "quests": quests,
         "models": [{"model": m["model"], "tasks": m["n"], "avg_score": round(m["s"] or 0, 2)} for m in models],
         "cleared": cleared,
-        "provisional": True,
+        "provisional": False,
     }
 
 
@@ -216,6 +184,63 @@ def playbook_text(relpath):
     if not full.startswith(base + os.sep) or not full.endswith(".md") or not os.path.isfile(full):
         return None
     with open(full, "r", encoding="utf-8") as f:
+        return f.read()
+
+
+ARMY_RANKS = [(100, "S"), (30, "A"), (10, "B"), (3, "C"), (1, "D"), (0, "E")]
+
+
+def army(conn):
+    """Shadow Army: TIDOS subagents (active + drafted specialists) with missions and rank."""
+    import glob
+    import re as _re
+    from tidos_session import detect
+    missions = {}
+    for (summary,) in conn.execute("SELECT summary FROM tool_calls WHERE kind = 'delegate' AND summary LIKE '%:%'"):
+        name = summary.split(":", 1)[0].strip()
+        missions[name] = missions.get(name, 0) + 1
+    units = []
+    sources = [(p, "active") for p in glob.glob(os.path.join(detect.REPO_ROOT, ".claude", "agents", "*.md"))] +               [(p, "draft") for p in glob.glob(os.path.join(detect.tidos_home(), "drafts", "agents", "*.md"))]
+    for path, state in sources:
+        with open(path, "r", encoding="utf-8") as f:
+            head = f.read(2000)
+        front = dict(_re.findall(r"^(\w+):\s*(.+)$", head.split("\n---", 1)[0], _re.M))
+        name = front.get("name", os.path.basename(path)[:-3])
+        n = missions.get(name, 0)
+        units.append({"name": name, "state": state, "description": front.get("description", "")[:160],
+                      "tools": front.get("tools", ""), "missions": n,
+                      "rank": next(r for t, r in ARMY_RANKS if n >= t)})
+    units.sort(key=lambda u: (u["state"] != "active", -u["missions"], u["name"]))
+    return {"units": units, "other_missions": sum(v for k, v in missions.items() if not k.startswith("tidos-"))}
+
+
+MEMORY_DIRS = ("memory", "drafts")
+
+
+def memory_index():
+    """Memory Explorer: private memory files + learned rules + unlocked drafts (read-only)."""
+    import glob
+    from tidos_session import detect
+    home = detect.tidos_home()
+    items = []
+    for sub in MEMORY_DIRS:
+        for path in sorted(glob.glob(os.path.join(home, sub, "**", "*.md"), recursive=True)):
+            rel = os.path.relpath(path, home).replace("\\", "/")
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                text = f.read()
+            items.append({"path": rel, "kind": rel.split("/")[0] if sub == "memory" else "/".join(rel.split("/")[:2]),
+                          "lines": len([l for l in text.splitlines() if l.strip()]), "bytes": len(text.encode())})
+    return {"items": items, "home": "~/.tidos"}
+
+
+def memory_text(relpath):
+    from tidos_session import detect
+    home = os.path.realpath(detect.tidos_home())
+    full = os.path.realpath(os.path.join(home, relpath))
+    allowed = any(full.startswith(os.path.join(home, d) + os.sep) for d in MEMORY_DIRS)
+    if not allowed or not full.endswith(".md") or not os.path.isfile(full):
+        return None
+    with open(full, "r", encoding="utf-8", errors="replace") as f:
         return f.read()
 
 

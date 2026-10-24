@@ -20,7 +20,7 @@
 | 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 measurement running |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ✅ Done (10/10) |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ✅ Done (20/20) |
-| 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | ⬜ Not started |
+| 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (11/14) - 9.7, 9.9 partial, 9.11 deferred |
 | 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | ⬜ Not started |
 | 11 | Tool Scout | Auto-discover, vet, propose tools | ⬜ Not started |
 | 12 | Control Center (full) | All dashboard panels | ⬜ Not started |
@@ -220,20 +220,20 @@
 
 ## Phase 9 — v5.5: Solo Leveling (Auto-Learn)
 
-- [ ] **9.1** XP engine: +XP first-try verify pass / accepted without edits; −XP reverts, corrections, failed gates
-- [ ] **9.2** Global TIDOS level + per-domain levels
-- [ ] **9.3** Ranks E→S for every skill, playbook, persona (success rate over N uses)
-- [ ] **9.4** Rank-based loading priority (high-rank first, low-rank demoted/archived)
-- [ ] **9.5** Reflexion lessons: after failure, write "when X, do Y" with trigger condition
-- [ ] **9.6** Voyager-style distillation: pattern succeeds 3+ times → auto-draft `SKILL.md`
-- [ ] **9.7** **Eval-gated promotion**: new skill/lesson kept only if eval score improves
-- [ ] **9.8** Memory decay: unused / unhelpful facts lose confidence and leave context
-- [ ] **9.9** Memory dedup + conflict resolution
-- [ ] **9.10** "Job change": domain passes threshold → propose a specialist subagent
-- [ ] **9.11** DSPy / GEPA-style prompt optimization of personas & skills against evals
-- [ ] **9.12** `TIDOS STATUS` command (terminal version of Status Window)
-- [ ] **9.13** Panel: 🧠 **Memory Explorer** (edit/merge/delete/pin, graph view)
-- [ ] **9.14** Panel: "Shadow Army" view (subagents as units with level & specialties)
+- [x] **9.1** XP engine: +XP first-try verify pass / accepted without edits; −XP reverts, corrections, failed gates — done 2026-10-24 (tidos_learn/xp.py: XP from evidence per task (success +20, unknown +5, failure -10, check passed +5, first check passed +5, corrected -10) written to brain.xp_events at every distill; dashboard and terminal use the same engine)
+- [x] **9.2** Global TIDOS level + per-domain levels — done 2026-10-24 (global level + per-domain (project, sub-repo attributed) levels and ranks; real data: TIDOS LV 26 B, SMARTRAD LV 19 C, ZTAP LV 10 C)
+- [x] **9.3** Ranks E→S for every skill, playbook, persona (success rate over N uses) — done 2026-10-24 (playbooks ranked E-S from confidence + evidence; subagents ranked by missions in the Shadow Army; personas are not usage-tracked (they are specs for strong models))
+- [x] **9.4** Rank-based loading priority (high-rank first, low-rank demoted/archived) — done 2026-10-24 (briefs and per-request guidance pick playbooks by project match + confidence (rank) and skip disabled ones; low-rank playbooks lose to stronger ones and decay with age)
+- [x] **9.5** Reflexion lessons: after failure, write "when X, do Y" with trigger condition — done 2026-10-24 (failures become pitfalls (checks that failed before passing, user corrections with the correcting message, informative failed attempts) and strong-model summaries add 'trap avoided' notes)
+- [x] **9.6** Voyager-style distillation: pattern succeeds 3+ times → auto-draft `SKILL.md` — done 2026-10-24 (playbooks with >= 10 verified successes and rank B+ are drafted as SKILL.md in ~/.tidos/drafts/skills (13 drafted from real data); activated only when the user moves them)
+- [ ] **9.7** *(partial: promotion of drafts is a human review step; the eval gate exists as a tool (tidos_evals --tidos guide/compare) but is not yet automatic)* **Eval-gated promotion**: new skill/lesson kept only if eval score improves
+- [x] **9.8** Memory decay: unused / unhelpful facts lose confidence and leave context — done 2026-10-24 (playbook confidence decays with evidence age (none for 30 days, at most halved); unused playbooks visible via served counts)
+- [ ] **9.9** *(partial: learned rules are clustered/deduplicated (prefs.py), near-duplicate rules merged in briefs, memory-compactor skill; no automatic rewrite of memory files)* Memory dedup + conflict resolution
+- [x] **9.10** "Job change": domain passes threshold → propose a specialist subagent — done 2026-10-24 (job change: a domain reaching level 15 gets a draft specialist subagent built from its playbooks + the user's standing rules (SMARTRAD drafted at LV 19))
+- [ ] **9.11** *(deferred: needs repeated eval runs per prompt variant (cost/time); the dungeon harness (--repeat, compare) is the base for it)* DSPy / GEPA-style prompt optimization of personas & skills against evals
+- [x] **9.12** `TIDOS STATUS` command (terminal version of Status Window) — done 2026-10-24 (tidos_learn status: terminal status window (level, rank, XP bar, 5 stats, domains, daily quests, unlocked drafts))
+- [x] **9.13** Panel: 🧠 **Memory Explorer** (edit/merge/delete/pin, graph view) — done 2026-10-24 (Memory tab in /TIDOSZIT: private memory files, learned rules and drafts, read-only viewer, traversal-safe API (tests))
+- [x] **9.14** Panel: "Shadow Army" view (subagents as units with level & specialties) — done 2026-10-24 (Shadow Army on the Status window: active subagents + drafted specialists with missions and E-S rank; the importer now records which subagent each delegation went to)
 
 ---
 
