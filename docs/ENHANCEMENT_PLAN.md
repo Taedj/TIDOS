@@ -14,7 +14,7 @@
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.4 local gitleaks, 1.20 history purge, 1.27 first CI run on push) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.5 Gemini, 2.7 router) |
-| 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🟢 Built (13/15) - 3.2 deploy + 3.15 first login need the user |
+| 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🟢 Built (14/15) - 3.15 first login needs the user |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | ✅ Done (9/9) |
 | 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 raid gave no result (agent hang, fixed); rerun pending |
@@ -119,7 +119,7 @@
 - [x] **3.12** Panel: 🜲 **Status Window** (level, XP bar, rank, today's quests, recent level-ups) — done 2026-10-24 (level / XP / E-S rank, 5 stats (INT PRE DIS WIS AGI), daily quests, domains, models, quest log — provisional XP from task scores until Phase 9)
 - [x] **3.13** Panel: 📡 **Live Monitor** (running sessions, current step, active model, gates, live log; pause/kill) — done 2026-10-24 (active sessions, live SSE event stream, recent tasks table; "kill session" replaced by the tracing pause switch (a running Claude Code session cannot be killed safely from outside))
 - [x] **3.14** Panel: 🛡 **Security** + kill switches (auto-update, persona factory, auto-sync, GPTID) — done 2026-10-24 (switches in `~/.tidos/control.json` ENFORCED by code: hook (tracing), start_tidos (auto_update), factory_sync, community_sync, gptid scripts; security log + lock status + change password)
-- [ ] **3.15** *(needs the user: hooks installed (2.3), rules deployed (3.2), one real Google login)* End-to-end test: `/TIDOSZIT` → login → see live trace from a real Claude Code session
+- [ ] **3.15** *(needs the user: one real Google login (hooks installed and rules deployed 2026-10-24))* End-to-end test: `/TIDOSZIT` → login → see live trace from a real Claude Code session
 
 ---
 
@@ -286,7 +286,7 @@
 ## Open Questions
 
 - [x] **Q1** Which models/tools are used day to day? → **Mostly Claude (Claude Code); sometimes Gemini and OpenCode models.** Collector order: 2.3/2.4 Claude Code → 2.5 Gemini CLI → 2.6 OpenCode — answered 2026-10-24
-- [x] **Q2** Owner Firebase UID → `YTU4IuDy3SaGKOPt9E34iSge8Mo1` — answered 2026-10-24 *(permission to deploy Firestore rules still to confirm at task 3.2)*
+- [x] **Q2** Owner Firebase UID → `YTU4IuDy3SaGKOPt9E34iSge8Mo1` — answered 2026-10-24 *(rules deployed by the user's request at task 3.2)*
 - [x] **Q3** Dashboard stack → user delegated ("go with the best way you see"): **Python stdlib server + plain HTML/JS + SSE**, no FastAPI/React — answered 2026-10-24
 - [ ] **Q4** Purge personal data from git history (1.20)? Requires force-push to GitHub
 
