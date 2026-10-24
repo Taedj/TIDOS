@@ -31,15 +31,11 @@ graph TD
   local edits or unpushed commits, never deletes untracked files, and backs up `memory/` + `evolution/`.
 - Offline: continues on the local version.
 
-### Step 0.5: Authentication Gate (MANDATORY STRICT LOCK — Firebase Google Sign-In)
+### Step 0.5: Google Sign-In Gate (optional, off by default)
 
-TIDOS strictly requires the user to authenticate via Google (Gmail) before any work or system operations can proceed (project `tidos-framework`, see [docs/firebase_auth.md](file:///d:/work/Dev/TIDOS/docs/firebase_auth.md)).
-
-1. Run `scripts/auth_verify.ps1 -Session` (Windows) or `scripts/auth_verify.sh -Session` (Linux/macOS).
-   - **Exit 0** → session validated (remember-me). Announce `Authenticated: <email> (Google)` in the Startup Report and proceed.
-   - **Exit 1 or unauthenticated** → **STRICTLY BLOCK BOOT**. TIDOS CANNOT be used without authenticating with Google / Gmail. Prompt the user and run `scripts/auth_verify.ps1 -GoogleLogin` (opens the browser to sign in/up via Gmail). TIDOS remains locked until exit 0 is achieved.
-2. The user may disconnect at any time with `TIDOS AUTH logout` (clears the saved session in `~/.tidos`).
-3. Record auth status in the Startup Report: `Authenticated: <email> (Google)`.
+TIDOS runs locally, so sign-in is **opt-in**: turn on the `auth_gate` switch in `/TIDOSZIT` (Security) to require
+Google sign-in at START TIDOS (`scripts/auth_verify.ps1 -Session`, then `-GoogleLogin` if needed). The `/TIDOSZIT`
+control center always requires the owner's Google account + control password. Never type passwords in a chat.
 
 ### Step 1: Session Mode — LEARN or GUIDE (v4.1, replaces reading every spec below)
 

@@ -12,8 +12,8 @@
 # Usage:
 #   ./scripts/auth_verify.sh -Status                        # config self-check
 #   ./scripts/auth_verify.sh -Session                       # validate saved session (remember-me)
-#   ./scripts/auth_verify.sh -Login -Email <e> -Password <p>     # email/password sign-in
-#   ./scripts/auth_verify.sh -Register -Email <e> -Password <p>  # create account
+#   ./scripts/auth_verify.sh -Login -Email <e>        # email/password sign-in (password asked, hidden)
+#   ./scripts/auth_verify.sh -Register -Email <e>     # create account (password asked, hidden)
 #   ./scripts/auth_verify.sh -Verify <idToken>              # verify an external ID token
 #   ./scripts/auth_verify.sh -Logout                        # clear saved session
 #
@@ -77,8 +77,9 @@ esac
 case "$1" in
   -Register|register)
     EMAIL="" PASSWORD=""
-    while [ $# -gt 0 ]; do case "$1" in -Email) EMAIL="$2"; shift 2;; -Password) PASSWORD="$2"; shift 2;; *) shift;; esac; done
-    [ -n "$EMAIL" ] && [ -n "$PASSWORD" ] || { echo "ERROR: Register requires -Email and -Password (min 6 chars)." >&2; exit 2; }
+    while [ $# -gt 0 ]; do case "$1" in -Email) EMAIL="$2"; shift 2;; -Password) echo "ERROR: -Password is not accepted (shell history). It will be asked." >&2; exit 2;; *) shift;; esac; done
+    [ -n "$EMAIL" ] || { echo "ERROR: Register requires -Email (the password is asked, hidden)." >&2; exit 2; }
+    read -rs -p "Password: " PASSWORD; echo
     R=$(auth_post "$BASE/accounts:signUp?key=$API_KEY" "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}") || exit 1
     auth_post "$BASE/accounts:sendOAuthVerificationEmail?key=$API_KEY" "{\"requestType\":\"VERIFY_EMAIL\",\"idToken\":$(echo "$R" | jq -r .idToken | jq -Rs .)}" >/dev/null 2>&1
     save_session "$R" || { echo "ERROR: cannot write session to $SESSION_DIR." >&2; exit 2; }
@@ -87,8 +88,9 @@ case "$1" in
     ;;
   -Login)
     EMAIL="" PASSWORD=""
-    while [ $# -gt 0 ]; do case "$1" in -Email) EMAIL="$2"; shift 2;; -Password) PASSWORD="$2"; shift 2;; *) shift;; esac; done
-    [ -n "$EMAIL" ] && [ -n "$PASSWORD" ] || { echo "ERROR: Login requires -Email and -Password." >&2; exit 2; }
+    while [ $# -gt 0 ]; do case "$1" in -Email) EMAIL="$2"; shift 2;; -Password) echo "ERROR: -Password is not accepted (shell history). It will be asked." >&2; exit 2;; *) shift;; esac; done
+    [ -n "$EMAIL" ] || { echo "ERROR: Login requires -Email (the password is asked, hidden)." >&2; exit 2; }
+    read -rs -p "Password: " PASSWORD; echo
     R=$(auth_post "$BASE/accounts:signInWithPassword?key=$API_KEY" "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\",\"returnSecureToken\":true}") || { echo "Login failed. Use -Register if no account exists." >&2; exit 1; }
     save_session "$R" || { echo "ERROR: cannot write session to $SESSION_DIR." >&2; exit 2; }
     echo "Authenticated: $(echo "$R" | jq -r .email) (uid $(echo "$R" | jq -r .localId), email verified: $(echo "$R" | jq -r .emailVerified)). Session saved (remember-me)."

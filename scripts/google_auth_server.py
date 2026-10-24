@@ -9,7 +9,11 @@ Exit codes:
   1 = Authentication failed or aborted
   2 = Configuration or binding error
 """
+import hmac
 import http.server
+import secrets
+import subprocess
+import urllib.request
 import json
 import os
 import socketserver
@@ -25,6 +29,7 @@ TIMEOUT_SECONDS = 180
 
 SESSION_DIR = os.path.join(os.path.expanduser("~"), ".tidos")
 SESSION_FILE = os.path.join(SESSION_DIR, "tidos-session.json")
+STATE = secrets.token_urlsafe(24)   # one-time nonce: only the page this run served can complete the login
 
 # Firebase Web App Config from config/firebase.md
 FIREBASE_CONFIG = {
@@ -239,7 +244,8 @@ HTML_PAGE = """<!DOCTYPE html>
           refreshToken: refreshToken,
           providerId: 'google.com',
           photoURL: user.photoURL || '',
-          emailVerified: user.emailVerified
+          emailVerified: user.emailVerified,
+          state: "__STATE__"
         };
 
         const resp = await fetch('/callback', {
@@ -314,7 +320,7 @@ class AuthServerHandler(http.server.BaseHTTPRequestHandler):
         if parsed.path == "/" or parsed.path == "/login":
             html = HTML_PAGE.replace(
                 "__FIREBASE_CONFIG__", json.dumps(FIREBASE_CONFIG)
-            )
+            ).replace("__STATE__", STATE)
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
@@ -325,53 +331,70 @@ class AuthServerHandler(http.server.BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
-        if parsed.path == "/callback":
-            length = int(self.headers.get("Content-Length", 0))
-            body = self.rfile.read(length)
-            try:
-                data = json.loads(body.decode("utf-8"))
-                email = data.get("email")
-                uid = data.get("localId")
-                refresh_token = data.get("refreshToken")
-                id_token = data.get("idToken")
-
-                if not email or not refresh_token:
-                    self.send_response(400)
-                    self.end_headers()
-                    self.wfile.write(b"Missing email or refreshToken")
-                    return
-
-                # Build session file
-                session = {
-                    "refreshToken": refresh_token,
-                    "idToken": id_token,
-                    "localId": uid,
-                    "email": email,
-                    "displayName": data.get("displayName", ""),
-                    "photoURL": data.get("photoURL", ""),
-                    "providerId": "google.com",
-                    "emailVerified": data.get("emailVerified", True),
-                    "authenticatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                }
-
-                os.makedirs(SESSION_DIR, exist_ok=True)
-                with open(SESSION_FILE, "w", encoding="utf-8") as f:
-                    json.dump(session, f, indent=2)
-
-                AuthServerHandler.session_result = session
-
-                self.send_response(200)
-                self.send_header("Content-Type", "application/json")
-                self.end_headers()
-                self.wfile.write(b'{"status":"ok"}')
-
-            except Exception as e:
-                self.send_response(500)
-                self.end_headers()
-                self.wfile.write(str(e).encode("utf-8"))
-        else:
+        if parsed.path != "/callback":
             self.send_response(404)
             self.end_headers()
+            return
+        allowed = {"localhost:%d" % self.server.server_address[1], "127.0.0.1:%d" % self.server.server_address[1]}
+        length = min(int(self.headers.get("Content-Length", 0) or 0), 64 * 1024)
+        body = self.rfile.read(length)
+        if self.headers.get("Host") not in allowed or self.headers.get("Origin") not in {"http://" + h for h in allowed}:
+            return self._reply(403, b"cross-origin request refused")
+        try:
+            data = json.loads(body.decode("utf-8"))
+        except ValueError:
+            return self._reply(400, b"invalid JSON")
+        if not hmac.compare_digest(str(data.get("state", "")), STATE):
+            return self._reply(403, b"invalid state")
+        refresh_token = data.get("refreshToken")
+        try:
+            user = verify_id_token(str(data.get("idToken", "")))   # Google says who this is, not the page
+        except Exception:  # noqa: BLE001
+            return self._reply(401, b"Google sign-in could not be verified")
+        if not refresh_token or not user.get("email"):
+            return self._reply(400, b"Missing email or refreshToken")
+        session = {
+            "refreshToken": refresh_token,
+            "localId": user.get("localId"),
+            "email": user.get("email"),
+            "displayName": user.get("displayName", ""),
+            "providerId": "google.com",
+            "emailVerified": bool(user.get("emailVerified")),
+            "authenticatedAt": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        }
+        write_private_json(SESSION_FILE, session)
+        AuthServerHandler.session_result = session
+        self._reply(200, b'{"status":"ok"}', "application/json")
+
+    def _reply(self, code, body, ctype="text/plain"):
+        self.send_response(code)
+        self.send_header("Content-Type", ctype)
+        self.end_headers()
+        self.wfile.write(body)
+
+
+def verify_id_token(id_token):
+    """Ask Google (Identity Toolkit) to validate the ID token; returns the account."""
+    url = "https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=" + FIREBASE_CONFIG["apiKey"]
+    req = urllib.request.Request(url, data=json.dumps({"idToken": id_token}).encode(), method="POST",
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        users = json.loads(resp.read().decode("utf-8")).get("users") or []
+    if not users:
+        raise ValueError("token rejected")
+    return users[0]
+
+
+def write_private_json(path, data):
+    """Write the session so only the current OS user can read it (it holds a refresh token)."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+    if os.name == "nt":
+        subprocess.run(["icacls", path, "/inheritance:r", "/grant:r", "%s:F" % os.environ.get("USERNAME", "")],
+                       capture_output=True, check=False)
+    else:
+        os.chmod(path, 0o600)
 
 
 def run_auth_flow(port=PORT, timeout=TIMEOUT_SECONDS):

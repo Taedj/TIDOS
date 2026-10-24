@@ -2,8 +2,8 @@
 # ============================================================================
 # START TIDOS - Central Session Entry Script (Linux/macOS Bash)
 # ============================================================================
-# Executes Step 0 (Force Update Gate) & Step 0.5 (Google Auth Gate)
-# and initializes the TIDOS Operating System session.
+# Step 0: update gate (reports; installs only with approval), Step 0.5: optional sign-in,
+# Step 1: model detection -> LEARN / GUIDE mode brief.
 # ============================================================================
 
 PY="$(command -v python3 || command -v python)"   # Git Bash on Windows has no python3
@@ -48,14 +48,12 @@ if [ "$SKIP_UPDATE" = 0 ]; then
     fi
 fi
 
-# Step 0.5: Firebase Google Authentication Gate
-echo ""
-echo ">>> [STEP 0.5] Verifying Google Authentication (Firebase)..."
-if [ -f "$SCRIPT_DIR/auth_verify.sh" ]; then
+# Step 0.5: Google sign-in gate - OPT-IN (switch "auth_gate" in /TIDOSZIT)
+if "$PY" -I "$TIDOS_ROOT/tidos_brain/control.py" get auth_gate >/dev/null 2>&1; then
+    echo ""
+    echo ">>> [STEP 0.5] Verifying Google Authentication (Firebase)..."
     if ! bash "$SCRIPT_DIR/auth_verify.sh" -Session; then
-        echo ""
-        echo "TIDOS is LOCKED. You must sign in with Google to use TIDOS."
-        echo "Opening browser for Google Authentication..."
+        echo "Sign-in required (auth_gate is on). Opening browser for Google sign-in..."
         bash "$SCRIPT_DIR/auth_verify.sh" -GoogleLogin || {
             echo "Authentication failed or was cancelled. TIDOS remains locked."
             exit 1

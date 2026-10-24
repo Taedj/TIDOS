@@ -6,6 +6,7 @@ Enforced by code, not by prompts:
   factory_sync    - scripts/factory_sync.* refuse to commit/push when off
   community_sync  - scripts/community_sync.* refuse to open PRs when off
   gptid           - scripts/gptid.* refuse to start the ChatGPT relay when off
+  auth_gate       - scripts/start_tidos.* ask for Google sign-in only when on (opt-in)
 
 Shell scripts read it with:  python -I tidos_brain/control.py get <switch>   (prints on/off, exit 0/1)
 """
@@ -20,6 +21,7 @@ SWITCHES = {
     "factory_sync": (True, "Persona factory may commit + push generated personas"),
     "community_sync": (True, "Community sync may open upstream pull requests"),
     "gptid": (False, "ChatGPT browser relay (experimental, ToS risk)"),
+    "auth_gate": (False, "Require Google sign-in at START TIDOS (the /TIDOSZIT owner login is always on)"),
 }
 
 

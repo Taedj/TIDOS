@@ -1,8 +1,8 @@
 # ============================================================================
 # START TIDOS - Central Session Entry Script (Windows PowerShell)
 # ============================================================================
-# Executes Step 0 (Force Update Gate) & Step 0.5 (Google Auth Gate)
-# and initializes the TIDOS Operating System session.
+# Step 0: update gate (reports; installs only with approval), Step 0.5: optional sign-in,
+# Step 1: model detection -> LEARN / GUIDE mode brief.
 # ============================================================================
 
 param(
@@ -51,14 +51,16 @@ if (-not $SkipUpdate) {
     }
 }
 
-# Step 0.5: Firebase Google Authentication Gate
-Write-Host "`n>>> [STEP 0.5] Verifying Google Authentication (Firebase)..." -ForegroundColor Yellow
-$authScript = Join-Path $scriptDir "auth_verify.ps1"
-if (Test-Path $authScript) {
+# Step 0.5: Google sign-in gate - OPT-IN (switch "auth_gate" in /TIDOSZIT). TIDOS is a local tool:
+# a mandatory login protected nothing and only added friction.
+$authOn = $false
+if (Test-Path $ctl) { & python -I $ctl get auth_gate | Out-Null; $authOn = ($LASTEXITCODE -eq 0) }
+if ($authOn) {
+    Write-Host "`n>>> [STEP 0.5] Verifying Google Authentication (Firebase)..." -ForegroundColor Yellow
+    $authScript = Join-Path $scriptDir "auth_verify.ps1"
     & powershell -NoProfile -ExecutionPolicy Bypass -File $authScript -Session
     if ($LASTEXITCODE -ne 0) {
-        Write-Host "`nTIDOS is LOCKED. You must sign in with Google to use TIDOS." -ForegroundColor Red
-        Write-Host "Opening browser for Google Authentication..." -ForegroundColor Cyan
+        Write-Host "`nSign-in required (auth_gate is on). Opening browser for Google sign-in..." -ForegroundColor Cyan
         & powershell -NoProfile -ExecutionPolicy Bypass -File $authScript -GoogleLogin
         if ($LASTEXITCODE -ne 0) {
             Write-Host "Authentication failed or was cancelled. TIDOS remains locked." -ForegroundColor Red

@@ -13,8 +13,8 @@
 #   .\scripts\auth_verify.ps1 -Status                       # config + session self-check
 #   .\scripts\auth_verify.ps1 -Session                      # validate saved session (remember-me)
 #   .\scripts\auth_verify.ps1 -Login                        # triggers Google Sign-In by default
-#   .\scripts\auth_verify.ps1 -Login -Email <e> -Password <p>    # email/password sign-in
-#   .\scripts\auth_verify.ps1 -Register -Email <e> -Password <p> # create account
+#   .\scripts\auth_verify.ps1 -Login -Email <e>             # email/password sign-in (password asked, hidden)
+#   .\scripts\auth_verify.ps1 -Register -Email <e>          # create account (password asked, hidden)
 #   .\scripts\auth_verify.ps1 -Verify <idToken>             # verify an external ID token
 #   .\scripts\auth_verify.ps1 -Logout                       # clear saved session
 #
@@ -31,7 +31,6 @@ param(
     [switch]$Session,
     [switch]$Logout,
     [string]$Email,
-    [string]$Password,
     [switch]$Status
 )
 
@@ -65,7 +64,22 @@ function Read-Session {
 function Write-Session($s) {
     $dir = Split-Path (Get-SessionPath) -Parent
     if (-not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+    $s.Remove("idToken")   # short-lived; only the refresh token is needed
     $s | ConvertTo-Json | Set-Content (Get-SessionPath) -Encoding UTF8
+    # the file holds a refresh token: only the current Windows user may read it
+    icacls (Get-SessionPath) /inheritance:r /grant:r "$($env:USERNAME):F" | Out-Null
+}
+
+# Passwords are never accepted as arguments (they would land in shell history and AI transcripts)
+function Read-Password {
+    # agents run scripts without a keyboard: fail fast instead of waiting forever
+    if ([Console]::IsInputRedirected -or -not [Environment]::UserInteractive) {
+        Fail "Password sign-in needs an interactive terminal (run it yourself, or use -GoogleLogin)." 2
+    }
+    $secure = Read-Host "Password" -AsSecureString
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+    try { return [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
 }
 
 # --- Config-independent operations (Logout, Status - run before API key load) --
@@ -131,7 +145,8 @@ $refreshUrl  = "https://securetoken.googleapis.com/v1/token?key=$apiKey"
 
 # --- Register (new account) ----------------------------------------------------
 if ($Register) {
-    if (-not $Email -or -not $Password) { Fail "Register requires -Email and -Password (min 6 chars)." 2 }
+    if (-not $Email) { Fail "Register requires -Email (the password is asked, hidden)." 2 }
+    $Password = Read-Password
     try {
         $r = Auth-Post $signUpUrl (@{ email = $Email; password = $Password } | ConvertTo-Json)
         try { Auth-Post $verifyMail (@{ requestType = "VERIFY_EMAIL"; idToken = $r.idToken } | ConvertTo-Json) | Out-Null } catch { }
@@ -146,7 +161,7 @@ if ($Login) {
     if (-not $Email) {
         Invoke-GoogleLogin
     }
-    if (-not $Password) { Fail "Email login requires -Password." 2 }
+    $Password = Read-Password
     try {
         $r = Auth-Post $signInUrl (@{ email = $Email; password = $Password; returnSecureToken = $true } | ConvertTo-Json)
         Write-Session @{ refreshToken = $r.refreshToken; idToken = $r.idToken; localId = $r.localId; email = $r.email; emailVerified = $r.emailVerified; providerId = "password" }
