@@ -173,8 +173,8 @@
 
 ## Phase 7 — v5.0: Runtime (MCP, Hooks, Plugin, Subagents)
 
-- [ ] **7.1** `tidos-mcp` server with tools: `get_context`, `route_persona`, `plan_gate`, `verify`, `record_outcome`, `recall`, `propose_skill`, `scout_tools`
-- [ ] **7.2** `get_context(task)` — retrieval with ~8 KB budget (only relevant rules/personas/skills/playbooks/memory) instead of loading ~86 KB at boot
+- [x] **7.1** `tidos-mcp` server with tools: `get_context`, `route_persona`, `plan_gate`, `verify`, `record_outcome`, `recall`, `propose_skill`, `scout_tools` — done 2026-10-24 (tidos_mcp/: stdlib MCP server (stdio JSON-RPC, protocol 2024-11-05..2025-06-18) with tidos_start, tidos_guide, tidos_verify (real exit codes; only check subcommands allowed: never python -c / node -e / shell), tidos_recall, tidos_note, tidos_propose; verified end-to-end with real Claude Code (Haiku called tidos_guide via --mcp-config, 0.004 USD) and OpenCode (server connected); tests/test_mcp.py)
+- [x] **7.2** `get_context(task)` — retrieval with ~8 KB budget (only relevant rules/personas/skills/playbooks/memory) instead of loading ~86 KB at boot — done 2026-10-24 (context is served per need instead of the 86 KB boot: tidos_start returns the brief (GUIDE <= 4 KB), tidos_guide returns <= 1.6 KB for one request, tidos_recall searches what was learned)
 - [ ] **7.3** Enforcement hooks (Claude Code): `PreToolUse` blocks `Edit/Write` until a plan/grounding record exists
 - [ ] **7.4** Enforcement hooks: `Stop` blocks "done" unless `verify` passed
 - [ ] **7.5** Convert personas to real subagents: `tidos-architect`, `tidos-reviewer` (read-only), `tidos-tester`, `tidos-security`, `tidos-researcher`, `tidos-uiux`, `tidos-mobile`
