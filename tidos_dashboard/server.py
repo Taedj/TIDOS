@@ -151,6 +151,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
             if path == "/api/dungeons":
                 return self._json(200, stats.dungeons(conn))
+            if path == "/api/session":
+                return self._json(200, stats.session_info(conn))
             if path == "/api/playbooks":
                 return self._json(200, stats.playbooks(conn))
             if path == "/api/playbook":

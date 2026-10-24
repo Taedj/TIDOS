@@ -220,7 +220,24 @@ function pushEvents(events, isNew) {
   if (isNew && events.some((e) => e.event === "Stop")) loadStatus();
 }
 
+async function loadSessionInfo() {
+  const r = await api("/api/session");
+  if (!r.ok) return;
+  const s = r.data.session;
+  $("sessInfo").innerHTML = s ? [
+    ["Mode", `<span class="pill ${s.mode === "guide" ? "warn" : "ok"}">${esc((s.mode || "").toUpperCase())}</span>`],
+    ["Model", esc(s.model)], ["Tier", esc(s.tier)], ["Tool", esc(s.tool)], ["Project", esc(s.project)],
+    ["Started", esc(when(s.started_at))],
+  ].map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("") : `<span class="muted">No START TIDOS yet.</span><b></b>`;
+  const pct = (x) => x.pass_rate === null ? '<span class="faint">—</span>' : `${x.pass_rate}%`;
+  $("effectRows").innerHTML = r.data.effect.map((e) => `
+    <tr><td>${esc(e.model.replace("opencode/", ""))}</td><td>${fmt(e.guided.tasks)}</td><td>${pct(e.guided)}</td>
+    <td>${fmt(e.unguided.tasks)}</td><td>${pct(e.unguided)}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">No weak-model work recorded yet.</td></tr>`;
+}
+
 async function loadLive() {
+  loadSessionInfo();
   const [live, tasks, sec] = await Promise.all([api("/api/live?since=0"), api("/api/tasks"), api("/api/security")]);
   if (live.ok) {
     $("console").innerHTML = "";

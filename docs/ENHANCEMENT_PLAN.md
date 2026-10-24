@@ -163,7 +163,7 @@
 - [x] **6.6** Delivery per tool: Claude Code (hooks + CLAUDE.md block), OpenCode (AGENTS.md + instructions + plugin), Gemini CLI (GEMINI.md), others via AGENTS.md — done 2026-10-24 (the brief is delivered through START TIDOS output in every tool; tidos_session snippet --tool X prints the paste-ready instructions for each tool's own file (CLAUDE.md, AGENTS.md, GEMINI.md, .cursor/.windsurf/.roo rules, .clinerules); docs/tools/ guides)
 - [x] **6.7** Every guided session is traced too, so TIDOS learns which guidance helped weak models — done 2026-10-24 (OpenCode + Claude Code sessions are traced (2.6); every START TIDOS is logged (~/.tidos/guide_log.jsonl); tidos_session effect compares weak-model tasks after a GUIDE start vs without (check pass rate, corrections, tool errors). Baseline before any guidance: big-pickle 62%, muse-spark 85% checks passed)
 - [ ] **6.8** Measure TIDOS guidance with dungeons: free model inside its own agent WITH the TIDOS guide vs WITHOUT (quality check of TIDOS, not a model benchmark)
-- [ ] **6.9** Panel: mode, model tier and guidance used per session in the Live Monitor
+- [x] **6.9** Panel: mode, model tier and guidance used per session in the Live Monitor — done 2026-10-24 (Live Monitor: TIDOS Session card (mode, model, tier, tool, project, start) + 'Does GUIDE mode help?' table (guided vs unguided tasks and check pass rate per weak/medium model) from /api/session; Playwright check desktop + mobile, 0 errors)
 
 > Built 2026-10-24 before this realignment and kept as tools: `tidos_driver/` (external orchestrator — its lessons feed 6.2/6.4/6.5),
 > `tidos_evals/` dungeons (used by 6.8). Earlier model baselines: Claude Haiku 32/32 without vs 31/32 with the v4 prose protocol

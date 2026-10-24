@@ -167,6 +167,20 @@ def dungeons(conn):
     return {"tasks": tasks, "columns": columns, "cells": cells, "leaderboard": leaderboard, "last_run": last}
 
 
+def session_info(conn):
+    """Current START TIDOS session (mode, tier, model) + does GUIDE mode help (guided vs unguided)."""
+    import json as _json
+    from tidos_session import detect, effect
+    try:
+        with open(os.path.join(detect.tidos_home(), "session.json"), "r", encoding="utf-8") as f:
+            current = _json.load(f)
+        current.pop("facts", None)
+        current["project"] = os.path.basename(current.get("project", "")) or current.get("project")
+    except (OSError, ValueError):
+        current = None
+    return {"session": current, "effect": effect.guidance_effect(conn)}
+
+
 def playbooks(conn):
     """Playbook Library: every learned playbook + notes, with rank, served counts and disabled flag."""
     import glob
