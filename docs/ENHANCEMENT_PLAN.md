@@ -23,7 +23,7 @@
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (11/14) - 9.7, 9.9 partial, 9.11 deferred |
 | 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | 🟢 Done (5/6) - 10.1 partial (no eval delta per proposal yet) |
 | 11 | Tool Scout | Auto-discover, vet, propose tools | 🟢 Done (6/8) - 11.4 and 11.7 partial |
-| 12 | Control Center (full) | All dashboard panels | ⬜ Not started |
+| 12 | Control Center (full) | All dashboard panels | ✅ Done (6/6) |
 | 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | ⬜ Not started |
 
 ---
@@ -263,12 +263,12 @@
 
 ## Phase 12 — Control Center (full)
 
-- [ ] **12.1** "Ask TIDOS" bar (natural-language questions over traces: "why did Flutter tasks fail this week?")
-- [ ] **12.2** Global search across traces, playbooks, memory, evals
-- [ ] **12.3** Settings editor for `config/framework.md` values (with validation)
-- [ ] **12.4** Export / backup / restore of brain.db
-- [ ] **12.5** Mobile-friendly layout
-- [ ] **12.6** Dashboard E2E tests (Playwright)
+- [x] **12.1** "Ask TIDOS" bar (natural-language questions over traces: "why did Flutter tasks fail this week?") — done 2026-10-24 (Ask TIDOS bar: question -> digest of the last 30 days (per project/type/stack/tier outcomes, recent failures, matching items) -> haiku with ALL tools and MCP disabled, budget 0.05 USD; switch ask_llm (off = local facts); the question is never logged. Real answer verified on the user's data)
+- [x] **12.2** Global search across traces, playbooks, memory, evals — done 2026-10-24 (global search (all words) across tasks, playbooks, memory + drafts, evals, proposals; results jump to the right tab)
+- [x] **12.3** Settings editor for `config/framework.md` values (with validation) — done 2026-10-24 (settings editor (Security tab) for 10 whitelisted config/framework.md values with type/range/choice validation; rewrites one line in place keeping comments/line endings; relay_host and other risky values stay manual)
+- [x] **12.4** Export / backup / restore of brain.db — done 2026-10-24 (tidos_brain backup / backup --list / restore NAME --yes (integrity + schema check, current brain saved as pre-restore first, never overwrites a backup, newest 10 kept by mtime); dashboard: Back up now + list; restore terminal-only)
+- [x] **12.5** Mobile-friendly layout — done 2026-10-24 (every tab checked at 390 px: no horizontal scroll (Playwright E2E + visual QA); ask bar wraps on phones)
+- [x] **12.6** Dashboard E2E tests (Playwright) — done 2026-10-24 (tests/test_dashboard_e2e.py (Playwright/Chromium, opt-in TIDOS_E2E=1, run by the daily quest): login wall, all tabs without console errors, search -> memory, Ask, settings write, backup, mobile overflow - 4/4 pass)
 
 ---
 

@@ -6,6 +6,8 @@
   stats                        print a summary of what the brain has learned so far
   prune [--live-days N] [--session-days N]   retention: drop old live events / sessions
   install-hooks [--settings PATH] [--dry-run] [--uninstall]   wire the hooks into Claude Code
+  backup                       consistent copy of brain.db into ~/.tidos/backups (newest 10 kept)
+  restore NAME [--yes]         replace brain.db with a backup (the current brain is backed up first)
 """
 import argparse
 import json
@@ -107,6 +109,35 @@ def cmd_prune(args):
     return 0
 
 
+def cmd_backup(args):
+    from tidos_dashboard import explore
+    if args.list:
+        for b in explore.list_backups():
+            print("%-32s %8.1f MB" % (b["name"], b["bytes"] / 1e6))
+        return 0
+    conn = db.connect(args.db)
+    path = explore.backup(conn)
+    conn.close()
+    ok, detail = explore.check_backup(path)
+    print("Backup %s (%s, %s)" % (path, "verified" if ok else "CHECK FAILED", detail))
+    return 0 if ok else 1
+
+
+def cmd_restore(args):
+    from tidos_dashboard import explore
+    path = args.db or db.default_path()
+    ok, detail = explore.check_backup(os.path.join(explore.backups_dir(), os.path.basename(args.name)))
+    print("Backup %s: %s" % (args.name, detail))
+    if not ok:
+        return 1
+    if not args.yes:
+        print("This replaces %s. Re-run with --yes to confirm (the current brain is backed up first)." % path)
+        return 1
+    safety, _ = explore.restore(args.name, path)
+    print("Restored. Previous brain saved as %s" % safety)
+    return 0
+
+
 def _hook_command():
     main = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
     return '"%s" -I "%s" hook' % (sys.executable, main)
@@ -181,6 +212,15 @@ def main(argv=None):
     p.add_argument("--dry-run", action="store_true")
     p.add_argument("--uninstall", action="store_true")
     p.set_defaults(func=cmd_install_hooks)
+
+    p = sub.add_parser("backup")
+    p.add_argument("--list", action="store_true")
+    p.set_defaults(func=cmd_backup)
+
+    p = sub.add_parser("restore")
+    p.add_argument("name")
+    p.add_argument("--yes", action="store_true")
+    p.set_defaults(func=cmd_restore)
 
     args = parser.parse_args(argv)
     return args.func(args)

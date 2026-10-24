@@ -90,7 +90,9 @@ def ask_strong_model(prompt, model=MODEL, budget=BUDGET_USD):
         return None, "claude CLI not found"
     env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
     try:
-        proc = subprocess.run([exe, "-p", "--model", model, "--output-format", "json", "--max-budget-usd", str(budget)],
+        proc = subprocess.run([exe, "-p", "--model", model, "--output-format", "json", "--max-budget-usd", str(budget),
+                               # text in, text out: no built-in tools and no MCP servers (no files, shell, web)
+                               "--tools", "", "--strict-mcp-config"],
                               input=prompt, capture_output=True, text=True, encoding="utf-8", errors="replace",
                               timeout=180, env=env, cwd=tidos_home())
         data = json.loads(proc.stdout.strip().splitlines()[-1])

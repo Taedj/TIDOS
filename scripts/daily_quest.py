@@ -2,7 +2,7 @@
 
   python scripts/daily_quest.py            -> ~/.tidos/reports/<date>.md, exit 1 on any failure
 
-Checks: unit/security tests, spec validator, plugin sync, dungeon validation (every task fails untouched and
+Checks: unit/security tests (+ dashboard browser E2E when Playwright is installed), spec validator, plugin sync, dungeon validation (every task fails untouched and
 passes with its solution), brain import + playbook refresh, and the TIDOS status. Schedule it yourself if you want
 it daily, e.g. Windows:  schtasks /Create /SC DAILY /ST 09:00 /TN TIDOS-daily /TR "python <TIDOS>\\scripts\\daily_quest.py"
 """
@@ -37,7 +37,8 @@ def main():
     for name, args in CHECKS:
         try:
             proc = subprocess.run([sys.executable] + args, cwd=ROOT, capture_output=True, text=True,
-                                  encoding="utf-8", errors="replace", timeout=1800)
+                                  encoding="utf-8", errors="replace", timeout=1800,
+                                  env={**os.environ, "TIDOS_E2E": "1"})  # + browser tests when Playwright exists
             code, out = proc.returncode, proc.stdout + proc.stderr
         except subprocess.TimeoutExpired:
             code, out = 124, "timed out"

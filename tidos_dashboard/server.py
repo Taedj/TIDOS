@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlparse
 
 from tidos_brain import control, db
 
-from . import auth, config, firebase, stats
+from . import auth, config, explore, firebase, stats
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 PENDING_COOKIE = "tidoszit_pending"
@@ -151,6 +151,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
             if path == "/api/dungeons":
                 return self._json(200, stats.dungeons(conn))
+            if path == "/api/search":
+                return self._json(200, explore.search(conn, (query.get("q") or [""])[0][:200]))
+            if path == "/api/settings":
+                return self._json(200, {"settings": explore.settings()})
+            if path == "/api/backups":
+                return self._json(200, {"backups": explore.list_backups()})
             if path == "/api/tools":
                 from tidos_scout import scout
                 return self._json(200, {"tools": scout.overview(conn)})
@@ -249,6 +255,9 @@ class Handler(BaseHTTPRequestHandler):
             "/api/playbooks/toggle": self._playbook_toggle,
             "/api/evolution/status": self._evolution_status,
             "/api/tools/action": self._tool_action,
+            "/api/ask": self._ask,
+            "/api/settings": self._setting,
+            "/api/backups": self._backup,
         }
         handler = routes.get(urlparse(self.path).path)
         if not handler:
@@ -349,6 +358,41 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "unknown proposal"})
         self.server.lockout.log("proposal", "#%s %s" % (body.get("id"), status))
         return self._json(200, {"ok": True})
+
+    def _ask(self, body):
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        question = str(body.get("question") or "").strip()[:500]
+        if not question:
+            return self._json(400, {"error": "empty question"})
+        conn = db.connect(self.server.db_path)
+        try:
+            result = explore.ask(conn, question)
+        finally:
+            conn.close()
+        self.server.lockout.log("ask", result["source"])  # never the question itself
+        return self._json(200, result)
+
+    def _setting(self, body):
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        try:
+            value = explore.set_setting(str(body.get("key")), body.get("value"))
+        except (KeyError, ValueError) as e:
+            return self._json(400, {"error": str(e).strip("'")})
+        self.server.lockout.log("setting", "%s=%s" % (body.get("key"), value))
+        return self._json(200, {"settings": explore.settings()})
+
+    def _backup(self, body):
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        conn = db.connect(self.server.db_path)
+        try:
+            path = explore.backup(conn)
+        finally:
+            conn.close()
+        self.server.lockout.log("backup", os.path.basename(path))
+        return self._json(200, {"backups": explore.list_backups()})
 
     def _tool_action(self, body):
         """Tool scout: approve/propose/blacklist/reset, refresh trust, or vet an installed tool. Never installs."""

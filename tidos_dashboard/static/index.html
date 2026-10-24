@@ -73,6 +73,13 @@
     <button class="tab" data-view="tools">Tool Scout</button>
   </nav>
 
+  <form class="askbar" id="askBar" autocomplete="off">
+    <input id="askQ" maxlength="500" placeholder="Ask TIDOS (why did Flutter tasks fail this month?) or search traces, playbooks, memory, evals">
+    <button class="btn" type="submit" data-mode="ask">Ask</button>
+    <button class="btn ghost" type="submit" data-mode="search">Search</button>
+  </form>
+  <div id="askOut" class="window hidden"><h2 id="askTitle">Answer</h2><div id="askBody"></div></div>
+
   <main>
     <!-- STATUS -->
     <div id="view-status" class="grid g-status">
@@ -232,6 +239,18 @@
           <button class="btn" type="submit">Change password</button>
           <div class="msg" id="changeMsg"></div>
         </form>
+      </div>
+      <div class="window">
+        <h2>Settings — config/framework.md</h2>
+        <div id="settings"></div>
+        <div class="msg" id="settingsMsg"></div>
+      </div>
+      <div class="window">
+        <h2>Brain Backups</h2>
+        <div id="backups"></div>
+        <button class="btn" id="backupBtn">Back up now</button>
+        <p class="small faint note">Restore is terminal-only (it replaces your brain):
+          <code class="sys">python -I tidos_brain/__main__.py restore NAME --yes</code></p>
       </div>
       <div class="window span-2">
         <h2>Security Log</h2>

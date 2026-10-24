@@ -121,6 +121,17 @@ async function startApp(fresh = false) {
   await loadStatus();
   loadArmy();
   loadNotifications();
+  if (!startApp.wired) {
+    startApp.wired = true;
+    document.querySelectorAll("#askBar button").forEach((b) => b.addEventListener("click", () => { askMode = b.dataset.mode; }));
+    $("askBar").addEventListener("submit", (e) => { e.preventDefault(); runAsk(); });
+    $("backupBtn").addEventListener("click", async () => {
+      $("backupBtn").disabled = true;
+      const r = await api("/api/backups", {});
+      $("backupBtn").disabled = false;
+      if (r.ok) { renderBackups(r.data.backups); toast("<b>[SYSTEM]</b> Brain backed up."); }
+    });
+  }
   loadLive();
   connectStream();
   refreshTimer = setInterval(() => { loadStatus(); if (!$("view-security").classList.contains("hidden")) loadSecurity(); }, 30000);
@@ -414,7 +425,73 @@ async function loadPlaybooks() {
 }
 
 // ---- security
+// ---- ask TIDOS + global search
+let askMode = "ask";
+const KIND_VIEW = { playbook: "playbooks", memory: "memory", eval: "dungeons", proposal: "evolution", task: "live" };
+
+async function runAsk() {
+  const q = $("askQ").value.trim();
+  if (!q) return;
+  $("askOut").classList.remove("hidden");
+  if (askMode === "ask") {
+    $("askTitle").textContent = "Ask TIDOS";
+    $("askBody").innerHTML = `<p class="muted">Thinking over your traces…</p>`;
+    const r = await api("/api/ask", { question: q });
+    if (!r.ok) { $("askBody").innerHTML = `<p class="lift-down">${esc(r.data.error || "failed")}</p>`; return; }
+    $("askBody").innerHTML = `<div class="answer">${esc(r.data.answer)}</div>
+      <details class="mt"><summary class="small faint">Data TIDOS used (${r.data.source === "llm" ? "sent to the model" : "local only"})</summary>
+      <pre class="console">${esc(r.data.digest)}</pre></details>`;
+    return;
+  }
+  $("askTitle").textContent = "Search";
+  const r = await api("/api/search?q=" + encodeURIComponent(q));
+  if (!r.ok) return;
+  $("askBody").innerHTML = r.data.results.map((h) => `
+    <div class="hit"><span><span class="pill">${esc(h.kind)}</span></span>
+      <div><a href="#" class="hitlink" data-kind="${esc(h.kind)}" data-path="${esc(h.path || "")}">${esc(h.title)}</a>
+      <div class="detail">${esc([h.project, h.when, h.detail].filter(Boolean).join(" · "))}</div></div></div>`).join("")
+    || `<p class="muted">No match for: ${esc(r.data.words.join(" "))}</p>`;
+  $("askBody").querySelectorAll(".hitlink").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const tab = document.querySelector(`.tab[data-view=${KIND_VIEW[a.dataset.kind]}]`);
+    if (tab) tab.click();
+    if (a.dataset.kind === "memory" && a.dataset.path) showMemory(a.dataset.path);
+  }));
+}
+
+// ---- settings + backups
+async function loadSettings() {
+  const r = await api("/api/settings");
+  if (!r.ok) return;
+  $("settings").innerHTML = r.data.settings.map((s) => {
+    let input;
+    if (s.type === "bool") input = `<select data-key="${esc(s.key)}" data-type="bool"><option value="true" ${s.value ? "selected" : ""}>true</option><option value="false" ${s.value ? "" : "selected"}>false</option></select>`;
+    else if (s.type === "int") input = `<input type="number" data-key="${esc(s.key)}" data-type="int" min="${s.range[0]}" max="${s.range[1]}" value="${s.value}">`;
+    else input = `<select data-key="${esc(s.key)}" data-type="str">${s.choices.map((c) => `<option ${c === s.value ? "selected" : ""}>${esc(c)}</option>`).join("")}</select>`;
+    return `<div class="setting"><div><b>${esc(s.key)}</b><div class="small muted">${esc(s.help)}</div></div>${input}</div>`;
+  }).join("");
+  $("settings").querySelectorAll("[data-key]").forEach((el) => el.addEventListener("change", async () => {
+    const value = el.dataset.type === "bool" ? el.value === "true" : el.dataset.type === "int" ? Number(el.value) : el.value;
+    const res = await api("/api/settings", { key: el.dataset.key, value });
+    $("settingsMsg").className = "msg " + (res.ok ? "ok" : "err");
+    $("settingsMsg").textContent = res.ok ? `Saved ${el.dataset.key} = ${value}` : res.data.error;
+    if (!res.ok) loadSettings();
+  }));
+}
+
+function renderBackups(list) {
+  $("backups").innerHTML = list.length ? `<div class="kv">${list.map((b) => `<span class="muted">${esc(b.name)}</span><b>${(b.bytes / 1e6).toFixed(1)} MB</b>`).join("")}</div>`
+    : `<p class="muted">No backups yet.</p>`;
+}
+
+async function loadBackups() {
+  const r = await api("/api/backups");
+  if (r.ok) renderBackups(r.data.backups);
+}
+
 async function loadSecurity() {
+  loadSettings();
+  loadBackups();
   const r = await api("/api/security");
   if (!r.ok) return;
   const d = r.data;
