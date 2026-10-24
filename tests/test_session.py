@@ -1,4 +1,5 @@
 """Tests for tidos_session: tool/model detection, tiers, project facts, LEARN/GUIDE briefs."""
+import io
 import json
 import os
 import sys
@@ -167,6 +168,22 @@ class MemoryMigrationTests(Isolated):
         self.assertTrue(os.path.exists(os.path.join(private, "SECRET_persona.md")))
         self.assertTrue(os.path.exists(os.path.join(private, "USER_PROFILE.md")))  # created privately
         self.assertEqual(memory.migrate(repo_mem), ([], []))               # idempotent
+
+
+class VersionFlagTests(Isolated):
+    def test_version_comes_from_version_md(self):
+        write(os.path.join(self.tmp.name, "VERSION.md"), "# Version\n\n**Current Version**: 9.8.7\n")
+        with mock.patch.object(cli.detect, "REPO_ROOT", self.tmp.name):
+            self.assertEqual(cli.version(), "9.8.7")
+            out = io.StringIO()
+            with mock.patch("sys.stdout", out), self.assertRaises(SystemExit) as exit_:
+                cli.main(["--version"])
+        self.assertEqual(exit_.exception.code, 0)
+        self.assertEqual(out.getvalue(), "9.8.7\n")
+
+    def test_version_unknown_without_version_md(self):
+        with mock.patch.object(cli.detect, "REPO_ROOT", self.tmp.name):
+            self.assertEqual(cli.version(), "unknown")
 
 
 if __name__ == "__main__":

@@ -4,10 +4,12 @@
                                                            save ~/.tidos/session.json, print report + brief
   status                                                   show the current session
   tier MODEL                                               show the tier a model id maps to
+  --version                                                print the TIDOS version from VERSION.md
 """
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime, timezone
 
@@ -16,6 +18,16 @@ from . import brief, detect, effect, memory
 
 def _session_path():
     return os.path.join(detect.tidos_home(), "session.json")
+
+
+def version():
+    """Current TIDOS version: the single source is VERSION.md."""
+    try:
+        with open(os.path.join(detect.REPO_ROOT, "VERSION.md"), "r", encoding="utf-8") as f:
+            m = re.search(r"\*\*Current Version\*\*:\s*(\S+)", f.read())
+    except OSError:
+        m = None
+    return m.group(1) if m else "unknown"
 
 
 def refresh_learning():
@@ -147,7 +159,8 @@ def main(argv=None):
         except AttributeError:
             pass
     parser = argparse.ArgumentParser(prog="tidos_session")
-    sub = parser.add_subparsers(dest="command", required=True)
+    parser.add_argument("--version", action="version", version=version())
+    sub =parser.add_subparsers(dest="command", required=True)
     p = sub.add_parser("start")
     p.add_argument("--tool", default="auto")
     p.add_argument("--model", default="auto")
