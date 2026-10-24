@@ -56,13 +56,15 @@ if ($blocked.Count -gt 0) {
     Write-Host "BLOCKED: unrelated changes would be included:"
     $blocked | ForEach-Object { Write-Host "  $_" }
     Fail "Stash/commit unrelated changes first; factory_sync commits ONLY the persona trio." 1
+}
+
 # --- Privacy & Sanitization Firewall Audit -----------------------------------
 Write-Host "Running Privacy Firewall audit on $Persona..."
 & python (Join-Path $repo "scripts/sanitizer.py") --check $Persona
 if ($LASTEXITCODE -ne 0) {
     Fail "Privacy Firewall REJECTED persona: Secrets or prohibited patterns found in $Persona. Aborting sync." 2
 }
-Write-Host "[✓] Privacy Firewall PASSED: Zero secrets, PII, or forbidden code found."
+Write-Host "[OK] Privacy Firewall PASSED: Zero secrets, PII, or forbidden code found."
 
 # --- Message ---------------------------------------------------------------
 $name = (Split-Path $Persona -Leaf) -replace '\.md$', ''

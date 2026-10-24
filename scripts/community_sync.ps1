@@ -75,7 +75,7 @@ $sanitizerPath = Join-Path $repo 'scripts/sanitizer.py'
 if ($LASTEXITCODE -ne 0) {
     Fail "Privacy Firewall REJECTED contribution: Secrets or prohibited patterns found in $Persona. Aborting." 2
 }
-Write-Host '[✓] Privacy Firewall PASSED: Zero secrets, PII, or forbidden code found.' -ForegroundColor Green
+Write-Host '[OK] Privacy Firewall PASSED: Zero secrets, PII, or forbidden code found.' -ForegroundColor Green
 
 # --- 3. Prepare Contribution Metadata -----------------------------------------
 $personaName = (Split-Path $Persona -Leaf) -replace '\.md$', ''

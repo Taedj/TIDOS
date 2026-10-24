@@ -12,7 +12,7 @@
 | Phase | Name | Goal | Status |
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
-| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🔄 In progress (8/29) |
+| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🔄 In progress (9/30) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | ⬜ Not started |
@@ -77,6 +77,7 @@
 - [ ] **1.26** Mark the "80/80 weak model benchmark" in `docs/THE_BIG_IDEA.md` as unverified until Phase 4 produces real numbers
 
 ### 1E. CI
+- [x] **1.30** *(found and fixed 2026-10-24)* `scripts/factory_sync.ps1` never parsed on Windows since v4.0 (unclosed `if` block + UTF-8 `✓` read as a smart quote by PowerShell 5.1) — fixed; all `.ps1` files now parse and are ASCII-only. CI should run a PowerShell parse check (see 1.27)
 - [ ] **1.27** Add `.github/workflows/ci.yml`: pytest, ruff, markdown-lint, link check, gitleaks secret scan, PowerShell lint (PSScriptAnalyzer), shellcheck
 - [ ] **1.28** Add persona/skill schema validator (required sections, routing signals) to CI
 - [ ] **1.29** Release v4.1.0 (changelog, tag)

@@ -68,7 +68,7 @@ function Write-Session($s) {
     $s | ConvertTo-Json | Set-Content (Get-SessionPath) -Encoding UTF8
 }
 
-# --- Config-independent operations (Logout, Status — run before API key load) --
+# --- Config-independent operations (Logout, Status - run before API key load) --
 if ($Logout) {
     $p = Get-SessionPath
     if (Test-Path $p) { Remove-Item $p -Force; Write-Host "Session cleared. Disconnected from the TIDOS account." }
