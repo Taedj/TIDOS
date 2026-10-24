@@ -23,6 +23,7 @@ if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
 from tidos_session import cli as session_cli, detect, guide  # noqa: E402
+from tidos_scout import scout  # noqa: E402
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
 SERVER_INFO = {"name": "tidos", "version": "5.1.0"}
@@ -48,9 +49,12 @@ def allowed_check(argv):
     if not argv:
         return False
     tool = os.path.basename(argv[0]).lower().replace(".exe", "").replace(".cmd", "").replace(".bat", "")
-    if tool not in CHECK_RULES:
+    rules = dict(CHECK_RULES)
+    for name, subs in scout.check_rules().items():  # catalog tools' own checks (gitleaks detect, osv-scanner scan...)
+        rules.setdefault(name, (None, subs))
+    if tool not in rules:
         return False
-    flag, subs = CHECK_RULES[tool]
+    flag, subs = rules[tool]
     if subs is None:
         return True
     if flag:

@@ -395,19 +395,29 @@ class Handler(BaseHTTPRequestHandler):
         return self._json(200, {"backups": explore.list_backups()})
 
     def _tool_action(self, body):
-        """Tool scout: approve/propose/blacklist/reset, refresh trust, or vet an installed tool. Never installs."""
+        """Tool scout: approve/propose/blacklist/reset, trust, vet, and install/uninstall (approved tools only,
+        switch tool_install, pinned versions / verified downloads: see tidos_scout.scout.install)."""
         session = self._session()
         if not session:
             return self._json(401, {"error": "login required"})
         from tidos_scout import scout
         tool = next((t for t in scout.catalog() if t["name"] == body.get("name")), None)
         action = body.get("action")
-        if not tool or action not in ("proposed", "approved", "blacklisted", "none", "trust", "vet"):
+        if not tool or action not in ("proposed", "approved", "blacklisted", "none", "trust", "vet", "install",
+                                      "uninstall"):
             return self._json(400, {"error": "unknown tool or action"})
         if action == "trust":
             result = scout.trust(tool, refresh=True)
         elif action == "vet":
             result = scout.vet(tool)
+        elif action in ("install", "uninstall"):
+            try:
+                result = scout.install(tool["name"]) if action == "install" else scout.uninstall(tool["name"])
+            except scout.InstallRefused as e:
+                self.server.lockout.log("tool", "%s %s refused: %s" % (tool["name"], action, e))
+                return self._json(409, {"error": str(e)})
+            self.server.lockout.log("tool", "%s %s: %s" % (tool["name"], action, result["detail"]))
+            return self._json(200, result)
         else:
             scout.set_status(tool["name"], action)
             result = {"ok": True}

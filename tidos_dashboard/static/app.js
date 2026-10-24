@@ -348,7 +348,7 @@ async function loadTools() {
   const tr = t; // `t` is a tool row below
   $("toolList").innerHTML = r.data.tools.map((t) => `
     <tr><td><b>${esc(t.name)}</b><br><span class="small faint">${esc(t.why)}</span>
-      ${t.status === "approved" && !t.installed ? `<br><code class="sys">${esc(t.install)}</code>` : ""}</td>
+      ${t.status === "approved" && !t.installed ? `<br><code class="sys">${esc(t.auto || t.install)}</code>` : ""}</td>
     <td>${esc(t.capability)}</td>
     <td>${t.installed ? `<span class="pill ok">${tr("yes")}</span>` : `<span class="pill">${tr("no")}</span>`}</td>
     <td title="${esc(t.trust_reasons.join(" · "))}">${t.trust == null ? "?" : `<span class="pill ${t.trust >= 70 ? "ok" : t.trust >= 40 ? "warn" : "bad"}">${t.trust}</span>`}</td>
@@ -356,10 +356,24 @@ async function loadTools() {
     <td>${t.status ? `<span class="pill ${t.status === "blacklisted" ? "bad" : "ok"}">${esc(tr(t.status))}</span>` : "-"}</td>
     <td>${btn(t, "trust", "Trust")} ${t.installed ? btn(t, "vet", "Vet") : ""}
       ${t.status !== "approved" && !t.installed ? btn(t, "approved", "Approve") : ""}
+      ${t.status === "approved" && !t.installed && t.auto ? btn(t, "install", "Install") : ""}
+      ${t.by_tidos ? btn(t, "uninstall", "Uninstall") : ""}
       ${t.status === "blacklisted" ? btn(t, "none", "Unban") : btn(t, "blacklisted", "Ban")}</td></tr>`).join("");
+  const rows = Object.fromEntries(r.data.tools.map((x) => [x.name, x]));
   $("toolList").querySelectorAll(".tool").forEach((b) => b.addEventListener("click", async () => {
+    const tool = rows[b.dataset.n];
+    if (b.dataset.a === "install" && !confirm(`${t("Install {name}?", { name: tool.name })}\n\n${tool.auto}\n\n${t("Trust {n}/100. Your user account only, no administrator rights. Logged; Uninstall removes it.", { n: tool.trust ?? "?" })}`)) return;
+    if (b.dataset.a === "uninstall" && !confirm(t("Uninstall {name}?", { name: tool.name }))) return;
     b.disabled = true;
+    if (b.dataset.a === "install") toast(`<b>[SYSTEM]</b> ${esc(t("Installing {name}… (can take a few minutes)", { name: tool.name }))}`);
     const res = await api("/api/tools/action", { name: b.dataset.n, action: b.dataset.a });
+    if (!res.ok) { b.disabled = false; toast(`<b>[SYSTEM]</b> ${esc(b.dataset.n)}: ${esc(t(res.data.error || "failed"))}`, "warn"); return; }
+    if (b.dataset.a === "install" || b.dataset.a === "uninstall") {
+      const d = res.data;
+      toast(`<b>[SYSTEM]</b> ${esc(b.dataset.n)}: ${esc(t(d.detail))}${d.vet ? ` · vet ${d.vet.ok ? "PASS" : "FAIL"} ${esc(d.vet.version || "")}` : ""}`, d.ok ? "" : "warn");
+      loadTools();
+      return;
+    }
     if (res.ok) {
       const d = res.data;
       const msg = b.dataset.a === "trust" ? `trust ${d.score ?? "?"}` : b.dataset.a === "vet" ? `vet ${d.ok ? "PASS" : "FAIL"}: ${d.detail}` : b.dataset.a;

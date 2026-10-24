@@ -1,6 +1,6 @@
 ---
 name: tool-scout
-description: Find, vet and propose a tool for a missing capability (linter, scanner, test runner, MCP server): search, check trust signals, try it in a sandbox, propose install - never install silently. Use when a project lacks a check or capability.
+description: Find, vet and propose a tool for a missing capability (linter, scanner, test runner, MCP server): search, check trust signals, try it in a sandbox, propose install - never install without the user's approval. Use when a project lacks a check or capability.
 ---
 
 # Tool scout
@@ -12,9 +12,12 @@ description: Find, vet and propose a tool for a missing capability (linter, scan
 5. **Propose** to the user: what, why, trust summary, exact install command, how TIDOS will use it.
    Never install, enable or configure a tool without the user's explicit OK.
 
-With TIDOS installed, the scout CLI does steps 1-3 and 5 for you (it never installs anything):
+With TIDOS installed, the scout CLI does steps 1-3 and 5 for you:
 `python -I <TIDOS>/tidos_scout/__main__.py needs --project . --trust` (missing capabilities + trust 0-100),
 `... search "capability words"`, `... vet NAME` (installed tools only), `... propose NAME` (prints the command).
+Only after the user approved a tool AND turned on the `tool_install` switch: `... install NAME --yes` installs
+catalog tools pinned to an exact version or a SHA-256-verified official download, in the user's account only.
+Never flip that switch or approve a tool yourself; MCP servers and project packages always stay manual.
 
 ---
 With the TIDOS MCP server: `tidos_recall` for what was learned in this project, `tidos_verify` to run the checks. Report: what changed, the check output, and anything still unverified.

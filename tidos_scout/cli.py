@@ -1,4 +1,4 @@
-"""tidos_scout - find, vet and propose tools for missing capabilities. Never installs anything.
+"""tidos_scout - find, vet and propose tools for missing capabilities; install only what you approved.
 
   needs [--project DIR] [--trust]   capabilities the project lacks + candidate tools (trust needs network)
   list                              the catalog: installed?, status, cached trust, usage XP
@@ -7,6 +7,9 @@
   vet NAME                          run an installed tool's version check in an empty temp dir
   propose NAME                      mark as proposed and print the exact install command for YOU to run
   approve NAME | blacklist NAME [--note why] | reset NAME
+  install NAME [--yes]              install an APPROVED tool: pinned version or SHA-256-verified download, your
+                                    user account only (needs the tool_install switch; without --yes: dry run)
+  uninstall NAME [--yes]            remove a tool TIDOS installed (never one you installed yourself)
 """
 import argparse
 import os
@@ -37,7 +40,7 @@ def cmd_needs(args):
             last = r["capability"]
         trust = "" if r["trust"] is None else "  trust %d" % r["trust"]
         print("  - %-14s %s%s%s" % (r["name"], r["why"], trust, "  [%s]" % r["status"] if r["status"] else ""))
-    print("\nNothing is installed automatically. `tidos_scout propose NAME` prints the command for you.")
+    print("\nNothing is installed automatically. `tidos_scout approve NAME`, then `tidos_scout install NAME`.")
     return 0
 
 
@@ -97,11 +100,36 @@ def cmd_status(args, status):
     if status == "proposed":
         entry = scout.trust(tool)
         print("PROPOSAL: %s - %s\n  why:     %s\n  trust:   %s (%s)\n  install: %s\n\nRun it yourself if you "
-              "agree; TIDOS never installs tools." % (tool["name"], tool["capability"], tool["why"], entry["score"],
+              "agree, or approve it and let TIDOS install it (tidos_scout install)." % (tool["name"], tool["capability"], tool["why"], entry["score"],
                                                      "; ".join(entry["reasons"]), scout.install_command(tool)))
     else:
         print("%s -> %s" % (tool["name"], status if status != "none" else "reset"))
     return 0
+
+
+def cmd_install(args, remove=False):
+    tool = _tool(args.name)
+    if not tool:
+        return 1
+    if not args.yes:
+        auto = scout.describe_auto(tool)
+        if not remove and not auto:
+            print("No automatic install for %s on this machine. Run it yourself:\n  %s"
+                  % (tool["name"], scout.install_command(tool)))
+            return 0
+        print("Would %s\nAdd --yes to do it." % ("remove %s (only if TIDOS installed it)" % tool["name"] if remove else auto))
+        return 0
+    try:
+        result = scout.uninstall(tool["name"]) if remove else scout.install(tool["name"])
+    except scout.InstallRefused as e:
+        print("REFUSED: %s" % e)
+        return 1
+    print("%s: %s" % (tool["name"], result["detail"]))
+    for line in result.get("output", []):
+        print("  " + line)
+    if result.get("vet"):
+        print("  vet: %s %s" % ("PASS" if result["vet"]["ok"] else "FAIL", result["vet"].get("version", "")))
+    return 0 if result["ok"] else 1
 
 
 def main(argv=None):
@@ -130,6 +158,11 @@ def main(argv=None):
         p.add_argument("name")
         p.add_argument("--note")
         p.set_defaults(func=lambda a, s=status: cmd_status(a, s))
+    for name, remove in (("install", False), ("uninstall", True)):
+        p = sub.add_parser(name)
+        p.add_argument("name")
+        p.add_argument("--yes", action="store_true")
+        p.set_defaults(func=lambda a, r=remove: cmd_install(a, r))
     args = parser.parse_args(argv)
     return args.func(args)
 

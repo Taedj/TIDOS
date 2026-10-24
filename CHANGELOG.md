@@ -4,6 +4,26 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [Unreleased]
+
+### Added
+- **Arabic control center**: language switch (English / العربية) on the login screen and top bar, full
+  right-to-left layout, translated server texts; Ask TIDOS answers in Arabic when the interface is Arabic.
+- **Tool Scout installs on approval**: approve a tool, then press Install (dashboard) or
+  `tidos_scout install NAME --yes`. Only catalog tools with a pinned `auto` spec: pip / npm -g at an exact
+  version, or an official GitHub release file checked against its pinned SHA-256 (only the executable is
+  unpacked, into `~/.tidos/bin` + user PATH on Windows, `~/.local/bin` elsewhere). Refused unless the new
+  `tool_install` kill switch is on (off by default), the tool is approved, trust >= 70 and not installed.
+  Every command is logged (`~/.tidos/tool_installs.log` + security log); Uninstall removes only what TIDOS
+  installed. MCP servers and project-local packages stay manual.
+- `tidos_verify` also accepts the catalog tools' own checks (`gitleaks detect`, `osv-scanner scan`, `shellcheck`).
+
+### Fixed
+- `/TIDOSZIT` launcher reported "did not start" on Windows (health check on `localhost` hit IPv6 first).
+- Plain `python -m pytest -q` collected the dungeons' hidden tests (pytest.ini testpaths).
+
+---
+
 ## [5.1.0] - 2026-10-24
 
 "Level Up": TIDOS measures its own growth from verified work and turns that growth into reviewed improvements.

@@ -199,8 +199,11 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(self.req("POST", "/api/tools/action", {"name": "ruff", "action": "blacklisted"})[0], 200)
             from tidos_scout import scout
             self.assertEqual(scout.state()["ruff"]["status"], "blacklisted")
-            for bad in ({"name": "ruff", "action": "install"}, {"name": "rm -rf", "action": "vet"}):
+            for bad in ({"name": "ruff", "action": "rm"}, {"name": "rm -rf", "action": "vet"}):
                 self.assertEqual(self.req("POST", "/api/tools/action", bad)[0], 400, bad)
+            code, body = self.req("POST", "/api/tools/action", {"name": "ruff", "action": "install"})[:2]
+            self.assertEqual(code, 409)  # refused: tool_install switch off by default (and ruff is blacklisted)
+            self.assertIn("switch is off", json.dumps(body))
 
     def test_memory_and_army_endpoints(self):
         home = os.path.join(self.tmp.name, "tidoshome2")

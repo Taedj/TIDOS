@@ -47,6 +47,20 @@ class ScoutTests(unittest.TestCase):
             for key in ("capability", "stacks", "repo", "detect", "install", "why"):
                 self.assertIn(key, t, t["name"])
             self.assertEqual(set(t["install"]), {"windows", "unix"}, t["name"])
+            auto = t.get("auto")
+            if not auto:
+                continue
+            self.assertNotIn("mcp", t["detect"], t["name"])          # MCP servers always stay manual
+            if auto["method"] == "pip":
+                self.assertRegex(auto["package"], r"^[a-z0-9-]+==\d+(\.\d+)+$", t["name"])
+            elif auto["method"] == "npm-global":
+                self.assertRegex(auto["package"], r"^(@[a-z0-9-]+/)?[a-z0-9-]+@\d+(\.\d+)+$", t["name"])
+            else:
+                self.assertEqual(auto["method"], "download", t["name"])
+                for f in auto["files"].values():
+                    self.assertTrue(f["url"].startswith("https://github.com/%s/releases/download/" % t["repo"]), f)
+                    self.assertRegex(f["sha256"], r"^[0-9a-f]{64}$")
+                    self.assertIn(auto["version"], f["url"])
 
     def test_needs_follow_stack_and_files(self):
         facts, missing = scout.needs(self.project)
@@ -122,6 +136,128 @@ class ScoutTests(unittest.TestCase):
             facts = detect.project_facts(self.project)
             text = brief.guide_brief({"model": "m", "tier": "weak", "tool": "opencode"}, facts, record=False)
         self.assertIn("(also available) `ruff check .`", text)
+
+
+def _zip(name, payload):
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w") as z:
+        z.writestr("pkg/" + name, payload)
+        z.writestr("../evil/" + name + ".txt", b"never extracted")
+    return buf.getvalue()
+
+
+class InstallTests(unittest.TestCase):
+    """Install on approval: every refusal rule, verified downloads, pip, uninstall. Nothing real is installed."""
+
+    def setUp(self):
+        import hashlib
+        self.tmp = tempfile.TemporaryDirectory()
+        self.zip = _zip("tool.exe", b"BINARY")
+        self.tools = [
+            {"name": "dl", "capability": "c", "stacks": [], "repo": "o/dl", "detect": {"bin": "tool"}, "why": "w",
+             "install": {"windows": "manual", "unix": "manual"},
+             "auto": {"method": "download", "version": "1.0", "files": {scout.platform_key(): {
+                 "url": "https://example.invalid/tool.zip", "sha256": hashlib.sha256(self.zip).hexdigest(),
+                 "bin": "tool.exe"}}}},
+            {"name": "pipper", "capability": "c", "stacks": [], "repo": "o/pipper", "detect": {"module": "pipper"},
+             "why": "w", "install": {"windows": "manual", "unix": "manual"},
+             "auto": {"method": "pip", "package": "pipper==2.0"}},
+            {"name": "mcp-thing", "capability": "c", "stacks": [], "repo": "o/m", "detect": {"mcp": "m"}, "why": "w",
+             "install": {"windows": "claude mcp add m", "unix": "claude mcp add m"}},
+        ]
+        self.present = set()
+        self.calls = []
+        self.trust = 90
+        bindir = os.path.join(self.tmp.name, "bin")
+        self.patches = [
+            mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": os.path.join(self.tmp.name, "home"),
+                                         "TIDOS_CONTROL_FILE": os.path.join(self.tmp.name, "control.json")}),
+            mock.patch.object(scout, "catalog", lambda: self.tools),
+            mock.patch.object(scout, "installed", lambda t, p=None, _mcp=None: t["name"] in self.present),
+            mock.patch.object(scout, "trust", lambda t, refresh=False: {"score": self.trust, "reasons": []}),
+            mock.patch.object(scout, "vet", lambda t: {"ok": True, "version": "1.0"}),
+            mock.patch.object(scout, "bin_dir", lambda: bindir),
+            mock.patch.object(scout, "_ensure_user_path", lambda path: False),  # never touch the real registry
+        ]
+        for p in self.patches:
+            p.start()
+        self.bindir = bindir
+
+    def tearDown(self):
+        for p in reversed(self.patches):
+            p.stop()
+        self.tmp.cleanup()
+
+    def runner(self, argv, **kw):
+        self.calls.append(argv)
+        if "install" in argv:
+            self.present.add("pipper")
+        if "uninstall" in argv:
+            self.present.discard("pipper")
+        return mock.Mock(returncode=0, stdout="Successfully done", stderr="")
+
+    def refused(self, name, why, **kw):
+        with self.assertRaises(scout.InstallRefused) as ctx:
+            scout.install(name, runner=self.runner, downloader=lambda url: self.zip, **kw)
+        self.assertIn(why, str(ctx.exception))
+
+    def test_every_rule_must_pass(self):
+        from tidos_brain import control
+        self.refused("pipper", "switch is off")                   # off by default
+        control.set_switch("tool_install", True)
+        self.refused("mcp-thing", "run it yourself")              # no auto spec: always manual
+        self.refused("pipper", "approve pipper first")
+        scout.set_status("pipper", "approved")
+        self.trust = 40
+        self.refused("pipper", "below 70")
+        self.trust = 90
+        self.present.add("pipper")
+        self.refused("pipper", "already installed")
+        self.assertEqual(self.calls, [])                          # nothing ever ran
+
+    def test_pip_install_and_uninstall(self):
+        from tidos_brain import control
+        control.set_switch("tool_install", True)
+        scout.set_status("pipper", "approved")
+        result = scout.install("pipper", runner=self.runner)
+        self.assertTrue(result["ok"])
+        self.assertEqual(self.calls[0][1:], ["-m", "pip", "install", "--disable-pip-version-check", "pipper==2.0"])
+        self.assertTrue(scout.state()["pipper"]["installed_by_tidos"])
+        self.assertTrue(scout.uninstall("pipper", runner=self.runner)["ok"])
+        self.assertEqual(self.calls[1][1:], ["-m", "pip", "uninstall", "-y", "pipper"])
+        self.assertNotIn("installed_by_tidos", scout.state()["pipper"])
+        with self.assertRaises(scout.InstallRefused):             # tools you installed yourself are never removed
+            scout.uninstall("pipper", runner=self.runner)
+        with open(os.path.join(os.environ["TIDOS_HOME_DIR"], "tool_installs.log"), encoding="utf-8") as f:
+            self.assertIn("pipper==2.0", f.read())
+
+    def test_download_is_verified_and_only_the_binary_is_written(self):
+        from tidos_brain import control
+        control.set_switch("tool_install", True)
+        scout.set_status("dl", "approved")
+        with self.assertRaises(scout.InstallRefused) as ctx:     # tampered file: refused, nothing written
+            scout.install("dl", runner=self.runner, downloader=lambda url: self.zip + b"x")
+        self.assertIn("SHA-256", str(ctx.exception))
+        self.assertFalse(os.path.exists(self.bindir))
+        result = scout.install("dl", runner=self.runner, downloader=lambda url: self.zip)
+        self.assertEqual(os.listdir(self.bindir), ["tool.exe"])   # the ../evil entry is never extracted
+        with open(os.path.join(self.bindir, "tool.exe"), "rb") as f:
+            self.assertEqual(f.read(), b"BINARY")
+        self.assertIn("sha256 verified", result["output"])
+        self.assertEqual(self.calls, [])                          # no shell, no package manager
+        self.assertTrue(scout.uninstall("dl")["ok"])
+        self.assertEqual(os.listdir(self.bindir), [])
+
+    def test_verify_accepts_catalog_checks_only(self):
+        from tidos_mcp import server as mcp
+        with mock.patch.object(scout, "catalog", lambda: [{"name": "g", "check": "gitleaks detect --redact"},
+                                                         {"name": "s", "check": "shellcheck scripts/*.sh"}]):
+            self.assertTrue(mcp.allowed_check(["gitleaks", "detect"]))
+            self.assertFalse(mcp.allowed_check(["gitleaks", "protect"]))
+            self.assertTrue(mcp.allowed_check(["shellcheck", "a.sh"]))
+            self.assertFalse(mcp.allowed_check(["python", "-c", "print(1)"]))
 
 
 if __name__ == "__main__":

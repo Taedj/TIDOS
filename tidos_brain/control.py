@@ -23,6 +23,7 @@ SWITCHES = {
     "gptid": (False, "ChatGPT browser relay (experimental, ToS risk)"),
     "auto_summarize": (True, "After strong-model sessions, a cheap strong model writes advice notes (max 2 per START, $0.05 each)"),
     "auth_gate": (False, "Require Google sign-in at START TIDOS (the /TIDOSZIT owner login is always on)"),
+    "tool_install": (False, "Tool Scout may install a tool you approved when you press Install (pinned version or verified download, your user account only)"),
     "ask_llm": (True, "Ask TIDOS may send a sanitized digest of your traces to a cheap Claude model ($0.05 cap); off = local search only"),
 }
 
