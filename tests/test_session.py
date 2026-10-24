@@ -125,6 +125,28 @@ class BriefTests(Isolated):
             self.assertEqual(f.read(), text)
 
 
+class AgentsMdTests(Isolated):
+    def test_block_is_inserted_then_replaced_and_keeps_user_content(self):
+        write(os.path.join(self.project, "pubspec.yaml"), "name: app")
+        write(os.path.join(self.project, "AGENTS.md"), "# My rules\n\nUse tabs.\n")
+        path = cli.write_agents_md(self.project, "opencode")
+        cli.write_agents_md(self.project, "opencode")                  # idempotent
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+        self.assertTrue(text.startswith("# My rules"))
+        self.assertEqual(text.count(cli.AGENTS_BEGIN), 1)
+        self.assertIn("START TIDOS", text)
+        self.assertIn("`flutter analyze`", text)
+        self.assertIn("tidos_guide", text)
+
+    def test_block_never_contains_private_learning(self):
+        write(os.path.join(self.tidos, "playbooks", "my-project", "notes.md"), "- SECRET NOTE about the project")
+        write(os.path.join(self.tidos, "memory", "LEARNED_PREFERENCES.md"), "## My Project\n- PRIVATE RULE")
+        block = cli.agents_md_block(self.project)
+        self.assertNotIn("SECRET NOTE", block)
+        self.assertNotIn("PRIVATE RULE", block)
+
+
 class MemoryMigrationTests(Isolated):
     def test_personal_memory_leaves_the_repo(self):
         repo_mem = os.path.join(self.tmp.name, "repo-memory")
