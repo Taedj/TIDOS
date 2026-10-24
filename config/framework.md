@@ -16,8 +16,8 @@ repository:
 
 ```yaml
 version:
-  current: 5.0.0
-  codename: Runtime
+  current: 5.1.0
+  codename: Level Up
   release_date: 2026-10-24
 ```
 

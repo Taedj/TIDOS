@@ -4,6 +4,33 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [5.1.0] - 2026-10-24
+
+"Level Up": TIDOS measures its own growth from verified work and turns that growth into reviewed improvements.
+
+### Added
+- **XP engine** (`tidos_learn/xp.py`): XP only from evidence (checks passed, right first time, minus corrections);
+  global and per-project levels and ranks; `tidos_learn status` terminal status window.
+- **Growth unlocks (drafts, never auto-activated)**: proven playbooks become SKILL.md drafts; a project reaching
+  level 15 gets a specialist subagent draft that includes the user's standing rules.
+- **Evolution queue** (`tidos_learn proposals`), GitHub issue drafts, **gated self-improvement**
+  (`scripts/self_improve.py`: temporary worktree, branch `auto/...`, tests + specs + plugin gates, never pushed),
+  **daily quest** report (`scripts/daily_quest.py`), **GUIDE rule ablation** (`tidos_evals run --ablate N`).
+- **Tool scout** (`tidos_scout`): missing capabilities per project, trust 0-100 (GitHub + OpenSSF Scorecard),
+  vetting of installed tools, usage XP, blacklist; installed tools add extra checks to GUIDE briefs. Never installs.
+- **Control center**: Ask TIDOS (tools and MCP disabled, switch `ask_llm`), global search, settings editor for
+  `config/framework.md`, brain backups (restore is terminal-only), Memory, Evolution, Tool Scout tabs, Shadow Army,
+  [SYSTEM] notifications, Playwright end-to-end tests.
+- **Workflow dataset** (`tidos_learn dataset`): requests + steps + checks, no model-written text, privacy-checked.
+- **Contribution gate** (`scripts/check_contribution.py`, in CI): privacy, no private drafts, frontmatter, size.
+
+### Fixed
+- Eval agent timeouts now kill the whole process tree (npm shims left OpenCode running forever).
+- Python projects without a manifest (packages only) were not detected as Python.
+- Strong-model helper calls run with no built-in tools and no MCP servers.
+
+---
+
 ## [5.0.0] - 2026-10-24
 
 TIDOS becomes a runtime: it learns automatically from strong-model work and **enforces** guidance for weak models

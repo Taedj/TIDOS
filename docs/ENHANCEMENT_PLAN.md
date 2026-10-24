@@ -24,7 +24,7 @@
 | 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | 🟢 Done (5/6) - 10.1 partial (no eval delta per proposal yet) |
 | 11 | Tool Scout | Auto-discover, vet, propose tools | 🟢 Done (6/8) - 11.4 and 11.7 partial |
 | 12 | Control Center (full) | All dashboard panels | ✅ Done (6/6) |
-| 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | ⬜ Not started |
+| 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | 🟡 Partial (1/6 + 5 partial/deferred) - v5.1.0 released instead of v6.0 |
 
 ---
 
@@ -274,12 +274,12 @@
 
 ## Phase 13 — v6.0: Swarm & TIDOS-native Model
 
-- [ ] **13.1** Community skills/playbooks submitted as PRs, accepted only if they raise community eval scores
-- [ ] **13.2** Signed releases + verified update channel
-- [ ] **13.3** Trace → dataset pipeline (sanitized, provider terms respected)
-- [ ] **13.4** LoRA fine-tune a small open model (e.g. via Unsloth) → "TIDOS-7B" that natively follows the protocol
-- [ ] **13.5** Benchmark TIDOS-7B vs base model vs strong models on the dungeons
-- [ ] **13.6** Release v6.0.0
+- [ ] **13.1** *(partial: contribution gate in CI (scripts/check_contribution.py: privacy firewall, no private TIDOS drafts or learned data, frontmatter, size; tests); 'only if eval scores rise' is a manual dungeon run before/after (CI has no model budget/secrets))* Community skills/playbooks submitted as PRs, accepted only if they raise community eval scores
+- [ ] **13.2** *(partial: the update gate already enforces signed tags with TIDOS_REQUIRE_SIGNED=1; signing needs the owner's GPG/SSH key (none configured here), so v5.1.0 is tagged unsigned)* Signed releases + verified update channel
+- [x] **13.3** Trace → dataset pipeline (sanitized, provider terms respected) — done 2026-10-24 (tidos_learn dataset: verified strong-model work -> JSONL (request, task type, stacks, steps, checks, outcome) + data card; no model-written text; privacy firewall + path stripping (audit on real data: 124 records, 0 paths/usernames); tests)
+- [ ] **13.4** *(deferred: needs a GPU, hours of training and a provider-terms review before training on session-derived data; the dataset (13.3) is ready for it)* LoRA fine-tune a small open model (e.g. via Unsloth) → "TIDOS-7B" that natively follows the protocol
+- [ ] **13.5** *(deferred: depends on 13.4; the dungeon harness (compare/ablate/repeat) is ready to benchmark it)* Benchmark TIDOS-7B vs base model vs strong models on the dungeons
+- [ ] **13.6** *(not released as v6.0 (no TIDOS-native model yet); phases 9-12 shipped as v5.1.0 'Level Up' (local tag))* Release v6.0.0
 
 ---
 

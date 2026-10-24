@@ -26,6 +26,8 @@ jobs:
         run: python -m pytest -q tests browser_relay/tests
       - name: Spec validator (personas, registry, versions, models, dungeons, links)
         run: python scripts/validate_specs.py
+      - name: Contribution gate (privacy, no private drafts, frontmatter, size)
+        run: python scripts/check_contribution.py
       - name: Claude Code plugin is in sync with .claude/ sources
         run: python scripts/build_plugin.py --check
       - name: Update-gate safety scenarios (bash)

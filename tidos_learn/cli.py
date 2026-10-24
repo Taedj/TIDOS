@@ -60,6 +60,16 @@ def cmd_note(args):
     return 0
 
 
+def cmd_dataset(args):
+    from . import dataset
+    conn = db.connect(args.db)
+    path, stats = dataset.export(conn, args.out, strong_only=not args.all,
+                                 include_projects=set(args.project) if args.project else None)
+    conn.close()
+    print("%d record(s), %d verified -> %s" % (stats.get("records", 0), stats.get("verified", 0), path))
+    return 0
+
+
 def cmd_proposals(args):
     """Evolution queue: list, add, accept/reject, or draft a GitHub issue for a proposal."""
     from . import evolve
@@ -146,6 +156,11 @@ def main(argv=None):
     p.set_defaults(func=cmd_distill)
     sub.add_parser("list").set_defaults(func=cmd_list)
     sub.add_parser("status", help="TIDOS STATUS: level, rank, stats, domains, quests").set_defaults(func=cmd_status)
+    p = sub.add_parser("dataset", help="export verified workflows (requests + steps + checks, no model text) as JSONL")
+    p.add_argument("--out")
+    p.add_argument("--all", action="store_true", help="include medium/weak-model tasks too")
+    p.add_argument("--project", action="append", help="only these projects (repeatable)")
+    p.set_defaults(func=cmd_dataset)
     p = sub.add_parser("proposals", help="evolution queue for improving TIDOS itself")
     p.add_argument("--add", metavar="TITLE")
     p.add_argument("--reason")

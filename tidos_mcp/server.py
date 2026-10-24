@@ -25,7 +25,7 @@ if REPO_ROOT not in sys.path:
 from tidos_session import cli as session_cli, detect, guide  # noqa: E402
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
-SERVER_INFO = {"name": "tidos", "version": "5.0.0"}
+SERVER_INFO = {"name": "tidos", "version": "5.1.0"}
 VERIFY_TIMEOUT = 300
 # tidos_verify only runs check SUBCOMMANDS of known tools - never `python -c`, `node -e` or any shell
 CHECK_RULES = {

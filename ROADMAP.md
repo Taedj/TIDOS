@@ -49,9 +49,17 @@
 ### v5.0.0 — Runtime (2026-10-24, beta)
 - MCP server, Claude Code plugin (subagents, /tidos, hooks), enforced GUIDE mode, automatic learning, OpenCode traces.
 
-### Future — Planned
-- Native MCP Server implementation (`tidos-mcp-server`) for direct tool-based OS context hydration across all MCP-compatible AI clients.
-- Automated GitHub Actions sync bot for cross-repository memory consolidation.
+### v5.1.0 — Level Up (2026-10-24, beta)
+- XP engine with per-project levels and ranks, skill drafts and specialist subagents unlocked by verified work.
+- Evolution queue, gated self-improvement branches, daily quest, GUIDE-rule ablation; tool scout with trust scores.
+- Control center: Ask TIDOS, global search, settings editor, backups, Memory / Evolution / Tool Scout tabs, E2E tests.
+- Workflow dataset export and a community contribution gate.
+
+### Future — Planned (v6.0)
+- TIDOS-native small model: LoRA fine-tune on the workflow dataset, benchmarked on the dungeons against the base
+  model and strong models (needs a GPU and a provider-terms review).
+- Signed releases end to end (the update gate already verifies signatures with `TIDOS_REQUIRE_SIGNED=1`).
+- Community skills accepted only when the dungeon scores go up.
 
 ---
 
