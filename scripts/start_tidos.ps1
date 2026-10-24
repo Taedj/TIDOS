@@ -21,6 +21,16 @@ Write-Host ""
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $tidosRoot = Split-Path -Parent $scriptDir
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT): auto_update off -> skip Step 0
+$ctl = Join-Path $tidosRoot "tidos_brain/control.py"
+if (-not $SkipUpdate -and (Test-Path $ctl)) {
+    & python -I $ctl get auto_update | Out-Null
+    if ($LASTEXITCODE -eq 1) {
+        Write-Host ">>> [STEP 0] Auto-update is switched OFF in the control center (/TIDOSZIT). Skipping." -ForegroundColor Yellow
+        $SkipUpdate = $true
+    }
+}
+
 # Step 0: Force-Update Gate against GitHub origin/main
 if (-not $SkipUpdate) {
     Write-Host ">>> [STEP 0] Checking for TIDOS updates on GitHub..." -ForegroundColor Yellow

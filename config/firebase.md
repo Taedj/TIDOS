@@ -24,6 +24,14 @@ firebase.web:
   project_number: 640232479990
 ```
 
+## Control Center Owner (`/TIDOSZIT`)
+
+```yaml
+firebase.owner:
+  owner_uid: YTU4IuDy3SaGKOPt9E34iSge8Mo1   # only this Google account can open the control center
+  password_doc: admin/tidoszit              # PBKDF2 hash only, never the password (rules: firebase/firestore.rules)
+```
+
 > The web `apiKey`, `appId`, `authDomain`, etc. are **public** by design (embedded in client apps).
 > Never commit secrets. Service-account keys, OAuth client secrets, or admin credentials MUST live in
 > `.env` / a key vault only — see `docs/firebase_auth.md` §Security.

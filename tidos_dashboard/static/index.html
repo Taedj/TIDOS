@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TIDOSZIT Control Center</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='3' y='3' width='26' height='26' rx='3' fill='%2304060d' stroke='%234fb0ff' stroke-width='2'/%3E%3Ctext x='16' y='22' text-anchor='middle' font-family='monospace' font-weight='700' font-size='15' fill='%236cc4ff'%3ET%3C/text%3E%3C/svg%3E">
+  <script type="module" src="/static/app.js"></script>
+</head>
+<body>
+
+<!-- ======================= LOGIN ======================= -->
+<section id="login">
+  <div class="window">
+    <h2>System</h2>
+    <div class="login-title">TIDOSZIT</div>
+    <p class="login-sub muted">TIDOS Control Center</p>
+    <div class="notice"><b>[!]</b> A Player is trying to access the TIDOS control center. Identity verification is required.</div>
+
+    <div class="steps">
+      <div class="step" id="step1">1 · GOOGLE IDENTITY</div>
+      <div class="step" id="step2">2 · CONTROL PASSWORD</div>
+    </div>
+
+    <div id="stage-login">
+      <button class="btn block" id="googleBtn">Verify identity with Google</button>
+      <p class="small faint note">Only the TIDOS owner's Google account is accepted.</p>
+    </div>
+
+    <form id="stage-password" class="hidden" autocomplete="off">
+      <label class="field"><span>CONTROL PASSWORD</span>
+        <input type="password" id="pw" autocomplete="current-password" required></label>
+      <button class="btn block" type="submit">Enter</button>
+      <p class="small faint note">Type it here only — never in an AI chat or terminal.</p>
+    </form>
+
+    <form id="stage-setup" class="hidden" autocomplete="off">
+      <div class="notice"><b>[FIRST RUN]</b> No control password exists yet. Set one now. Only its PBKDF2 hash is stored (Firestore, owner-only).</div>
+      <label class="field"><span>NEW CONTROL PASSWORD (10+ chars, 3 of: a-z A-Z 0-9 symbols)</span>
+        <input type="password" id="newpw" autocomplete="new-password" required></label>
+      <label class="field"><span>CONFIRM</span>
+        <input type="password" id="newpw2" autocomplete="new-password" required></label>
+      <button class="btn block" type="submit">Set password &amp; enter</button>
+    </form>
+
+    <div class="msg" id="loginMsg"></div>
+  </div>
+</section>
+
+<!-- ======================= APP ======================= -->
+<section id="app" class="hidden">
+  <header class="topbar">
+    <div class="brand">TIDOS<small>// CONTROL CENTER</small></div>
+    <div class="player-chip">
+      <span class="rank E" id="chipRank">E</span>
+      <span>LV <b id="chipLevel">1</b></span>
+      <span class="xpbar"><i id="chipXp"></i></span>
+      <span class="timer" id="timer">--:--</span>
+      <button class="btn ghost" id="logoutBtn">Log out</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-view="status">Status</button>
+    <button class="tab" data-view="live">Live Monitor</button>
+    <button class="tab" data-view="security">Security</button>
+    <button class="tab locked" title="Unlocks in Phase 4 — Evals">🔒 Dungeons</button>
+    <button class="tab locked" title="Unlocks in Phase 5 — Distillation">🔒 Playbooks</button>
+    <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
+    <button class="tab locked" title="Unlocks in Phase 9 — Auto-learn">🔒 Memory</button>
+    <button class="tab locked" title="Unlocks in Phase 10 — Auto-develop">🔒 Evolution</button>
+    <button class="tab locked" title="Unlocks in Phase 11 — Tool scout">🔒 Tool Scout</button>
+  </nav>
+
+  <main>
+    <!-- STATUS -->
+    <div id="view-status" class="grid g-status">
+      <div class="window player player-win">
+        <h2>Status</h2>
+        <span class="rank lg E" id="pRank">E</span>
+        <div class="lvl"><small>LEVEL</small><span id="pLevel">1</span></div>
+        <div class="xptext"><span id="pXp">0</span> XP · next level at <span id="pNext">100</span></div>
+        <div class="xpbar"><i id="pXpBar"></i></div>
+        <div class="kv" id="pTotals"></div>
+        <p class="small faint note">XP is provisional (from task scores) until the eval-gated XP engine (Phase 9).</p>
+      </div>
+      <div class="window"><h2>Stats</h2><div id="stats"></div></div>
+      <div class="window"><h2>Daily Quests</h2><div id="quests"></div></div>
+      <div class="window"><h2>Domains</h2><div id="domains"></div></div>
+      <div class="window"><h2>Models</h2><div id="models"></div></div>
+      <div class="window"><h2>Quest Log</h2><div id="cleared"></div></div>
+    </div>
+
+    <!-- LIVE -->
+    <div id="view-live" class="grid g-live hidden">
+      <div class="window">
+        <h2>Active Sessions</h2>
+        <div id="activeSessions"></div>
+        <p class="small faint">Recording: <span id="tracingState">…</span> · switch it in Security.</p>
+      </div>
+      <div class="window">
+        <h2><span class="live-dot off" id="liveDot"></span>Event Stream</h2>
+        <div class="console" id="console"></div>
+      </div>
+      <div class="window span-3">
+        <h2>Recent Tasks</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>When</th><th>Project</th><th>Task</th><th>Model</th><th>Tools</th><th>Verify</th><th>Score</th><th>Outcome</th></tr></thead>
+          <tbody id="tasks"></tbody>
+        </table></div>
+      </div>
+    </div>
+
+    <!-- SECURITY -->
+    <div id="view-security" class="grid g-2 hidden">
+      <div class="window">
+        <h2>Kill Switches</h2>
+        <div id="switches"></div>
+      </div>
+      <div class="window">
+        <h2>Session &amp; Lock</h2>
+        <div class="kv" id="secInfo"></div>
+        <h2 class="mt">Change Control Password</h2>
+        <form id="changeForm" autocomplete="off">
+          <label class="field"><span>CURRENT</span><input type="password" id="curpw" required></label>
+          <label class="field"><span>NEW</span><input type="password" id="chgpw" required></label>
+          <label class="field"><span>CONFIRM NEW</span><input type="password" id="chgpw2" required></label>
+          <button class="btn" type="submit">Change password</button>
+          <div class="msg" id="changeMsg"></div>
+        </form>
+      </div>
+      <div class="window span-2">
+        <h2>Security Log</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Time (UTC)</th><th>Event</th><th>Detail</th></tr></thead>
+          <tbody id="secLog"></tbody>
+        </table></div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<div id="toasts"></div>
+</body>
+</html>

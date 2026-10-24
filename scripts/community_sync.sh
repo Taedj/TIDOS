@@ -10,6 +10,10 @@ cd "$ROOT"
 CANONICAL_REPO="Taedj/TIDOS"
 PERSONA="${1:-}"
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT)
+rc=0; python3 -I "$ROOT/tidos_brain/control.py" get community_sync >/dev/null 2>&1 || rc=$?
+if [[ "$rc" -eq 1 ]]; then echo "Community sync is switched OFF in the TIDOS control center (/TIDOSZIT)." >&2; exit 1; fi
+
 if [[ -z "$PERSONA" ]]; then
     PERSONA=$(git status --porcelain personas | grep -E '^(\?\?| M)  personas/tidos.+\.md$' | head -n 1 | awk '{print $2}' || true)
 fi

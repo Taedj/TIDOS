@@ -17,6 +17,10 @@
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$REPO" || { echo "ERROR: Not a git repo: $REPO" >&2; exit 2; }
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT)
+rc=0; python3 -I "$REPO/tidos_brain/control.py" get factory_sync >/dev/null 2>&1 || rc=$?
+if [ "$rc" -eq 1 ]; then echo "Factory sync is switched OFF in the TIDOS control center (/TIDOSZIT)." >&2; exit 1; fi
+
 PERSONA=""
 MESSAGE=""
 DRYRUN=0

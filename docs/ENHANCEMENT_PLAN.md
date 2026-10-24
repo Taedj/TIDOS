@@ -13,8 +13,8 @@
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
 | 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🔄 In progress (8/29) |
-| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11) |
-| 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | ⬜ Not started |
+| 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🔄 In progress (7/11 — 2.3 waits for hook install) |
+| 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🔄 In progress (13/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | ⬜ Not started |
 | 5 | Learn from Strong Models (Distillation) | Turn strong-model traces into playbooks | ⬜ Not started |
 | 6 | Weak-Model Driver | TIDOS drives weak models to strong-model results | ⬜ Not started |
@@ -36,7 +36,7 @@
 - [x] **0.4** Design "learn from strong models → drive weak models" pipeline — done 2026-10-24
 - [x] **0.5** Design the `/TIDOSZIT` control center and its security model — done 2026-10-24
 - [x] **0.6** Write this plan (`docs/ENHANCEMENT_PLAN.md`) — done 2026-10-24
-- [ ] **0.7** User answers open questions (see [Open Questions](#open-questions)) — Q1, Q2 answered 2026-10-24; Q3, Q4 pending
+- [ ] **0.7** User answers open questions (see [Open Questions](#open-questions)) — Q1, Q2, Q3 answered 2026-10-24; Q4 pending
 
 ---
 
@@ -60,7 +60,7 @@
 - [ ] **1.13** Store the refresh token securely (OS keyring via `keyring`, or at least restricted file permissions)
 - [ ] **1.14** `scripts/auth_verify.ps1` / `.sh` — remove `-Password` CLI argument (shell history leak); prompt securely instead
 - [ ] **1.15** Make the Google auth gate **opt-in** (required only for features that need identity: community sync, `/TIDOSZIT`)
-- [ ] **1.16** `browser_relay/` (GPTID) — mark as experimental/off by default; document ToS risk; prepare API-based replacement (see 6.x)
+- [ ] **1.16** *(partial 2026-10-24: `gptid` kill switch OFF by default and enforced in `scripts/gptid.*`; docs + API replacement still to do)* `browser_relay/` (GPTID) — mark as experimental/off by default; document ToS risk; prepare API-based replacement (see 6.x)
 - [ ] **1.17** `personas/tidostrade.md` — add risk disclaimer and "paper-trading only / never execute real trades" constraint
 
 ### 1C. Privacy
@@ -102,23 +102,23 @@
 ## Phase 3 — `/TIDOSZIT` Control Center (core)
 
 ### 3A. Security gate
-- [ ] **3.1** Firestore document `admin/tidoszit` = `{ hash, salt, algo, iterations, updatedAt }` (never the plaintext password)
-- [ ] **3.2** Firestore security rules: `admin/*` readable/writable **only** by the owner UID; deploy to `tidos-framework`
-- [ ] **3.3** `scripts/tidoszit_setpass.py` — set/change password locally (PBKDF2-SHA256 or argon2), writes only the hash
-- [ ] **3.4** Login step 1: Google sign-in, must match owner UID
-- [ ] **3.5** Login step 2: password typed **in the browser** (never through the AI chat/terminal) and verified against the Firestore hash
-- [ ] **3.6** Session cookie (HttpOnly, SameSite=Strict, 30-min expiry), bound to `127.0.0.1` only
-- [ ] **3.7** Brute-force protection: 5 failures → 15-min lockout; every attempt logged in `security_log`
-- [ ] **3.8** Security tests (wrong UID, wrong password, lockout, expired session, CSRF)
+- [x] **3.1** Firestore document `admin/tidoszit` = `{ hash, salt, algo, iterations, updatedAt }` (never the plaintext password) — done 2026-10-24 (format implemented + tested; the document itself is created by the first-run setup in the browser)
+- [ ] **3.2** *(partial 2026-10-24: `firebase/firestore.rules` (owner-only `admin/*`, deny everything else) + `firebase/firebase.json` written. **Deploy blocked for the agent (production deploy) — user runs it.**)* Firestore security rules: `admin/*` readable/writable **only** by the owner UID; deploy to `tidos-framework`
+- [x] **3.3** `scripts/tidoszit_setpass.py` — set/change password locally (PBKDF2-SHA256 or argon2), writes only the hash — done 2026-10-24 (design change: no CLI script (a password typed in a terminal can end up in AI transcripts) — first-run setup + "Change password" happen in the browser; PBKDF2-SHA256 600k iterations)
+- [x] **3.4** Login step 1: Google sign-in, must match owner UID — done 2026-10-24 (server verifies the ID token with Google (Identity Toolkit) and requires uid == owner_uid)
+- [x] **3.5** Login step 2: password typed **in the browser** (never through the AI chat/terminal) and verified against the Firestore hash — done 2026-10-24 (hash read from Firestore with the owner token, constant-time compare)
+- [x] **3.6** Session cookie (HttpOnly, SameSite=Strict, 30-min expiry), bound to `127.0.0.1` only — done 2026-10-24 (HttpOnly + SameSite=Strict, 5-min pending + 30-min full session, 127.0.0.1 only; plus Host check (DNS rebinding), Origin check (CSRF), CSP, X-Frame-Options)
+- [x] **3.7** Brute-force protection: 5 failures → 15-min lockout; every attempt logged in `security_log` — done 2026-10-24 (lockout persisted in brain.security_log (survives restarts); refused attempts during lockout do not extend it)
+- [x] **3.8** Security tests (wrong UID, wrong password, lockout, expired session, CSRF) — done 2026-10-24 (`tests/test_dashboard.py` 11 tests: wrong account, forged token, CSRF, bad Host, lockout, setup replay, expiry, path traversal; suite 127 passed)
 
 ### 3B. Command & app
-- [ ] **3.9** `/TIDOSZIT` slash command for Claude Code (`.claude/commands` or skill) + `scripts/tidoszit.ps1` / `.sh` for other tools
-- [ ] **3.10** Backend: FastAPI + SQLite (reads brain.db), WebSocket live stream
-- [ ] **3.11** Frontend: React + Tailwind, dark "System Window" theme (Solo Leveling style), built and served locally
-- [ ] **3.12** Panel: 🜲 **Status Window** (level, XP bar, rank, today's quests, recent level-ups)
-- [ ] **3.13** Panel: 📡 **Live Monitor** (running sessions, current step, active model, gates, live log; pause/kill)
-- [ ] **3.14** Panel: 🛡 **Security** + kill switches (auto-update, persona factory, auto-sync, GPTID)
-- [ ] **3.15** End-to-end test: `/TIDOSZIT` → login → see live trace from a real Claude Code session
+- [x] **3.9** `/TIDOSZIT` slash command for Claude Code (`.claude/commands` or skill) + `scripts/tidoszit.ps1` / `.sh` for other tools — done 2026-10-24 (`.claude/commands/TIDOSZIT.md` (works inside the TIDOS repo; copy to `~/.claude/commands/` for every project) + `scripts/tidoszit.ps1` / `.sh` (background start, `-Stop`))
+- [x] **3.10** Backend: FastAPI + SQLite (reads brain.db), WebSocket live stream — done 2026-10-24 (design change (Q3): Python stdlib `ThreadingHTTPServer` + Server-Sent Events instead of FastAPI/WebSocket — zero dependencies, offline)
+- [x] **3.11** Frontend: React + Tailwind, dark "System Window" theme (Solo Leveling style), built and served locally — done 2026-10-24 (design change (Q3): plain HTML/CSS/JS, no build step; "System Window" theme; verified with Playwright screenshots desktop + mobile, 0 console/CSP errors, no horizontal overflow)
+- [x] **3.12** Panel: 🜲 **Status Window** (level, XP bar, rank, today's quests, recent level-ups) — done 2026-10-24 (level / XP / E-S rank, 5 stats (INT PRE DIS WIS AGI), daily quests, domains, models, quest log — provisional XP from task scores until Phase 9)
+- [x] **3.13** Panel: 📡 **Live Monitor** (running sessions, current step, active model, gates, live log; pause/kill) — done 2026-10-24 (active sessions, live SSE event stream, recent tasks table; "kill session" replaced by the tracing pause switch (a running Claude Code session cannot be killed safely from outside))
+- [x] **3.14** Panel: 🛡 **Security** + kill switches (auto-update, persona factory, auto-sync, GPTID) — done 2026-10-24 (switches in `~/.tidos/control.json` ENFORCED by code: hook (tracing), start_tidos (auto_update), factory_sync, community_sync, gptid scripts; security log + lock status + change password)
+- [ ] **3.15** *(pending: needs hooks installed (2.3) + rules deployed (3.2) + one real Google login by the owner)* End-to-end test: `/TIDOSZIT` → login → see live trace from a real Claude Code session
 
 ---
 
@@ -281,7 +281,7 @@
 
 - [x] **Q1** Which models/tools are used day to day? → **Mostly Claude (Claude Code); sometimes Gemini and OpenCode models.** Collector order: 2.3/2.4 Claude Code → 2.5 Gemini CLI → 2.6 OpenCode — answered 2026-10-24
 - [x] **Q2** Owner Firebase UID → `YTU4IuDy3SaGKOPt9E34iSge8Mo1` — answered 2026-10-24 *(permission to deploy Firestore rules still to confirm at task 3.2)*
-- [ ] **Q3** Approve dashboard stack: FastAPI + SQLite + React/Tailwind (default)
+- [x] **Q3** Dashboard stack → user delegated ("go with the best way you see"): **Python stdlib server + plain HTML/JS + SSE**, no FastAPI/React — answered 2026-10-24
 - [ ] **Q4** Purge personal data from git history (1.20)? Requires force-push to GitHub
 
 ---
@@ -298,3 +298,7 @@
 | 2026-10-24 | Auto-develop opens PRs; a human merges | Avoids supply-chain / prompt-injection via `main` |
 | 2026-10-24 | Update gate never runs `git clean`, and skips (never forces) when system files have local edits or unpushed commits | Untracked files are always user work; protects the maintainer's in-progress changes |
 | 2026-10-24 | Trace collectors built in order Claude Code → Gemini CLI → OpenCode | User mostly uses Claude, sometimes Gemini / OpenCode (Q1) |
+| 2026-10-24 | Control center = Python stdlib + plain JS + SSE (not FastAPI/React) | Zero installs, no build, offline, matches TIDOS stdlib-only scripts (Q3 delegated) |
+| 2026-10-24 | Control password is set/changed only in the browser; no CLI | Anything typed in a terminal can be captured in AI transcripts |
+| 2026-10-24 | Kill switches live in `~/.tidos/control.json` and are enforced by scripts/hooks | Real control, not prose; survives TIDOS updates |
+| 2026-10-24 | Agent cannot edit `~/.claude/settings.json` or deploy to Firebase (Claude Code safety) — owner runs those two commands | Self-modification and production deploys need a human |

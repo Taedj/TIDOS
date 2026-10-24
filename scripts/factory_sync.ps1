@@ -27,6 +27,13 @@ Set-Location $repo
 
 if (-not (Test-Path ".git")) { Fail "Not a git repo: $repo" 2 }
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT)
+$ctl = Join-Path $repo "tidos_brain/control.py"
+if (Test-Path $ctl) {
+    & python -I $ctl get factory_sync | Out-Null
+    if ($LASTEXITCODE -eq 1) { Fail "Factory sync is switched OFF in the TIDOS control center (/TIDOSZIT)." 1 }
+}
+
 # --- Detect the new persona file if not supplied -------------------------------
 function Find-NewPersona {
     $untracked = git status --porcelain -- personas

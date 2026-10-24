@@ -16,8 +16,19 @@ echo "  TIDOS (Tidjani Development Operating System) v3.0"
 echo "=========================================================="
 echo ""
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT): auto_update off -> skip Step 0
+SKIP_UPDATE=0
+[ "${1:-}" = "--skip-update" ] && SKIP_UPDATE=1
+if [ "$SKIP_UPDATE" = 0 ]; then
+    rc=0; python3 -I "$TIDOS_ROOT/tidos_brain/control.py" get auto_update >/dev/null 2>&1 || rc=$?
+    if [ "$rc" -eq 1 ]; then
+        echo ">>> [STEP 0] Auto-update is switched OFF in the control center (/TIDOSZIT). Skipping."
+        SKIP_UPDATE=1
+    fi
+fi
+
 # Step 0: Force-Update Gate against GitHub origin/main
-if [ "$1" != "--skip-update" ]; then
+if [ "$SKIP_UPDATE" = 0 ]; then
     echo ">>> [STEP 0] Checking for TIDOS updates on GitHub..."
     if [ -f "$SCRIPT_DIR/update.sh" ]; then
         bash "$SCRIPT_DIR/update.sh" "$TIDOS_ROOT" || echo "WARNING: Update check completed with non-zero exit. Continuing."

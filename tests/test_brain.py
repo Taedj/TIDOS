@@ -55,6 +55,9 @@ TRANSCRIPT = [
     _assistant([_tool_use("t6", "PowerShell", command="pytest -q")], msg_id="m6", ts="2026-10-24T10:05:00Z"),
     _tool_result("t6", "12 passed, 0 failed"),
     _user("<command-name>/review</command-name><command-args>--fast</command-args>"),  # task 2 (command)
+    _user("<bash-input>firebase deploy</bash-input>"),                              # "!" shell command: not a task
+    _user("<bash-stdout>\x1b[1mDeploying\x1b[22m</bash-stdout><bash-stderr></bash-stderr>"),
+    _user('fix this <pasted_content id="17">TypeError: x is undefined</pasted_content>'),  # task 3
 ]
 
 
@@ -105,8 +108,9 @@ class TranscriptTests(unittest.TestCase):
         self.assertEqual(self.session["model"], "claude-opus-5-5")
 
     def test_task_segmentation(self):
-        self.assertEqual([t["prompt"] for t in self.tasks][1:], ["no, it still fails", "/review --fast"])
-        self.assertEqual(len(self.tasks), 3)
+        self.assertEqual([t["prompt"] for t in self.tasks][1:],
+                         ["no, it still fails", "/review --fast", "fix this TypeError: x is undefined"])
+        self.assertEqual(len(self.tasks), 4)
 
     def test_first_task_failed_and_corrected(self):
         t = self.tasks[0]
@@ -127,7 +131,7 @@ class TranscriptTests(unittest.TestCase):
         conn = db.connect(":memory:")
         claude_code.store(conn, self.session, self.tasks)
         claude_code.store(conn, self.session, self.tasks)
-        self.assertEqual(conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 3)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 4)
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM tool_calls").fetchone()[0], 6)
         prompt = conn.execute("SELECT prompt FROM tasks WHERE seq = 0").fetchone()[0]
         self.assertNotIn("sk-ant-", prompt)
@@ -147,7 +151,7 @@ class HookTests(unittest.TestCase):
             self.assertIn("<USER>", row["cwd"])
             claude_code.handle_hook(conn, {"hook_event_name": "Stop", "session_id": SID,
                                            "transcript_path": path}, background_import=False)
-            self.assertEqual(conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 3)
+            self.assertEqual(conn.execute("SELECT COUNT(*) FROM tasks").fetchone()[0], 4)
         finally:
             os.remove(path)
 

@@ -36,6 +36,13 @@ if (-not (Test-Path '.git')) {
 
 $CanonicalRepo = 'Taedj/TIDOS'
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT)
+$ctl = Join-Path $repo 'tidos_brain/control.py'
+if (Test-Path $ctl) {
+    & python -I $ctl get community_sync | Out-Null
+    if ($LASTEXITCODE -eq 1) { Fail 'Community sync is switched OFF in the TIDOS control center (/TIDOSZIT).' 1 }
+}
+
 # --- 1. Detect candidate persona if not specified -----------------------------
 function Find-CandidatePersona {
     $untracked = git status --porcelain -- personas

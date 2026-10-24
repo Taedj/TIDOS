@@ -12,14 +12,16 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-from . import privacy, scoring
+from . import control, privacy, scoring
 
 SOURCE = "claude-code"
 PROJECTS_DIR = os.path.join(os.path.expanduser("~"), ".claude", "projects")
 
 # Injected, non-human user messages
 _NOT_A_PROMPT = re.compile(r"^\s*(<system-reminder>|<local-command-|Caveat:|Base directory for this skill|"
-                           r"\[Request interrupted|<task-notification>|This session is being continued)")
+                           r"\[Request interrupted|<task-notification>|This session is being continued|"
+                           r"<bash-input>|<bash-stdout>|<bash-stderr>)")  # "!" shell commands are not prompts
+_PASTE_TAG = re.compile(r"</?pasted_content[^>]*>")
 _SYSTEM_REMINDER = re.compile(r"<system-reminder>.*?</system-reminder>", re.DOTALL)
 _COMMAND = re.compile(r"<command-name>(.*?)</command-name>.*?(?:<command-args>(.*?)</command-args>)?", re.DOTALL)
 
@@ -52,7 +54,7 @@ def extract_prompt(entry):
     text = _SYSTEM_REMINDER.sub("", text).strip()
     if not text or _NOT_A_PROMPT.match(text):
         return None
-    return text
+    return _PASTE_TAG.sub("", text).strip() or None
 
 
 def _summary(tool, tool_input):
@@ -229,6 +231,8 @@ def import_all(conn, projects_dir=PROJECTS_DIR):
 
 def handle_hook(conn, payload, background_import=True):
     """Record one Claude Code hook event. Must be fast and must never raise to the caller."""
+    if not control.is_on("tracing"):
+        return
     event = payload.get("hook_event_name") or "unknown"
     tool = payload.get("tool_name")
     summary = None

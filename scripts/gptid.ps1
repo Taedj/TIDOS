@@ -31,6 +31,13 @@ $ErrorActionPreference = 'Stop'
 $cli = Join-Path (Join-Path $PSScriptRoot "..\browser_relay") "gptid_cli.py"
 if (-not (Test-Path $cli)) { Write-Error "GPTID relay not found: $cli"; exit 2 }
 
+# Kill switch (~/.tidos/control.json, /TIDOSZIT): status/stop always allowed
+$ctl = Join-Path (Join-Path $PSScriptRoot "..\tidos_brain") "control.py"
+if ((Test-Path $ctl) -and ($Command.ToLower() -notin @("status", "stop"))) {
+    & python -I $ctl get gptid | Out-Null
+    if ($LASTEXITCODE -eq 1) { Write-Host "GPTID is switched OFF in the TIDOS control center (/TIDOSZIT)." -ForegroundColor Yellow; exit 1 }
+}
+
 $args = @($cli, $Command.ToLower(), "--port", "$Port")
 
 # Pass browser and headless/headed preferences
