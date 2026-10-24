@@ -17,7 +17,7 @@
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | 🟢 Built (13/15) - 3.2 deploy + 3.15 first login need the user |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
 | 5 | LEARN mode | TIDOS learns from strong-model sessions (START TIDOS) | ✅ Done (9/9) |
-| 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 measurement running |
+| 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 raid gave no result (agent hang, fixed); rerun pending |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ✅ Done (10/10) |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ✅ Done (20/20) |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (11/14) - 9.7, 9.9 partial, 9.11 deferred |
