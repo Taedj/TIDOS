@@ -1,0 +1,19 @@
+{
+  "name": "tidos",
+  "version": "4.1.0",
+  "description": "TIDOS learns how your projects are built while you work with strong models, and guides weak or free models with that knowledge: per-request playbooks, read-before-edit and no-done-without-checks enforcement, subagents and an MCP server.",
+  "author": {
+    "name": "Tidjani Zitouni"
+  },
+  "homepage": "https://github.com/Taedj/TIDOS",
+  "repository": "https://github.com/Taedj/TIDOS",
+  "license": "MIT",
+  "keywords": [
+    "learning",
+    "guidance",
+    "weak-models",
+    "playbooks",
+    "mcp",
+    "hooks"
+  ]
+}

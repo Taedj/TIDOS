@@ -1,0 +1,16 @@
+{
+  "name": "tidos",
+  "owner": {
+    "name": "Tidjani Zitouni"
+  },
+  "metadata": {
+    "description": "TIDOS learns how your projects are built from strong-model sessions and guides weak or free models with that knowledge."
+  },
+  "plugins": [
+    {
+      "name": "tidos",
+      "source": "./plugin",
+      "description": "TIDOS: learn from strong-model sessions, guide weak models with per-request playbooks and enforced checks."
+    }
+  ]
+}

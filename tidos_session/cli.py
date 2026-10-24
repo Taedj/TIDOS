@@ -68,6 +68,8 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
     with open(os.path.join(detect.tidos_home(), "brief.md"), "w", encoding="utf-8") as f:
         f.write(text)
     effect.log_start(session)
+    with open(os.path.join(detect.tidos_home(), "repo_path"), "w", encoding="utf-8") as f:
+        f.write(detect.REPO_ROOT)  # lets the Claude Code plugin launcher find this checkout
     return session, facts, text
 
 

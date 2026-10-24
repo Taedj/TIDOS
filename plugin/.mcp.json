@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "tidos": {
+      "command": "python",
+      "args": [
+        "-I",
+        "${CLAUDE_PLUGIN_ROOT}/bin/tidos_launch.py",
+        "mcp"
+      ]
+    }
+  }
+}
