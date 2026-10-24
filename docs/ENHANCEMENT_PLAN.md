@@ -104,7 +104,7 @@
 
 ### 3A. Security gate
 - [x] **3.1** Firestore document `admin/tidoszit` = `{ hash, salt, algo, iterations, updatedAt }` (never the plaintext password) — done 2026-10-24 (format implemented + tested; the document itself is created by the first-run setup in the browser)
-- [ ] **3.2** *(rules written; deploy needs the user (Claude Code blocks agent production deploys): firebase deploy --only firestore:rules --project tidos-framework --config firebase/firebase.json)* Firestore security rules: `admin/*` readable/writable **only** by the owner UID; deploy to `tidos-framework`
+- [x] **3.2** Firestore security rules: `admin/*` readable/writable **only** by the owner UID; deploy to `tidos-framework` — done 2026-10-24 (deployed by the user's request; rules compiled and released)
 - [x] **3.3** `scripts/tidoszit_setpass.py` — set/change password locally (PBKDF2-SHA256 or argon2), writes only the hash — done 2026-10-24 (design change: no CLI script (a password typed in a terminal can end up in AI transcripts) — first-run setup + "Change password" happen in the browser; PBKDF2-SHA256 600k iterations)
 - [x] **3.4** Login step 1: Google sign-in, must match owner UID — done 2026-10-24 (server verifies the ID token with Google (Identity Toolkit) and requires uid == owner_uid)
 - [x] **3.5** Login step 2: password typed **in the browser** (never through the AI chat/terminal) and verified against the Firestore hash — done 2026-10-24 (hash read from Firestore with the owner token, constant-time compare)
