@@ -192,6 +192,9 @@ class InstallTests(unittest.TestCase):
 
     def runner(self, argv, **kw):
         self.calls.append(argv)
+        if "--dry-run" in argv:  # pip's resolution report: what WOULD be installed
+            return mock.Mock(returncode=0, stderr="", stdout='{"install": [{"metadata": {"name": "pipper", "version": "2.0"}},'
+                                                             ' {"metadata": {"name": "dep", "version": "1.1"}}]}')
         if "install" in argv:
             self.present.add("pipper")
         if "uninstall" in argv:
@@ -223,10 +226,12 @@ class InstallTests(unittest.TestCase):
         scout.set_status("pipper", "approved")
         result = scout.install("pipper", runner=self.runner)
         self.assertTrue(result["ok"])
-        self.assertEqual(self.calls[0][1:], ["-m", "pip", "install", "--disable-pip-version-check", "pipper==2.0"])
-        self.assertTrue(scout.state()["pipper"]["installed_by_tidos"])
+        self.assertIn("--dry-run", self.calls[0])                  # resolve first: what WOULD be installed
+        self.assertEqual(self.calls[1][1:], ["-m", "pip", "install", "--disable-pip-version-check", "pipper==2.0"])
+        self.assertIn("installs: pipper==2.0, dep==1.1", result["output"])
+        self.assertEqual(scout.state()["pipper"]["installed_by_tidos"]["plan"], ["pipper==2.0", "dep==1.1"])
         self.assertTrue(scout.uninstall("pipper", runner=self.runner)["ok"])
-        self.assertEqual(self.calls[1][1:], ["-m", "pip", "uninstall", "-y", "pipper"])
+        self.assertEqual(self.calls[2][1:], ["-m", "pip", "uninstall", "-y", "pipper"])
         self.assertNotIn("installed_by_tidos", scout.state()["pipper"])
         with self.assertRaises(scout.InstallRefused):             # tools you installed yourself are never removed
             scout.uninstall("pipper", runner=self.runner)
@@ -249,6 +254,29 @@ class InstallTests(unittest.TestCase):
         self.assertEqual(self.calls, [])                          # no shell, no package manager
         self.assertTrue(scout.uninstall("dl")["ok"])
         self.assertEqual(os.listdir(self.bindir), [])
+
+    def test_unresolvable_pip_package_installs_nothing(self):
+        from tidos_brain import control
+        control.set_switch("tool_install", True)
+        scout.set_status("pipper", "approved")
+        fail = lambda argv, **kw: (self.calls.append(argv), mock.Mock(returncode=1, stdout="", stderr="no match"))[1]
+        with self.assertRaises(scout.InstallRefused) as ctx:
+            scout.install("pipper", runner=fail)
+        self.assertIn("dry run failed", str(ctx.exception))
+        self.assertEqual(len(self.calls), 1)                       # only the dry run ran
+
+    def test_prevet_quarantines_bad_binaries(self):
+        tool = {"version": ["tool", "--version"]}
+        bad = scout.prevet_binary(tool, "tool.exe", b"not a program")
+        self.assertFalse(bad["ok"])                                # does not run -> never installed
+        script = "import os, sys; open('junk.txt', 'w').write('x'); print('tool 1.0')"
+        with mock.patch.object(scout.subprocess, "run", lambda argv, cwd=None, **kw: (
+                open(os.path.join(cwd, "junk.txt"), "w").close(), mock.Mock(returncode=0, stdout="tool 1.0", stderr=""))[1]):
+            writer = scout.prevet_binary(tool, "tool.exe", b"x")
+        self.assertFalse(writer["ok"])
+        self.assertIn("wrote", writer["detail"])                   # a version check must not write files
+        with mock.patch.object(scout.subprocess, "run", lambda argv, **kw: mock.Mock(returncode=0, stdout="tool 1.0", stderr="")):
+            self.assertEqual(scout.prevet_binary(tool, "tool.exe", b"x")["version"], "tool 1.0")
 
     def test_verify_accepts_catalog_checks_only(self):
         from tidos_mcp import server as mcp

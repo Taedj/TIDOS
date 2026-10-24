@@ -430,6 +430,47 @@ def _pip_user_scripts_on_path():
     return _ensure_user_path(scripts)
 
 
+def prevet_binary(tool, filename, exe_bytes, timeout=60):
+    """Quarantine check BEFORE install: run the downloaded program's version command in an empty temp folder.
+    Passes only if it exits 0 and writes nothing next to itself."""
+    if not tool.get("version"):
+        return {"ok": True, "version": "no version command", "detail": "skipped"}
+    with tempfile.TemporaryDirectory(prefix="tidos-prevet-") as tmp:
+        exe = os.path.join(tmp, filename)
+        with open(exe, "wb") as f:
+            f.write(exe_bytes)
+        if os.name != "nt":
+            os.chmod(exe, 0o755)
+        work = os.path.join(tmp, "work")
+        os.makedirs(work)
+        try:
+            proc = subprocess.run([exe] + list(tool["version"][1:]), cwd=work, capture_output=True, text=True,
+                                  encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
+        except (OSError, subprocess.TimeoutExpired) as e:
+            return {"ok": False, "version": "", "detail": "did not run: %s" % type(e).__name__}
+        stray = sorted(set(os.listdir(tmp)) - {filename, "work"}) + os.listdir(work)
+        out = (proc.stdout or proc.stderr).strip().splitlines()
+        version = out[0][:80] if out else ""
+        if proc.returncode or stray:
+            return {"ok": False, "version": version,
+                    "detail": "exit %d%s" % (proc.returncode, ", wrote %s" % stray[:5] if stray else "")}
+        return {"ok": True, "version": version, "detail": "clean"}
+
+
+def pip_plan(spec, runner=subprocess.run):
+    """Every package pip WOULD install (dependencies included), from a dry run. None if it cannot resolve."""
+    proc = runner([sys.executable, "-m", "pip", "install", "--dry-run", "--quiet", "--disable-pip-version-check",
+                   "--report", "-", spec["package"]], capture_output=True, text=True, encoding="utf-8",
+                  errors="replace", timeout=INSTALL_TIMEOUT, stdin=subprocess.DEVNULL)
+    if proc.returncode:
+        return None
+    try:
+        report = json.loads(proc.stdout or "{}")
+    except ValueError:
+        return None
+    return ["%s==%s" % (i["metadata"]["name"], i["metadata"]["version"]) for i in report.get("install", [])]
+
+
 def _log(line):
     os.makedirs(detect.tidos_home(), exist_ok=True)
     with open(_home_file("tool_installs.log"), "a", encoding="utf-8") as f:
@@ -478,6 +519,10 @@ def install(name, runner=subprocess.run, downloader=_download):
             exe = _extract(data, f["url"], f["bin"])
             if exe is None:
                 raise InstallRefused("%s not found in the release file" % f["bin"])
+            check = prevet_binary(tool, f["bin"], exe)
+            if not check["ok"]:
+                _log("REFUSED %s: pre-install vet failed: %s" % (name, check["detail"]))
+                raise InstallRefused("pre-install vet failed: %s" % check["detail"])
             os.makedirs(bin_dir(), exist_ok=True)
             target = os.path.join(bin_dir(), f["bin"])
             with open(target + ".tmp", "wb") as out:
@@ -486,11 +531,20 @@ def install(name, runner=subprocess.run, downloader=_download):
             if os.name != "nt":
                 os.chmod(target, 0o755)
             path_added = _ensure_user_path(bin_dir())
-            _log("installed %s %s -> %s (sha256 ok)" % (name, spec["version"], target))
+            _log("installed %s %s -> %s (sha256 ok, pre-vet: %s)" % (name, spec["version"], target, check["version"]))
             record.update(version=spec["version"], files=[target], path_added=path_added)
-            output = ["sha256 verified", "-> " + target]
+            output = ["sha256 verified", "pre-install vet: %s (clean)" % check["version"], "-> " + target]
         else:
+            plan = []
+            if spec["method"] == "pip":
+                plan = pip_plan(spec, runner)
+                if plan is None:
+                    raise InstallRefused("pip could not resolve %s (dry run failed): nothing installed" % spec["package"])
+                _log("pip plan for %s: %s" % (name, ", ".join(plan)))
+                record.update(plan=plan)
             code, output = _run(auto_argv(spec), runner)
+            if plan:
+                output = ["installs: " + ", ".join(plan)] + output
             if code:
                 return {"ok": False, "detail": "install failed (exit %d)" % code, "output": output}
             record.update(package=spec["package"])
