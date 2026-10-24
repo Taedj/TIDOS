@@ -188,6 +188,20 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(self.req("POST", "/api/playbooks/toggle", {"path": "app/bugfix.md", "disabled": True})[0], 200)
             self.assertTrue(self.req("GET", "/api/playbooks")[1]["playbooks"][0]["disabled"])
 
+    def test_tool_scout_endpoints(self):
+        home = os.path.join(self.tmp.name, "tidoshome3")
+        with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):
+            self.assertEqual(self.req("GET", "/api/tools")[0], 401)
+            self.assertEqual(self.req("POST", "/api/tools/action", {"name": "ruff", "action": "approved"})[0], 401)
+            self.login_with_setup()
+            tools = self.req("GET", "/api/tools")[1]["tools"]
+            self.assertTrue(any(t["name"] == "gitleaks" for t in tools))
+            self.assertEqual(self.req("POST", "/api/tools/action", {"name": "ruff", "action": "blacklisted"})[0], 200)
+            from tidos_scout import scout
+            self.assertEqual(scout.state()["ruff"]["status"], "blacklisted")
+            for bad in ({"name": "ruff", "action": "install"}, {"name": "rm -rf", "action": "vet"}):
+                self.assertEqual(self.req("POST", "/api/tools/action", bad)[0], 400, bad)
+
     def test_memory_and_army_endpoints(self):
         home = os.path.join(self.tmp.name, "tidoshome2")
         with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):

@@ -151,6 +151,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"tasks": stats.recent_tasks(conn)})
             if path == "/api/dungeons":
                 return self._json(200, stats.dungeons(conn))
+            if path == "/api/tools":
+                from tidos_scout import scout
+                return self._json(200, {"tools": scout.overview(conn)})
             if path == "/api/evolution":
                 return self._json(200, stats.evolution())
             if path == "/api/notifications":
@@ -245,6 +248,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/auth/change": self._auth_change, "/api/switches": self._switches,
             "/api/playbooks/toggle": self._playbook_toggle,
             "/api/evolution/status": self._evolution_status,
+            "/api/tools/action": self._tool_action,
         }
         handler = routes.get(urlparse(self.path).path)
         if not handler:
@@ -345,6 +349,26 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "unknown proposal"})
         self.server.lockout.log("proposal", "#%s %s" % (body.get("id"), status))
         return self._json(200, {"ok": True})
+
+    def _tool_action(self, body):
+        """Tool scout: approve/propose/blacklist/reset, refresh trust, or vet an installed tool. Never installs."""
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        from tidos_scout import scout
+        tool = next((t for t in scout.catalog() if t["name"] == body.get("name")), None)
+        action = body.get("action")
+        if not tool or action not in ("proposed", "approved", "blacklisted", "none", "trust", "vet"):
+            return self._json(400, {"error": "unknown tool or action"})
+        if action == "trust":
+            result = scout.trust(tool, refresh=True)
+        elif action == "vet":
+            result = scout.vet(tool)
+        else:
+            scout.set_status(tool["name"], action)
+            result = {"ok": True}
+        self.server.lockout.log("tool", "%s %s" % (tool["name"], action))
+        return self._json(200, result)
 
     def _playbook_toggle(self, body):
         session = self._session()

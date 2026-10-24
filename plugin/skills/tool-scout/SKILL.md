@@ -12,5 +12,9 @@ description: Find, vet and propose a tool for a missing capability (linter, scan
 5. **Propose** to the user: what, why, trust summary, exact install command, how TIDOS will use it.
    Never install, enable or configure a tool without the user's explicit OK.
 
+With TIDOS installed, the scout CLI does steps 1-3 and 5 for you (it never installs anything):
+`python -I <TIDOS>/tidos_scout/__main__.py needs --project . --trust` (missing capabilities + trust 0-100),
+`... search "capability words"`, `... vet NAME` (installed tools only), `... propose NAME` (prints the command).
+
 ---
 With the TIDOS MCP server: `tidos_recall` for what was learned in this project, `tidos_verify` to run the checks. Report: what changed, the check output, and anything still unverified.

@@ -22,7 +22,7 @@
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ✅ Done (20/20) |
 | 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (11/14) - 9.7, 9.9 partial, 9.11 deferred |
 | 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | 🟢 Done (5/6) - 10.1 partial (no eval delta per proposal yet) |
-| 11 | Tool Scout | Auto-discover, vet, propose tools | ⬜ Not started |
+| 11 | Tool Scout | Auto-discover, vet, propose tools | 🟢 Done (6/8) - 11.4 and 11.7 partial |
 | 12 | Control Center (full) | All dashboard panels | ⬜ Not started |
 | 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | ⬜ Not started |
 
@@ -250,14 +250,14 @@
 
 ## Phase 11 — Tool Scout
 
-- [ ] **11.1** Need sensing (missing capability from task/stack, e.g. "no secret scanner", "no linter")
-- [ ] **11.2** Search: GitHub API, MCP registries, awesome-lists
-- [ ] **11.3** Trust score: stars, recent commits, license, maintainers, OSV / OpenSSF Scorecard
-- [ ] **11.4** Sandbox vetting (Docker/worktree): install, smoke test, permission check
-- [ ] **11.5** Propose install + config to user — **never auto-install without approval**
-- [ ] **11.6** Learn: tool XP (helped or not), blacklist bad tools
-- [ ] **11.7** Integrate starter toolset: gitleaks, semgrep, ruff, mypy/pyright, pytest, ast-grep, tree-sitter, ripgrep, Playwright MCP, GitHub MCP, Context7, Serena, promptfoo/inspect-ai, LiteLLM, Ollama
-- [ ] **11.8** Panel: 🛰 **Tool Scout** (trust score, install, sandbox-test, blacklist)
+- [x] **11.1** Need sensing (missing capability from task/stack, e.g. "no secret scanner", "no linter") — done 2026-10-24 (tidos_scout needs: missing capabilities from the project's stack + files (e.g. ZTAP lacks a secret scanner, dependency scanner, python linter/type checker); installed tools, MCP servers (names only) and blacklisted tools excluded)
+- [x] **11.2** Search: GitHub API, MCP registries, awesome-lists — done 2026-10-24 (tidos_scout search: GitHub repository search (only the query words leave the machine) ranked by trust; curated starter catalog in config/tools.json (16 tools incl. MCP servers))
+- [x] **11.3** Trust score: stars, recent commits, license, maintainers, OSV / OpenSSF Scorecard — done 2026-10-24 (trust 0-100: stars, last push, license (permissive/copyleft), archived = 0, OpenSSF Scorecard; capped at 85 without Scorecard; cached 7 days; offline keeps the cached value; system-curl fallback when Python's CA bundle fails (verification never disabled))
+- [ ] **11.4** *(partial: vet runs an INSTALLED tool's catalog version command in an empty temp dir and flags stray writes; no container/network isolation (Docker not used) and nothing is downloaded to vet)* Sandbox vetting (Docker/worktree): install, smoke test, permission check
+- [x] **11.5** Propose install + config to user — **never auto-install without approval** — done 2026-10-24 (propose/approve print the exact install command for the user; TIDOS never runs install (CLI + dashboard))
+- [x] **11.6** Learn: tool XP (helped or not), blacklist bad tools — done 2026-10-24 (tool XP from real sessions (runs/passes of each tool's commands in the brain, e.g. pytest 11/13); blacklist removes a tool from needs and briefs)
+- [ ] **11.7** *(partial: starter toolset catalogued with install commands and detection; installed tools with a check (gitleaks, ruff, osv-scanner, shellcheck) are added to GUIDE briefs as extra checks; nothing installed on this machine (user decision))* Integrate starter toolset: gitleaks, semgrep, ruff, mypy/pyright, pytest, ast-grep, tree-sitter, ripgrep, Playwright MCP, GitHub MCP, Context7, Serena, promptfoo/inspect-ai, LiteLLM, Ollama
+- [x] **11.8** Panel: 🛰 **Tool Scout** (trust score, install, sandbox-test, blacklist) — done 2026-10-24 (Tool Scout tab unlocked: installed, trust (with reasons on hover), usage, status; Trust/Vet/Approve/Ban actions, logged in the security log (tests))
 
 ---
 

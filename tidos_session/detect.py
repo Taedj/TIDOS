@@ -125,7 +125,8 @@ def project_facts(project):
             checks += ["npm run %s" % s for s in ("lint", "test", "build") if s in scripts]
         except (OSError, ValueError):
             pass
-    if has("pyproject.toml", "requirements.txt", "setup.py", "pytest.ini") or glob.glob(os.path.join(project, "*.py")):
+    if has("pyproject.toml", "requirements.txt", "setup.py", "pytest.ini") or glob.glob(os.path.join(project, "*.py")) \
+            or glob.glob(os.path.join(project, "*", "__init__.py")):  # packages without a manifest
         stack.append("python")
         if has("tests", "pytest.ini") or glob.glob(os.path.join(project, "test_*.py")):
             checks.append("python -m pytest -q")
@@ -143,4 +144,4 @@ def project_facts(project):
     if has(".git"):
         notes.append("git repository: check `git status` before and after changes")
     return {"name": os.path.basename(os.path.abspath(project)), "stack": stack or ["unknown"],
-            "checks": checks, "notes": notes}
+            "checks": checks, "notes": notes, "path": os.path.abspath(project)}

@@ -141,7 +141,8 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "evolution", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    if (tab.dataset.view === "tools") loadTools();
     if (tab.dataset.view === "evolution") loadEvolution();
     if (tab.dataset.view === "memory") loadMemory();
     if (tab.dataset.view === "live") loadLive();
@@ -323,6 +324,34 @@ async function loadEvolution() {
     : `<span class="muted">Last run</span><b>never</b>`;
   $("evoDrafts").innerHTML = [["Skill drafts", d.drafts.skills], ["Specialist drafts", d.drafts.agents], ["Issue drafts", d.drafts.issues]]
     .map(([k, v]) => `<span class="muted">${k}</span><b>${v}</b>`).join("");
+}
+
+// ---- tool scout
+async function loadTools() {
+  const r = await api("/api/tools");
+  if (!r.ok) return;
+  const btn = (t, action, label) => `<button class="btn ghost tool" data-n="${esc(t.name)}" data-a="${action}">${label}</button>`;
+  $("toolList").innerHTML = r.data.tools.map((t) => `
+    <tr><td><b>${esc(t.name)}</b><br><span class="small faint">${esc(t.why)}</span>
+      ${t.status === "approved" && !t.installed ? `<br><code class="sys">${esc(t.install)}</code>` : ""}</td>
+    <td>${esc(t.capability)}</td>
+    <td>${t.installed ? `<span class="pill ok">yes</span>` : `<span class="pill">no</span>`}</td>
+    <td title="${esc(t.trust_reasons.join(" · "))}">${t.trust == null ? "?" : `<span class="pill ${t.trust >= 70 ? "ok" : t.trust >= 40 ? "warn" : "bad"}">${t.trust}</span>`}</td>
+    <td>${t.usage ? `${t.usage.passed}/${t.usage.runs}` : "-"}</td>
+    <td>${t.status ? `<span class="pill ${t.status === "blacklisted" ? "bad" : "ok"}">${esc(t.status)}</span>` : "-"}</td>
+    <td>${btn(t, "trust", "Trust")} ${t.installed ? btn(t, "vet", "Vet") : ""}
+      ${t.status !== "approved" && !t.installed ? btn(t, "approved", "Approve") : ""}
+      ${t.status === "blacklisted" ? btn(t, "none", "Unban") : btn(t, "blacklisted", "Ban")}</td></tr>`).join("");
+  $("toolList").querySelectorAll(".tool").forEach((b) => b.addEventListener("click", async () => {
+    b.disabled = true;
+    const res = await api("/api/tools/action", { name: b.dataset.n, action: b.dataset.a });
+    if (res.ok) {
+      const d = res.data;
+      const msg = b.dataset.a === "trust" ? `trust ${d.score ?? "?"}` : b.dataset.a === "vet" ? `vet ${d.ok ? "PASS" : "FAIL"}: ${d.detail}` : b.dataset.a;
+      toast(`<b>[SYSTEM]</b> ${esc(b.dataset.n)}: ${esc(msg)}`);
+      loadTools();
+    }
+  }));
 }
 
 // ---- shadow army + memory

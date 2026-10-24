@@ -70,7 +70,7 @@
     <button class="tab locked" title="Unlocks in Phase 6 — Weak-model driver">🔒 Model Arena</button>
     <button class="tab" data-view="memory">Memory</button>
     <button class="tab" data-view="evolution">Evolution</button>
-    <button class="tab locked" title="Unlocks in Phase 11 — Tool scout">🔒 Tool Scout</button>
+    <button class="tab" data-view="tools">Tool Scout</button>
   </nav>
 
   <main>
@@ -113,6 +113,19 @@
       <div class="window">
         <h2>Unlocked Drafts</h2>
         <div class="kv" id="evoDrafts"></div>
+      </div>
+    </div>
+
+    <!-- TOOL SCOUT -->
+    <div id="view-tools" class="grid hidden">
+      <div class="window">
+        <h2>Tool Scout — capabilities TIDOS can recommend</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Tool</th><th>Capability</th><th>Installed</th><th>Trust</th><th>Used</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="toolList"></tbody>
+        </table></div>
+        <p class="small faint note">TIDOS never installs tools. Approve shows the exact command for you to run.
+          Per project: <code class="sys">python -I tidos_scout/__main__.py needs --project PATH --trust</code></p>
       </div>
     </div>
 

@@ -107,6 +107,17 @@ def _user_rules(project, limit=4):
     return rules[:limit]
 
 
+def _scout_checks(facts):
+    """Extra checks from installed tool-scout tools (gitleaks, ruff, ...) - never fails the brief."""
+    if not facts.get("path"):
+        return []
+    try:
+        from tidos_scout import scout
+        return scout.extra_checks(facts["path"], facts)
+    except Exception:
+        return []
+
+
 def weak_rules(ablate=None):
     """WEAK_RULES, optionally without rule number `ablate` (renumbered) - used by eval ablation runs."""
     if not ablate:
@@ -124,6 +135,9 @@ def guide_brief(session, facts, record=True, ablate=None):
                   % "\n".join("- " + r for r in rules)) if rules else ""
     checks = "\n".join("- `%s`" % c for c in facts["checks"]) or \
         "- No test command detected: ask the user how they check this project, or write a small check script."
+    extra = _scout_checks(facts)
+    if extra:
+        checks += "\n" + "\n".join("- (also available) `%s`" % c for c in extra)
     notes = "".join("- %s\n" % n for n in facts["notes"])
     selected = _playbooks(facts["stack"], facts["name"], limit=2, with_paths=True)
     if selected and record:
