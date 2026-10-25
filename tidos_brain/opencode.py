@@ -11,6 +11,7 @@ import sqlite3
 from datetime import datetime, timezone
 
 from . import scoring
+from .paths import leaf
 from .claude_code import finalize_tasks, importer_done, importer_stale, is_synthetic, store
 
 SOURCE = "opencode"
@@ -99,7 +100,7 @@ def parse_session(src, session_row):
         norm = os.path.normpath(directory)
         home = os.path.normpath(os.path.expanduser("~"))
         session["project"] = "~" if os.path.normcase(norm) == os.path.normcase(home) else \
-            (os.path.basename(norm.rstrip("\\/")) or norm)
+            (leaf(norm) or norm)
     return session, finalize_tasks(tasks)
 
 

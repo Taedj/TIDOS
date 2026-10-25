@@ -6,6 +6,8 @@ edits -> feature, reads only -> question. English + French keywords.
 import os
 import re
 
+from tidos_brain.paths import leaf
+
 TYPE_RULES = [
     # "release" alone is not a deploy ("pre-release identifiers" is a coding spec): only release ACTIONS count
     ("deploy", r"\bdeploy|\bpublish|(?<!-)\brelease (the |a |new )?(app|apk|aab|build|version)|"
@@ -78,7 +80,7 @@ def stacks(calls):
         summary = (c.get("summary") or "")
         if c.get("kind") in ("edit", "read"):
             stack = EXT_STACKS.get(os.path.splitext(summary.split()[0] if summary else "")[1].lower())
-            if os.path.basename(summary).lower() in ("firebase.json", "firestore.rules", "firestore.indexes.json"):
+            if leaf(summary).lower() in ("firebase.json", "firestore.rules", "firestore.indexes.json"):
                 stack = "firebase"
             if stack and stack != "docs" and stack not in found:
                 found.append(stack)

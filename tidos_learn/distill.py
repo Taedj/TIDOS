@@ -15,6 +15,7 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 
 from tidos_brain.claude_code import is_synthetic
+from tidos_brain.paths import leaf
 from tidos_session.detect import tidos_home, tier_for
 
 from . import classify
@@ -67,7 +68,7 @@ def normalize_check(command):
     tokens = cmd.split()
     if not tokens or "<<" in cmd or "=" in tokens[0]:
         return None
-    tool = os.path.basename(tokens[0].strip('"')).lower().replace(".exe", "")
+    tool = leaf(tokens[0].strip('"')).lower().replace(".exe", "")
     if tool not in _CHECK_TOOLS:
         return None
     tokens[0] = tool

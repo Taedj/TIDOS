@@ -13,6 +13,7 @@ import sys
 from datetime import datetime, timezone
 
 from . import control, privacy, scoring
+from .paths import leaf
 
 SOURCE = "claude-code"
 # Bump when parsing changes what is stored: every session is then re-read once (store() replaces it).
@@ -168,7 +169,7 @@ def parse_transcript(path):
         if os.path.normcase(cwd) == os.path.normcase(os.path.normpath(os.path.expanduser("~"))):
             session["project"] = "~"
         else:
-            session["project"] = os.path.basename(cwd.rstrip("\\/")) or cwd
+            session["project"] = leaf(cwd) or cwd
     if not session["id"]:
         session["id"] = os.path.splitext(os.path.basename(path))[0]
 

@@ -143,7 +143,8 @@ def session_info(conn):
         with open(os.path.join(detect.tidos_home(), "session.json"), "r", encoding="utf-8") as f:
             current = _json.load(f)
         current.pop("facts", None)
-        current["project"] = os.path.basename(current.get("project", "")) or current.get("project")
+        from tidos_brain.paths import leaf
+        current["project"] = leaf(current.get("project", "")) or current.get("project")
     except (OSError, ValueError):
         current = None
     return {"session": current, "effect": effect.guidance_effect(conn)}
