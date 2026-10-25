@@ -274,7 +274,6 @@ class Handler(BaseHTTPRequestHandler):
             "/api/army/action": self._army_action,
             "/api/jobs/run": self._job_run,
             "/api/jobs/cancel": self._job_cancel,
-            "/api/helper": self._helper,
             "/api/tools/action": self._tool_action,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
@@ -411,23 +410,6 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(409, {"error": str(e)})
         self.server.lockout.log("job", "cancelled %s" % body.get("id"))
         return self._json(200, {"ok": True})
-
-    def _helper(self, body):
-        """The model TIDOS uses for its own jobs (free by default; any model you have)."""
-        if not self._session():
-            return self._json(401, {"error": "login required"})
-        from tidos_brain import control
-        from tidos_session import helper
-        try:
-            control.set_text("helper_model", body.get("model"))
-        except (KeyError, ValueError, TypeError) as e:
-            return self._json(400, {"error": str(e)})
-        self.server.lockout.log("helper", str(body.get("model")))
-        conn = db.connect(self.server.db_path)
-        try:
-            return self._json(200, helper.describe(conn))
-        finally:
-            conn.close()
 
     def _army_action(self, body):
         """ARISE: activate a draft unit (-> ~/.claude/agents, personal) or undo it. Owner only, logged."""

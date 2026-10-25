@@ -127,11 +127,7 @@
       <div class="window">
         <h2>Autopilot — TIDOS decides what to run</h2>
         <div class="kv" id="apInfo"></div>
-        <form class="ap-row" id="apForm" autocomplete="off">
-          <label>Helper model <select id="apHelper"></select></label>
-          <button class="btn ghost" type="submit">Save</button>
-        </form>
-        <p class="small faint note">TIDOS is free and works with any model. Jobs that need a model use the helper model: by default a free model you already use (auto). Switch the autopilot on or off in Security. It never installs, pushes, merges, activates a unit or changes a switch.</p>
+        <p class="small faint note">TIDOS is free and works with any model: it uses the model of your last START TIDOS (Claude Code, OpenCode, Gemini CLI), or a free model when your tool has no command line. Switch the autopilot on or off in Security. It never installs, pushes, merges, activates a unit or changes a switch.</p>
 
         <h2 class="mt">Recommended now</h2>
         <div id="recs"></div>

@@ -131,6 +131,30 @@ class JobsTests(unittest.TestCase):
         control.set_text("helper_model", "none")
         self.assertEqual(helper.ask("hi")[0], None)                 # 'none': no model is ever called
 
+    def test_helper_follows_start_tidos(self):
+        import json
+        from tidos_session import helper
+        home = os.environ["TIDOS_HOME_DIR"]
+        os.makedirs(home, exist_ok=True)
+
+        def started(tool, model):
+            with open(os.path.join(home, "session.json"), "w", encoding="utf-8") as f:
+                json.dump({"tool": tool, "model": model}, f)
+        every_cli = mock.patch("tidos_session.helper.shutil.which", lambda exe: exe)
+        with every_cli:
+            started("gemini-cli", "gemini-2.5-pro")
+            self.assertEqual(helper.resolve(conn=self.conn), "gemini:gemini-2.5-pro")      # the model you work with
+            started("opencode", "google/gemini-2.5-flash")
+            self.assertEqual(helper.resolve(conn=self.conn), "opencode:google/gemini-2.5-flash")
+            started("claude-code", "claude-opus-5-5")
+            self.assertEqual(helper.describe(self.conn)["note"], "from your last START TIDOS")
+            started("antigravity", "gemini-3-pro")                                       # an IDE, no command line
+            self.assertEqual(helper.resolve(conn=self.conn), "opencode:opencode/big-pickle")
+            self.assertIn("antigravity has no command line", helper.describe(self.conn)["note"])
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: None):
+            started("gemini-cli", "gemini-2.5-pro")
+            self.assertIsNone(helper.resolve(conn=self.conn))      # CLI missing, no free model: local only
+
 
 if __name__ == "__main__":
     unittest.main()

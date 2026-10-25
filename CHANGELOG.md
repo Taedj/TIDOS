@@ -8,12 +8,13 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ### Changed
 - **TIDOS is no-cost and model-agnostic by design.** Its own jobs (advice notes, Ask TIDOS, unit trials,
-  self-improve, proposal measurements, raids) now use one **helper model** (`tidos_session/helper.py`,
-  setting `helper_model`): `auto` (default) = a free model you already use through OpenCode, which reaches
-  Gemini, OpenAI, local Ollama and many free models; if one free model is down it falls back to the next;
-  with no model available TIDOS works local-only. Claude is used only if you choose it. The control center
-  shows no money anywhere: the autopilot budget, cost estimates, "spent today" and cost columns are gone
-  (the dungeon leaderboard shows average time instead); the autopilot simply runs due jobs one at a time.
+  self-improve, proposal measurements, raids) use the model you are working with: every START TIDOS records
+  the tool and model, and TIDOS reaches it through that tool's command line (Claude Code -> claude, OpenCode ->
+  opencode for Gemini/OpenAI/Ollama/free models, Gemini CLI -> gemini). IDEs without a command line
+  (Antigravity, Cursor...) or a missing CLI fall back to a free model you use; a failing free model falls back
+  to the next; with none TIDOS works local-only. Nothing to choose (`tidos_session/helper.py`; optional
+  override `helper_model` in control.json). The control center shows no money anywhere: autopilot budget,
+  cost estimates, "spent today" and cost columns are gone (the leaderboard shows average time).
 
 ### Added
 - **Arabic control center**: language switch (English / العربية) on the login screen and top bar, full

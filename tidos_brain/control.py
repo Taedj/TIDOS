@@ -10,8 +10,8 @@ Enforced by code, not by prompts:
   tool_install    - Tool Scout installs an approved tool only when on
   autopilot       - the control center runs the jobs TIDOS recommends by itself
 
-Texts (same file): helper_model - the model TIDOS uses for its own jobs (tidos_session.helper): auto = a free
-model you already use, none = local only. TIDOS is no-cost by design and works with any model.
+Texts (same file): helper_model - the model TIDOS uses for its own jobs (tidos_session.helper): auto = the model
+of your last START TIDOS (free fallback), none = local only. TIDOS is no-cost by design and works with any model.
 
 Shell scripts read it with:  python -I tidos_brain/control.py get <switch>   (prints on/off, exit 0/1)
 """
@@ -35,9 +35,10 @@ SWITCHES = {
 
 
 TEXTS = {  # name -> (default, validator regex, description)
-    "helper_model": ("auto", r"^(auto|none|claude:[A-Za-z0-9.\-]+|opencode:[A-Za-z0-9._\-]+/[A-Za-z0-9._\-/]+)$",
-                     "Model TIDOS uses for its own jobs: auto (a free model you use), none, opencode:<provider/model>, "
-                     "claude:<model>"),
+    "helper_model": ("auto", r"^(auto|none|claude:[A-Za-z0-9.\-]+|gemini:[A-Za-z0-9.\-]+|"
+                              r"opencode:[A-Za-z0-9._\-]+/[A-Za-z0-9._\-/]+)$",
+                     "Model TIDOS uses for its own jobs: auto (the model of your last START TIDOS, else a free one), "
+                     "none, or an explicit family:model"),
 }
 
 

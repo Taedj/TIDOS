@@ -462,13 +462,8 @@ async function loadJobs() {
   const hp = d.helper;
   $("apInfo").innerHTML = [
     ["Autopilot", `<span class="pill ${ap.on ? "ok" : ""}">${t(ap.on ? "ON" : "OFF")}</span>`],
-    ["Helper model", `${esc(hp.model ? shortModel(hp.model) : t("none (local only)"))} <span class="pill">${esc(t(hp.note))}</span>`],
+    ["Model in use", `${esc(hp.model ? shortModel(hp.model) : t("none (local only)"))} <span class="pill">${esc(t(hp.note))}</span>`],
   ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
-  if (document.activeElement !== $("apHelper")) {
-    const choices = ["auto", "none"].concat(jobOptions.agents.filter((a) => a !== "reference"));
-    $("apHelper").innerHTML = choices.map((c) => `<option value="${esc(c)}">${esc(c === "auto" ? t("auto (a free model you use)") : c === "none" ? t("none (local only)") : c)}</option>`).join("");
-    $("apHelper").value = hp.setting;
-  }
   $("recs").innerHTML = d.recommendations.map((x, i) => `
     <div class="rec"><div><b>${esc(t(x.title))}</b><div class="small faint">${esc(t(x.reason))}</div></div>
       <span class="pill">${x.model ? esc(shortModel(x.model)) : t("no model")}</span>
@@ -532,12 +527,6 @@ $("trialForm").addEventListener("change", () => { $("trialForm").dataset.touched
 $("trialForm").elements.unit.addEventListener("change", (e) => {
   const suite = jobOptions && jobOptions.unit_suites[e.target.value];
   $("trialForm").elements.suite.value = suite || "";
-});
-$("apForm").addEventListener("submit", async (e) => {
-  e.preventDefault();
-  const r = await api("/api/helper", { model: $("apHelper").value });
-  toast(`<b>[SYSTEM]</b> ${esc(r.ok ? t("Helper model: {m}", { m: r.data.model ? shortModel(r.data.model) : t("none (local only)") }) : t(r.data.error || "failed"))}`, r.ok ? "" : "warn");
-  loadJobs();
 });
 
 // ---- shadow army + memory
