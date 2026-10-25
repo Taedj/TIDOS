@@ -47,15 +47,76 @@ def lookup_user(cfg, id_token):
     return users[0]
 
 
-def _doc_url(cfg):
+def _doc_url(cfg, path=PASSWORD_DOC):
     return "https://firestore.googleapis.com/v1/projects/%s/databases/(default)/documents/%s" % (
-        cfg["projectId"], PASSWORD_DOC)
+        cfg["projectId"], path)
 
 
-def get_password_doc(cfg, id_token):
+def refresh_id_token(cfg, refresh_token):
+    """Exchange a stored refresh token for a fresh ID token (background uploads). Returns (id_token, uid)."""
+    url = "https://securetoken.googleapis.com/v1/token?key=" + urllib.parse.quote(cfg["apiKey"])
+    req = urllib.request.Request(url, data=urllib.parse.urlencode(
+        {"grant_type": "refresh_token", "refresh_token": refresh_token}).encode("utf-8"), method="POST")
+    req.add_header("Content-Type", "application/x-www-form-urlencoded")
+    try:
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except (urllib.error.URLError, OSError, ValueError) as e:
+        raise FirebaseError("token refresh failed: %s" % e) from None
+    return data["id_token"], data["user_id"]
+
+
+def to_fields(value):
+    """Python value -> Firestore REST value (dicts, lists, numbers, strings, booleans)."""
+    if isinstance(value, bool):
+        return {"booleanValue": value}
+    if isinstance(value, int):
+        return {"integerValue": str(value)}
+    if isinstance(value, float):
+        return {"doubleValue": value}
+    if isinstance(value, dict):
+        return {"mapValue": {"fields": {k: to_fields(v) for k, v in value.items()}}}
+    if isinstance(value, (list, tuple)):
+        return {"arrayValue": {"values": [to_fields(v) for v in value]}}
+    if value is None:
+        return {"nullValue": None}
+    return {"stringValue": str(value)}
+
+
+def from_fields(value):
+    """Firestore REST value -> Python value."""
+    if "mapValue" in value:
+        return {k: from_fields(v) for k, v in (value["mapValue"].get("fields") or {}).items()}
+    if "arrayValue" in value:
+        return [from_fields(v) for v in value["arrayValue"].get("values", [])]
+    if "integerValue" in value:
+        return int(value["integerValue"])
+    if "nullValue" in value:
+        return None
+    return next(iter(value.values()))
+
+
+def set_doc(cfg, id_token, path, data):
+    _request("PATCH", _doc_url(cfg, path), {"fields": {k: to_fields(v) for k, v in data.items()}}, token=id_token)
+
+
+def query_group(cfg, id_token, collection, limit=500):
+    """Every document of a collection group the token may read (the owner's Community tab)."""
+    url = "https://firestore.googleapis.com/v1/projects/%s/databases/(default)/documents:runQuery" % cfg["projectId"]
+    rows = _request("POST", url, {"structuredQuery": {"from": [{"collectionId": collection, "allDescendants": True}],
+                                                      "limit": limit}}, token=id_token)
+    out = []
+    for row in rows if isinstance(rows, list) else []:
+        doc = row.get("document")
+        if doc:
+            out.append(dict({k: from_fields(v) for k, v in (doc.get("fields") or {}).items()}, _path=doc["name"]))
+    return out
+
+
+def get_password_doc(cfg, id_token, path=PASSWORD_DOC):
     """Return the stored hash record as a plain dict, or None if it was never set."""
     try:
-        doc = _request("GET", _doc_url(cfg), token=id_token)
+        doc = _request("GET", _doc_url(cfg, path), token=id_token)
     except FirebaseError as e:
         if e.status == 404:
             return None
@@ -69,11 +130,11 @@ def get_password_doc(cfg, id_token):
     return out
 
 
-def set_password_doc(cfg, id_token, record):
+def set_password_doc(cfg, id_token, record, path=PASSWORD_DOC):
     fields = {}
     for key, value in record.items():
         if isinstance(value, int):
             fields[key] = {"integerValue": str(value)}
         else:
             fields[key] = {"stringValue": str(value)}
-    _request("PATCH", _doc_url(cfg), {"fields": fields}, token=id_token)
+    _request("PATCH", _doc_url(cfg, path), {"fields": fields}, token=id_token)

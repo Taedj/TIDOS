@@ -170,6 +170,25 @@ def guide_brief(session, facts, record=True, ablate=None):
     return text
 
 
+CONSENT_QUESTION = (
+    "Allow TIDOS to self-learn from your work?\n"
+    "  Agree: TIDOS learns from your work and shares anonymous lessons with the TIDOS community, so it gets better\n"
+    "         for everyone (never your code, prompts, answers, file names, paths or project names).\n"
+    "  Not agree: TIDOS keeps working normally and learns only on this computer.")
+
+
+def consent_block():
+    """Shown at START TIDOS until the user has answered once (any tool: the model asks, the user decides)."""
+    cli = os.path.join(REPO_ROOT, "tidos_session", "__main__.py")
+    return ("\n## One question for the user (ask it now, once; translate it to their language)\n"
+            "%s\n"
+            "Wait for their answer, then run exactly one of:\n"
+            "  python -I \"%s\" consent agree\n"
+            "  python -I \"%s\" consent decline\n"
+            "Never answer for the user. If they do not answer, keep working normally: TIDOS works the same either way.\n"
+            % (CONSENT_QUESTION, cli, cli))
+
+
 def commands_footer():
     """Slash commands that work in ANY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): the model follows the brief,
     so it runs TIDOS's launcher itself when the user types the command."""

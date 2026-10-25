@@ -22,7 +22,8 @@ class FakeFirebase:
     def __init__(self):
         self.users = {"owner-token": {"localId": OWNER, "email": "owner@example.com"},
                       "stranger-token": {"localId": "someone-else", "email": "x@example.com"}}
-        self.doc = None
+        self.doc = None          # the owner's hash (admin/tidoszit)
+        self.docs = {}           # other accounts' hashes (users/<uid>/private/tidoszit)
         self.writes = 0
 
     def lookup_user(self, cfg, id_token):
@@ -30,18 +31,26 @@ class FakeFirebase:
             raise firebase.FirebaseError("bad token", 400)
         return self.users[id_token]
 
-    def get_password_doc(self, cfg, id_token):
-        return self.doc
+    def get_password_doc(self, cfg, id_token, path="admin/tidoszit"):
+        return self.doc if path == "admin/tidoszit" else self.docs.get(path)
 
-    def set_password_doc(self, cfg, id_token, record):
-        self.doc = record
+    def query_group(self, cfg, id_token, collection):
+        return [{"schema": "tidos-pack/1", "install": "i1", "date": "2026-10-25",
+                 "work": [{"type": "bugfix", "stack": "python", "strong": True, "tasks": 3, "success": 2}]}]
+
+    def set_password_doc(self, cfg, id_token, record, path="admin/tidoszit"):
+        if path == "admin/tidoszit":
+            self.doc = record
+        else:
+            self.docs[path] = record
         self.writes += 1
 
 
 class DashboardTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
-        self.env = mock.patch.dict(os.environ, {"TIDOS_CONTROL_FILE": os.path.join(self.tmp.name, "control.json")})
+        self.env = mock.patch.dict(os.environ, {"TIDOS_CONTROL_FILE": os.path.join(self.tmp.name, "control.json"),
+                                                "TIDOS_HOME_DIR": os.path.join(self.tmp.name, "home")})
         self.env.start()
         self.fb = FakeFirebase()
         self.srv = server.ControlServer(port=0, cfg=CFG, db_path=os.path.join(self.tmp.name, "brain.db"), fb=self.fb)
@@ -113,13 +122,36 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.req("POST", "/api/auth/google", {"idToken": "owner-token"}, ctype="text/plain")[0], 415)
 
     def test_wrong_google_account_or_token_refused(self):
-        self.assertEqual(self.req("POST", "/api/auth/google", {"idToken": "stranger-token"})[0], 403)
+        self.login_with_setup()                 # the owner signs in first: this installation is now theirs
+        self.cookies.clear()
+        code, body = self.req("POST", "/api/auth/google", {"idToken": "stranger-token"})[:2]
+        self.assertEqual(code, 403)             # another account can never open this computer's brain
+        self.assertIn("belongs to another Google account", body["error"])
         self.assertEqual(self.req("POST", "/api/auth/google", {"idToken": "forged"})[0], 401)
         self.assertEqual(self.req("POST", "/api/auth/password", {"password": "x"})[0], 401)
         conn = db.connect(self.srv.db_path)
         events = [r["event"] for r in conn.execute("SELECT event FROM security_log")]
         conn.close()
-        self.assertEqual(events, ["owner_mismatch", "google_rejected"])
+        self.assertEqual(events[-2:], ["account_mismatch", "google_rejected"])
+
+    def test_any_google_account_gets_its_own_tidos(self):
+        code, body = self.req("POST", "/api/auth/google", {"idToken": "stranger-token"})[:2]
+        self.assertEqual((code, body["stage"]), (200, "setup"))   # a normal user: first sign-in on their computer
+        self.assertEqual(self.req("POST", "/api/auth/setup", {"password": "Us3r-Passw0rd!"})[0], 200)
+        self.assertIn("users/someone-else/private/tidoszit", self.fb.docs)  # own hash, never the owner's doc
+        self.assertIsNone(self.fb.doc)
+        status = self.req("GET", "/api/status")[1]
+        self.assertEqual(status["session"]["role"], "user")
+        self.assertEqual(self.req("GET", "/api/community")[0], 403)            # developer-only, enforced server-side
+        self.assertEqual(self.req("POST", "/api/community/export", {})[0], 403)
+
+    def test_owner_sees_the_community(self):
+        self.login_with_setup()
+        code, body = self.req("GET", "/api/community")[:2]
+        self.assertEqual((code, body["contributors"], body["work"][0]["tasks"]), (200, 1, 3))
+        self.assertEqual(self.req("GET", "/api/share")[1]["consent"], "unasked")
+        self.assertEqual(self.req("POST", "/api/share", {"answer": "decline"})[1]["consent"], "decline")
+        self.assertEqual(self.req("POST", "/api/share", {"answer": "maybe"})[0], 400)
 
     def test_first_run_setup_stores_only_a_hash(self):
         self.assertEqual(self.req("POST", "/api/auth/google", {"idToken": "owner-token"})[1]["stage"], "setup")

@@ -153,7 +153,8 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "army", "jobs", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "live", "dungeons", "playbooks", "army", "jobs", "community", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    if (tab.dataset.view === "community") loadCommunity();
     if (tab.dataset.view === "army") loadArmyTab();
     clearInterval(jobsTimer);
     if (tab.dataset.view === "jobs") { loadJobs(); jobsTimer = setInterval(loadJobs, 8000); }
@@ -180,6 +181,7 @@ async function loadStatus() {
   if (!r.ok) return;
   const d = r.data, p = d.player;
   startTimer(d.session.expires_in);
+  document.querySelectorAll(".owner-only").forEach((el) => el.classList.toggle("hidden", d.session.role !== "owner"));
   const pct = Math.min(100, Math.round(100 * (p.xp - p.floor_xp) / Math.max(1, p.next_xp - p.floor_xp)));
   for (const id of ["chipRank", "pRank"]) { $(id).textContent = p.rank; $(id).className = "rank " + p.rank + (id === "pRank" ? " lg" : ""); }
   $("chipLevel").textContent = $("pLevel").textContent = p.level;
@@ -529,6 +531,51 @@ $("trialForm").elements.unit.addEventListener("change", (e) => {
   $("trialForm").elements.suite.value = suite || "";
 });
 
+// ---- community learning (everyone) + Community tab (developer only)
+async function loadShare() {
+  const r = await api("/api/share");
+  if (!r.ok) return;
+  const d = r.data;
+  const label = { agree: t("Agreed: sharing anonymous lessons"), decline: t("Not agreed: this computer only"), unasked: t("Not answered yet") }[d.consent];
+  $("shareInfo").innerHTML = [["Your choice", esc(label)],
+    ["Last shared", d.last && d.last.date ? esc(d.last.date) : t("never")],
+    ["Signed in for sharing", t(d.signed_in ? "yes" : "no")]].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
+}
+
+document.querySelectorAll(".share-btn").forEach((b) => b.addEventListener("click", async () => {
+  const r = await api("/api/share", { answer: b.dataset.answer });
+  toast(`<b>[SYSTEM]</b> ${esc(r.ok ? (r.data.note ? t(r.data.note) : t(b.dataset.answer === "agree" ? "Thank you! TIDOS will share anonymous lessons." : "Nothing will be shared. TIDOS keeps working normally.")) : t(r.data.error || "failed"))}`);
+  loadShare();
+}));
+$("sharePreview").addEventListener("click", async () => {
+  const r = await api("/api/share/preview");
+  if (!r.ok) return;
+  $("shareView").textContent = JSON.stringify(r.data.pack, null, 1);
+  $("shareView").classList.remove("hidden");
+});
+
+async function loadCommunity() {
+  const r = await api("/api/community");
+  if (!r.ok) { $("comInfo").innerHTML = `<span class="muted">${t("Community")}</span><b>${esc(t(r.data.error || "failed"))}</b>`; return; }
+  const d = r.data;
+  const pct = (v) => v === null || v === undefined ? '<span class="faint">—</span>' : `${v}%`;
+  $("comInfo").innerHTML = [["Contributors", fmt(d.contributors)], ["Packs", fmt(d.packs)], ["Latest", esc(d.latest || t("never"))],
+    ["Versions", esc(Object.entries(d.versions).map(([v, n]) => `${v} ×${n}`).join(", ") || "—")]]
+    .map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
+  $("comWork").innerHTML = d.work.slice(0, 40).map((w) => `<tr><td>${esc(t(w.type))}</td><td>${esc(w.stack)}</td><td>${t(w.strong ? "strong" : "weak")}</td><td>${fmt(w.tasks)}</td><td>${pct(w.success_rate)}</td><td>${pct(w.first_try_rate)}</td></tr>`).join("")
+    || `<tr><td colspan="6" class="muted">${t("No contributions yet.")}</td></tr>`;
+  $("comChecks").innerHTML = d.checks.slice(0, 30).map((c) => `<tr><td>${esc(c.stack)}</td><td><code class="sys">${esc(c.check)}</code></td><td>${fmt(c.users)}</td><td>${fmt(c.runs)}</td><td>${pct(c.pass_rate)}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">${t("No contributions yet.")}</td></tr>`;
+  $("comGuide").innerHTML = d.guide.map((g) => `<tr><td>${esc(g.model)}</td><td>${pct(g.guided)} <span class="faint">(${g.guided_n})</span></td><td>${pct(g.unguided)} <span class="faint">(${g.unguided_n})</span></td></tr>`).join("")
+    || `<tr><td colspan="3" class="muted">${t("No contributions yet.")}</td></tr>`;
+  $("comArmy").innerHTML = d.army.map((a) => `<tr><td>${esc(a.unit)}</td><td>${fmt(a.missions)}</td><td>${fmt(a.xp)}</td></tr>`).join("")
+    || `<tr><td colspan="3" class="muted">${t("No contributions yet.")}</td></tr>`;
+}
+$("comExport").addEventListener("click", async () => {
+  const r = await api("/api/community/export", {});
+  toast(`<b>[SYSTEM]</b> ${esc(r.ok ? t("Exported: {p}", { p: r.data.path }) : t(r.data.error || "failed"))}`, r.ok ? "" : "warn");
+});
+
 // ---- shadow army + memory
 async function loadArmy() {
   const r = await api("/api/army");
@@ -699,6 +746,7 @@ async function loadBackups() {
 }
 
 async function loadSecurity() {
+  loadShare();
   loadSettings();
   loadBackups();
   const r = await api("/api/security");

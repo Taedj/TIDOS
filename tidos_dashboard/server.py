@@ -17,7 +17,7 @@ from urllib.parse import parse_qs, urlparse
 
 from tidos_brain import control, db
 
-from . import auth, config, explore, firebase, stats
+from . import accounts, auth, config, explore, firebase, stats
 
 STATIC_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "static")
 PENDING_COOKIE = "tidoszit_pending"
@@ -142,7 +142,8 @@ class Handler(BaseHTTPRequestHandler):
         try:
             if path == "/api/status":
                 data = stats.status(conn)
-                data["session"] = {"email": session["email"], "expires_in": self.server.sessions.remaining(token)}
+                data["session"] = {"email": session["email"], "expires_in": self.server.sessions.remaining(token),
+                                   "role": session.get("role", "owner")}
                 return self._json(200, data)
             if path == "/api/live":
                 since = int((query.get("since") or ["0"])[0])
@@ -166,6 +167,19 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"notifications": stats.notifications(conn)})
             if path == "/api/army":
                 return self._json(200, stats.army(conn))
+            if path == "/api/share":
+                from tidos_learn import share
+                return self._json(200, {"consent": share.consent(), "last": share.last_upload(),
+                                        "signed_in": bool(share._google_session())})
+            if path == "/api/share/preview":
+                from tidos_learn import share
+                return self._json(200, {"pack": share.build(conn)})
+            if path == "/api/community":
+                if session.get("role", "owner") != "owner":
+                    return self._json(403, {"error": "the Community tab is for the TIDOS developer"})
+                from tidos_dashboard import community
+                packs = self.server.fb.query_group(self.server.cfg, session["id_token"], "packs")
+                return self._json(200, community.aggregate(packs))
             if path == "/api/jobs":
                 from tidos_dashboard import autopilot, jobs
                 from tidos_session import helper
@@ -272,6 +286,8 @@ class Handler(BaseHTTPRequestHandler):
             "/api/playbooks/toggle": self._playbook_toggle,
             "/api/evolution/status": self._evolution_status,
             "/api/army/action": self._army_action,
+            "/api/share": self._share,
+            "/api/community/export": self._community_export,
             "/api/jobs/run": self._job_run,
             "/api/jobs/cancel": self._job_cancel,
             "/api/tools/action": self._tool_action,
@@ -294,20 +310,26 @@ class Handler(BaseHTTPRequestHandler):
         except firebase.FirebaseError:
             self.server.lockout.log("google_rejected", "invalid or expired ID token")
             return self._json(401, {"error": "Google sign-in could not be verified."})
-        if user.get("localId") != self.server.cfg["ownerUid"]:
-            self.server.lockout.log("owner_mismatch", "uid %s…" % str(user.get("localId"))[:6])
-            return self._json(403, {"error": "This Google account is not the TIDOS owner."})
-        record = self.server.fb.get_password_doc(self.server.cfg, id_token)
+        uid = user.get("localId")
+        refused = accounts.check(uid)  # the first account to sign in on a computer owns that installation
+        if refused:
+            self.server.lockout.log("account_mismatch", "uid %s…" % str(uid)[:6])
+            return self._json(403, {"error": refused})
+        doc = accounts.password_doc(self.server.cfg, uid)
+        record = self.server.fb.get_password_doc(self.server.cfg, id_token, path=doc)
         token = self.server.sessions.create("pending", {
             "id_token": id_token, "email": user.get("email", ""), "has_password": record is not None,
-            "record": record})
-        self.server.lockout.log("google_ok", "owner verified")
+            "record": record, "uid": uid, "doc": doc})
+        self.server.lockout.log("google_ok", "%s verified" % accounts.role(self.server.cfg, uid))
         return self._json(200, {"stage": "password" if record else "setup", **self._lock_info()},
                           [self._set_cookie(PENDING_COOKIE, token, auth.PENDING_TTL)])
 
     def _finish_login(self, pending_token, pending):
         self.server.sessions.drop(pending_token)
-        token = self.server.sessions.create("full", {"id_token": pending["id_token"], "email": pending["email"]})
+        accounts.claim(pending["uid"], pending["email"])
+        token = self.server.sessions.create("full", {"id_token": pending["id_token"], "email": pending["email"],
+                                                     "uid": pending["uid"], "doc": pending["doc"],
+                                                     "role": accounts.role(self.server.cfg, pending["uid"])})
         return self._json(200, {"stage": "app"}, [self._set_cookie(SESSION_COOKIE, token, auth.SESSION_TTL),
                                                   self._clear_cookie(PENDING_COOKIE)])
 
@@ -337,7 +359,8 @@ class Handler(BaseHTTPRequestHandler):
         problem = auth.password_problem(password)
         if problem:
             return self._json(400, {"error": problem})
-        self.server.fb.set_password_doc(self.server.cfg, pending["id_token"], auth.hash_password(password))
+        self.server.fb.set_password_doc(self.server.cfg, pending["id_token"], auth.hash_password(password),
+                                        path=pending["doc"])
         self.server.lockout.log("password_set", "first-time setup")
         self.server.lockout.log("login_ok", pending["email"])
         return self._finish_login(pending_token, pending)
@@ -352,7 +375,7 @@ class Handler(BaseHTTPRequestHandler):
         session = self._session()
         if not session:
             return self._json(401, {"error": "login required"})
-        record = self.server.fb.get_password_doc(self.server.cfg, session["id_token"])
+        record = self.server.fb.get_password_doc(self.server.cfg, session["id_token"], path=session["doc"])
         if not auth.verify_password(str(body.get("current") or ""), record):
             self.server.lockout.log("password_change_fail", "wrong current password")
             return self._json(401, {"error": "Current password is wrong."})
@@ -360,7 +383,8 @@ class Handler(BaseHTTPRequestHandler):
         problem = auth.password_problem(new)
         if problem:
             return self._json(400, {"error": problem})
-        self.server.fb.set_password_doc(self.server.cfg, session["id_token"], auth.hash_password(new))
+        self.server.fb.set_password_doc(self.server.cfg, session["id_token"], auth.hash_password(new),
+                                        path=session["doc"])
         self.server.lockout.log("password_changed", session["email"])
         return self._json(200, {"ok": True})
 
@@ -410,6 +434,33 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(409, {"error": str(e)})
         self.server.lockout.log("job", "cancelled %s" % body.get("id"))
         return self._json(200, {"ok": True})
+
+    def _share(self, body):
+        """Community learning answer from the Security tab (agree / decline). Never blocks TIDOS."""
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        from tidos_learn import share
+        answer = body.get("answer")
+        if answer not in ("agree", "decline"):
+            return self._json(400, {"error": "answer must be agree or decline"})
+        share.set_consent(answer)
+        self.server.lockout.log("share", answer)
+        note = None
+        if answer == "agree" and not share._google_session():
+            note = "To start sharing, sign in once from START TIDOS or run: tidos_session consent agree"
+        return self._json(200, {"consent": share.consent(), "note": note})
+
+    def _community_export(self, body):
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        if session.get("role", "owner") != "owner":
+            return self._json(403, {"error": "the Community tab is for the TIDOS developer"})
+        from tidos_dashboard import community
+        packs = self.server.fb.query_group(self.server.cfg, session["id_token"], "packs")
+        path = community.export(community.aggregate(packs))
+        self.server.lockout.log("community", "exported %s" % os.path.basename(path))
+        return self._json(200, {"path": os.path.relpath(path, community.REPO_ROOT).replace("\\", "/")})
 
     def _army_action(self, body):
         """ARISE: activate a draft unit (-> ~/.claude/agents, personal) or undo it. Owner only, logged."""

@@ -1,14 +1,46 @@
 rules_version = '2';
 
 // TIDOS Firestore rules.
-// admin/* holds the /TIDOSZIT control-password HASH (PBKDF2-SHA256, never the password).
-// Only the owner's Google account may read or write it. Everything else is denied.
+// admin/*                          the developer's /TIDOSZIT control-password HASH: owner only.
+// users/{uid}/private/{doc}        each user's own control-password HASH: that user only.
+// contributions/{uid}/packs/{date} anonymous learning packs (only with the user's "Agree"):
+//                                  a user may write ONLY their own packs and read only their own;
+//                                  the developer (owner) may read all of them (Community tab).
+// Everything else is denied.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /admin/{doc} {
-      allow read, write: if request.auth != null
-                         && request.auth.uid == "YTU4IuDy3SaGKOPt9E34iSge8Mo1";
+    function isOwner() {
+      return request.auth != null && request.auth.uid == "YTU4IuDy3SaGKOPt9E34iSge8Mo1";
     }
+    function isSelf(uid) {
+      return request.auth != null && request.auth.uid == uid;
+    }
+
+    match /admin/{doc} {
+      allow read, write: if isOwner();
+    }
+
+    match /users/{uid}/private/{doc} {
+      allow read, write: if isSelf(uid);
+    }
+
+    match /contributions/{uid}/packs/{pack} {
+      allow read: if isSelf(uid) || isOwner();
+      allow create, update: if isSelf(uid)
+                            && request.resource.data.schema == "tidos-pack/1"
+                            && request.resource.data.keys().hasOnly(
+                                 ["schema", "tidos_version", "install", "date", "work", "checks",
+                                  "guide", "dungeons", "tools", "army"])
+                            && request.resource.data.work.size() <= 400
+                            && request.resource.data.checks.size() <= 40;
+      allow delete: if isSelf(uid) || isOwner();
+    }
+
+    // the owner's Community tab lists every pack with one collection-group query
+    match /{path=**}/packs/{pack} {
+      allow read: if isOwner();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }

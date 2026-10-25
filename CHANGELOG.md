@@ -7,6 +7,16 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 ## [Unreleased]
 
 ### Added
+- **Every user gets their own TIDOS control center** (sign in with Google, no separate sign-up): the first account
+  that signs in on a computer owns that installation (`tidos_dashboard/accounts.py`); each account has its own
+  control-password hash (`users/<uid>/private/tidoszit`). The developer (owner UID) also gets the **Community** tab.
+- **Community learning with consent**: the first START TIDOS asks once "Allow TIDOS to self-learn from your work?"
+  (Agree / Not agree, in the user's language). Not agree never blocks anything. Agree: an anonymous, whitelist-only
+  learning pack (task types x stacks, check commands, GUIDE effect, dungeon and tool stats, built-in subagents;
+  never code, prompts, file names, paths or project names) is uploaded once a day to the TIDOS Firebase project
+  (`tidos_learn/share.py`, `tidos_learn share --show` prints exactly what is sent). Firestore rules: users write
+  only their own packs; only the developer reads them all. The Community tab merges the latest pack per
+  installation and exports `community/knowledge.json` for the next release.
 - START TIDOS installs `/TIDOSZIT` as a user-level Claude Code command (`~/.claude/commands/`, this machine's TIDOS
   path filled in), so it works in every project, not only inside the TIDOS folder; a copy you edited is never
   overwritten (`tidos_session/commands.py`).

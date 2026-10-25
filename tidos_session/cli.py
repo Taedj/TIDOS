@@ -57,9 +57,44 @@ def _spawn_summaries():
         kwargs["start_new_session"] = True
     subprocess.Popen([sys.executable, "-I", learn, "summarize", "--pending"], **kwargs)
     from tidos_brain import control
+    if control.text("share_learning") == "agree":  # anonymous lessons for the community, at most once a day
+        subprocess.Popen([sys.executable, "-I", learn, "share", "--auto"], **kwargs)
     if control.is_on("autopilot"):  # TIDOS runs what it decided is due (one job at a time)
         pilot = os.path.join(detect.REPO_ROOT, "tidos_dashboard", "autopilot.py")
         subprocess.Popen([sys.executable, "-I", pilot, "--once"], **kwargs)
+
+
+def consent(answer, sign_in=None):
+    """Record the user's answer to the community-learning question (never blocks TIDOS)."""
+    from tidos_learn import share
+    if answer == "status":
+        print("Community learning: %s" % share.consent())
+        return 0
+    share.set_consent(answer)
+    if answer == "decline":
+        print("Thank you. Nothing will be shared: TIDOS keeps working normally and learns only on this computer.\n"
+              "You can agree later at any time: tidos_session consent agree (or the Security tab).")
+        return 0
+    print("Thank you! TIDOS will share anonymous lessons once a day (never code, prompts, file names or paths).\n"
+          "See exactly what is shared: python -I tidos_learn/__main__.py share --show")
+    if not share._google_session():
+        print("Sign in with Google once so TIDOS can share (a browser window opens)...")
+        try:
+            if sign_in is None:
+                sys.path.insert(0, os.path.join(detect.REPO_ROOT, "scripts"))
+                from google_auth_server import run_auth_flow as sign_in
+            sign_in()
+        except Exception as e:  # noqa: BLE001 - sharing must never break TIDOS
+            print("Sign-in did not finish (%s). TIDOS keeps working; sharing starts after you sign in." % e)
+            return 0
+    from tidos_brain import db
+    conn = db.connect()
+    try:
+        ok, detail = share.upload(conn)
+    finally:
+        conn.close()
+    print(detail)
+    return 0
 
 
 def start(tool=None, model=None, project=".", env=None, learn=False):
@@ -83,6 +118,9 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
     facts = detect.project_facts(project)
     text = brief.learn_brief(session, facts) if session["mode"] == "learn" else brief.guide_brief(session, facts)
     text += brief.commands_footer()  # /TIDOSZIT in every tool, not only Claude Code
+    from tidos_brain import control
+    if control.text("share_learning") == "unasked":  # asked once, until the user answers; never blocks TIDOS
+        text += brief.consent_block()
     os.makedirs(detect.tidos_home(), exist_ok=True)
     with open(_session_path(), "w", encoding="utf-8") as f:
         json.dump(dict(session, facts=facts), f, indent=2)
@@ -189,7 +227,12 @@ def main(argv=None):
     sn.add_argument("--tool", default="claude-code")
     t = sub.add_parser("tier")
     t.add_argument("model")
+    c = sub.add_parser("consent", help="community learning: agree (share anonymous lessons) / decline / status")
+    c.add_argument("answer", choices=["agree", "decline", "status"])
     args = parser.parse_args(argv)
+
+    if args.command == "consent":
+        return consent(args.answer)
 
     if args.command == "start":
         session, facts, text = start(args.tool, args.model, args.project, learn=not args.no_learn)

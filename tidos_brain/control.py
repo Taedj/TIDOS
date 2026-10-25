@@ -35,6 +35,8 @@ SWITCHES = {
 
 
 TEXTS = {  # name -> (default, validator regex, description)
+    "share_learning": ("unasked", r"^(unasked|agree|decline)$",
+                       "Community learning: agree = share anonymous lessons (tidos_learn.share), decline = this computer only"),
     "helper_model": ("auto", r"^(auto|none|claude:[A-Za-z0-9.\-]+|gemini:[A-Za-z0-9.\-]+|"
                               r"opencode:[A-Za-z0-9._\-]+/[A-Za-z0-9._\-/]+)$",
                      "Model TIDOS uses for its own jobs: auto (the model of your last START TIDOS, else a free one), "

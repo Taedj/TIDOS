@@ -7,6 +7,8 @@
   note --project P --stack S "advice"   (LEARN mode) a strong model records advice for weaker models
   summarize [--pending | --session ID]  the helper model (free by default) turns finished sessions into advice notes
   army [--lessons NAME | --activate NAME | --deactivate NAME]   Shadow Army: units ranked by mission evidence
+  share [--show | --auto]         community learning pack: --show prints exactly what is shared; --auto uploads
+                                  once a day (only if you agreed: tidos_session consent agree)
 """
 import argparse
 import glob
@@ -97,6 +99,26 @@ def cmd_proposals(args):
     if not items:
         print("No proposals yet. Add one with: tidos_learn proposals --add \"title\" --reason \"why\"")
     return 0
+
+
+def cmd_share(args):
+    """Community learning: show the anonymous pack, or upload it (only with consent, at most once a day)."""
+    import json
+    from . import share
+    conn = db.connect(args.db)
+    try:
+        if args.show or share.consent() != "agree":
+            print(json.dumps(share.build(conn), indent=1))
+            print("\nCommunity learning: %s%s" % (share.consent(), "" if share.consent() == "agree" else
+                                                   " (nothing is sent; agree with: tidos_session consent agree)"))
+            return 0
+        if args.auto and not share.due():
+            return 0
+        ok, detail = share.upload(conn)
+        print(detail)
+        return 0 if ok else 1
+    finally:
+        conn.close()
 
 
 def cmd_army(args):
@@ -203,6 +225,10 @@ def main(argv=None):
     p.add_argument("--reject", type=int, metavar="ID")
     p.add_argument("--issue", type=int, metavar="ID", help="write a GitHub issue draft + the gh command")
     p.set_defaults(func=cmd_proposals)
+    p = sub.add_parser("share", help="community learning pack (anonymous; only with your agreement)")
+    p.add_argument("--show", action="store_true", help="print exactly what would be shared")
+    p.add_argument("--auto", action="store_true", help="upload only if a day has passed (START TIDOS)")
+    p.set_defaults(func=cmd_share)
     p = sub.add_parser("army", help="Shadow Army: subagents ranked by mission evidence")
     p.add_argument("--lessons", metavar="NAME")
     p.add_argument("--activate", metavar="NAME", help="draft -> ~/.claude/agents (personal, all projects)")

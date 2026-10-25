@@ -26,7 +26,7 @@
 
     <div id="stage-login">
       <button class="btn block" id="googleBtn">Verify identity with Google</button>
-      <p class="small faint note">Only the TIDOS owner's Google account is accepted.</p>
+      <p class="small faint note">Sign in with your Google account. The first account that signs in on this computer owns this TIDOS.</p>
     </div>
 
     <form id="stage-password" class="hidden" autocomplete="off">
@@ -71,6 +71,7 @@
     <button class="tab" data-view="playbooks">Playbooks</button>
     <button class="tab" data-view="army">Army</button>
     <button class="tab" data-view="jobs">Autopilot</button>
+    <button class="tab owner-only hidden" data-view="community">Community</button>
     <button class="tab" data-view="memory">Memory</button>
     <button class="tab" data-view="evolution">Evolution</button>
     <button class="tab" data-view="tools">Tool Scout</button>
@@ -120,6 +121,28 @@
         <h2 id="armyTitle">Select a unit</h2>
         <pre class="console pb-view" id="armyView"></pre>
       </div>
+    </div>
+
+    <!-- COMMUNITY (developer only) -->
+    <div id="view-community" class="grid g-2 hidden">
+      <div class="window span-2">
+        <h2>Community — what all TIDOS users teach TIDOS</h2>
+        <div class="kv" id="comInfo"></div>
+        <p class="small faint note">Anonymous learning packs from users who agreed (latest pack per installation). No code, prompts, file names or paths are ever shared. Export writes community/knowledge.json for the next release.</p>
+        <button class="btn" id="comExport" type="button">Export for the next release</button>
+      </div>
+      <div class="window"><h2>Work across all users</h2><div class="table-wrap"><table>
+        <thead><tr><th>Type</th><th>Stack</th><th>Model</th><th>Tasks</th><th>Success</th><th>Right first time</th></tr></thead>
+        <tbody id="comWork"></tbody></table></div></div>
+      <div class="window"><h2>Checks that confirm work</h2><div class="table-wrap"><table>
+        <thead><tr><th>Stack</th><th>Check</th><th>Users</th><th>Runs</th><th>Pass</th></tr></thead>
+        <tbody id="comChecks"></tbody></table></div></div>
+      <div class="window"><h2>Does GUIDE help weak models?</h2><div class="table-wrap"><table>
+        <thead><tr><th>Model</th><th>Guided</th><th>Unguided</th></tr></thead>
+        <tbody id="comGuide"></tbody></table></div></div>
+      <div class="window"><h2>Shadow Army across users</h2><div class="table-wrap"><table>
+        <thead><tr><th>Unit</th><th>Missions</th><th>XP</th></tr></thead>
+        <tbody id="comArmy"></tbody></table></div></div>
     </div>
 
     <!-- AUTOPILOT / JOBS -->
@@ -324,6 +347,17 @@
         <h2>Settings — config/framework.md</h2>
         <div id="settings"></div>
         <div class="msg" id="settingsMsg"></div>
+      </div>
+      <div class="window">
+        <h2>Community learning</h2>
+        <div class="kv" id="shareInfo"></div>
+        <p class="small faint note">Agree: TIDOS shares anonymous lessons once a day so it gets better for everyone (never code, prompts, answers, file names, paths or project names). Not agree: TIDOS works the same and learns only on this computer.</p>
+        <div class="job-actions">
+          <button class="btn ghost share-btn" type="button" data-answer="agree">Agree</button>
+          <button class="btn ghost share-btn" type="button" data-answer="decline">Not agree</button>
+          <button class="btn ghost" id="sharePreview" type="button">See what is shared</button>
+        </div>
+        <pre class="console hidden" id="shareView"></pre>
       </div>
       <div class="window">
         <h2>Brain Backups</h2>
