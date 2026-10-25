@@ -6,6 +6,7 @@ decide() looks at the brain and the files and returns recommendations, each with
   - back up the brain       when the newest backup is older than 7 days                  free, auto
   - trial a draft unit      when a draft has no trial and a dungeon suite tests it       paid, auto within budget
   - implement a proposal    when you accepted it and it has no branch yet                paid, auto within budget
+  - measure a proposal      when its branch exists and its effect was never measured    free model, auto
   - weekly weak-model check GUIDE vs plain with a free OpenCode model (plan 6.8)         free, auto, weekly
   - tool needs              per active project (installing still needs your approval)    free, shown only
 Rules: one job at a time; paid jobs only while today's autopilot spend + the estimate stays within
@@ -98,6 +99,11 @@ def decide(conn):
         if item["status"] == "accepted" and not item.get("branch"):
             add("self_improve:%d" % item["id"], "self_improve", {"id": item["id"]}, "Implement proposal #%d" % item["id"],
                 "you accepted it: %s" % item["title"][:80])
+
+    measured = {i["id"] for i in evolve.load() if i.get("measure")}
+    for pid in sorted(jobs.measurable() - measured):
+        add("measure:%d" % pid, "measure", {"id": pid}, "Measure proposal #%d" % pid,
+            "implemented on a branch, effect never measured: GUIDE dungeons before vs after")
 
     weak = [a for a in jobs.allowed_agents(conn) if a.startswith("opencode:")]
     if weak:

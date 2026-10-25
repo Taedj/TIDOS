@@ -328,11 +328,14 @@ async function loadEvolution() {
   if (!r.ok) return;
   const d = r.data;
   $("evoList").innerHTML = d.proposals.map((p) => `
-    <tr><td>${p.id}</td><td><b>${esc(p.title)}</b><br><span class="small faint">${esc(p.reason)}</span>${p.branch ? `<br><code class="sys">${esc(p.branch)}</code>` : ""}</td>
+    <tr><td>${p.id}</td><td><b>${esc(p.title)}</b><br><span class="small faint">${esc(p.reason)}</span>${p.branch ? `<br><code class="sys">${esc(p.branch)}</code>` : ""}
+      ${p.impact ? `<br><span class="small">${esc(t("tests {a} → {b} · {f} file(s) +{i}/−{d}", { a: p.impact.tests_before ?? "?", b: p.impact.tests_after ?? "?", f: p.impact.files ?? 0, i: p.impact.insertions ?? 0, d: p.impact.deletions ?? 0 }))}</span>` : ""}
+      ${p.measure ? `<br><span class="pill ${p.measure.delta > 0 ? "ok" : p.measure.delta < 0 ? "bad" : ""}">${esc(t("effect {d} pts", { d: (p.measure.delta > 0 ? "+" : "") + p.measure.delta }))}</span> <span class="small faint">${esc(t("{b}% → {a}% on {n} dungeons ({agent})", { b: p.measure.base, a: p.measure.after, n: p.measure.tasks, agent: p.measure.agent }))}</span>` : ""}</td>
     <td><span class="pill ${p.priority === "high" ? "warn" : ""}">${esc(t(p.priority))}</span></td>
     <td><span class="pill ${p.status === "accepted" || p.status === "implemented" ? "ok" : p.status === "rejected" ? "bad" : ""}">${esc(t(p.status))}</span></td>
     <td>${p.status === "new" ? `<button class="btn ghost evo" data-id="${p.id}" data-s="accepted">${t("Accept")}</button> <button class="btn ghost evo" data-id="${p.id}" data-s="rejected">${t("Reject")}</button>` : ""}
-      ${p.status === "accepted" && !p.branch ? `<button class="btn ghost job-btn" type="button" data-job="self_improve" data-params='{"id": ${Number(p.id)}}'>${t("Implement")}</button>` : ""}</td></tr>`).join("")
+      ${p.status === "accepted" && !p.branch ? `<button class="btn ghost job-btn" type="button" data-job="self_improve" data-params='{"id": ${Number(p.id)}}'>${t("Implement")}</button>` : ""}
+      ${p.branch && !p.measure ? `<button class="btn ghost job-btn" type="button" data-job="measure" data-params='{"id": ${Number(p.id)}}'>${t("Measure")}</button>` : ""}</td></tr>`).join("")
     || `<tr><td colspan="5" class="muted">${t("No proposals yet. Agents add them with tidos_propose; you with tidos_learn proposals --add.")}</td></tr>`;
   $("evoList").querySelectorAll(".evo").forEach((b) => b.addEventListener("click", async () => {
     const res = await api("/api/evolution/status", { id: Number(b.dataset.id), status: b.dataset.s });

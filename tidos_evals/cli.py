@@ -102,7 +102,8 @@ def cmd_run(args):
                 with open(os.path.join(work, "_tidos_eval_log.txt"), "w", encoding="utf-8") as f:
                     f.write("AGENT (%s, ok=%s, error=%s)\n%s\n\nVERIFY\n%s" % (
                         args.agent, res.ok, res.error, res.log, verify_log))
-                model = _unit_label(args.agent, args.unit) if with_tidos == "unit" else _ablated(args.agent, args.ablate)
+                model = args.label or (_unit_label(args.agent, args.unit) if with_tidos == "unit"
+                                       else _ablated(args.agent, args.ablate))
                 row = {"suite": t.suite, "task_name": t.name, "model": model,
                        "agent": args.agent.partition(":")[0],
                        "with_tidos": {"guide": 2, "unit": 3}.get(with_tidos, int(bool(with_tidos))),
@@ -270,6 +271,8 @@ def main(argv=None):
     run.add_argument("--budget", type=float, default=1.0, help="max USD per Claude attempt")
     run.add_argument("--repeat", type=int, default=1)
     run.add_argument("--min-difficulty", default="E", choices=list("EDCBAS"), help="only tasks of this rank or harder")
+    run.add_argument("--label", help="store results under this model label (proposal measurements), so they "
+                     "never mix with the agent's own leaderboard rows")
     run.add_argument("--unit", metavar="NAME", help="Shadow Army trial: plain vs this subagent's instructions "
                      "(active or draft unit), same tasks; the result is shown when you activate it")
     run.add_argument("--ablate", type=int, metavar="N",

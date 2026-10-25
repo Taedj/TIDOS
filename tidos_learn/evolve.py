@@ -69,6 +69,17 @@ def set_status(item_id, status, **extra):
     raise KeyError(item_id)
 
 
+def update(item_id, **fields):
+    """Attach evidence to a proposal (impact of its branch, measured effect) without changing its status."""
+    items = load()
+    for item in items:
+        if item["id"] == item_id:
+            item.update(fields)
+            save(items)
+            return item
+    raise KeyError(item_id)
+
+
 def ranked(status=None):
     items = [i for i in load() if status is None or i["status"] == status]
     return sorted(items, key=lambda i: (-PRIORITY.get(i["priority"], 2), i["id"]))

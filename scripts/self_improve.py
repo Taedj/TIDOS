@@ -46,6 +46,12 @@ def run(argv, cwd, timeout=900):
     return proc.returncode, (proc.stdout + proc.stderr)[-3000:]
 
 
+def count_tests(cwd):
+    code, out = run(["{python}", "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider", "tests"], cwd)
+    m = re.search(r"(\d+) tests? collected", out)
+    return int(m.group(1)) if m else None
+
+
 def gates(cwd):
     results = []
     for argv in GATES:
@@ -76,6 +82,7 @@ def main(args=None):
         print("Cannot create worktree/branch %s:\n%s" % (branch, out))
         return 1
     print("Worktree %s on branch %s" % (work, branch))
+    impact = {"tests_before": count_tests(work), "cost_usd": None}
     try:
         if not a.dry_run:
             exe = shutil.which("claude")
@@ -89,6 +96,7 @@ def main(args=None):
                                   encoding="utf-8", errors="replace", timeout=3600, env=env)
             try:
                 data = json.loads(proc.stdout.strip().splitlines()[-1])
+                impact["cost_usd"] = round(float(data.get("total_cost_usd") or 0), 3)
                 print("Agent: %s (cost %.2f USD)\n%s" % ("error" if data.get("is_error") else "done",
                                                         data.get("total_cost_usd", 0), str(data.get("result"))[-800:]))
             except (ValueError, IndexError):
@@ -102,10 +110,17 @@ def main(args=None):
         changed = run(["git", "status", "--porcelain"], work)[1].strip()
         if ok and changed and not a.dry_run:
             run(["git", "add", "-A"], work)
+            stat = run(["git", "diff", "--cached", "--shortstat"], work)[1]
+            nums = dict((k, int(n)) for n, k in re.findall(r"(\d+) (file|insertion|deletion)", stat))
+            impact.update(tests_after=count_tests(work), files=nums.get("file", 0),
+                          insertions=nums.get("insertion", 0), deletions=nums.get("deletion", 0), gates="all passed")
             run(["git", "commit", "-q", "-m", "auto: %s (evolution #%d)\n\nImplemented by scripts/self_improve.py; "
                  "all gates passed. Review before merging." % (item["title"], item["id"])], work)
-            evolve.set_status(item["id"], "implemented", branch=branch)
+            evolve.set_status(item["id"], "implemented", branch=branch, impact=impact)
             print("\nCommitted on %s (not pushed). Review: git log -p %s ; merge if you agree." % (branch, branch))
+            print("Impact: tests %s -> %s, %d file(s) +%d/-%d. Measure its effect: python scripts/measure_proposal.py "
+                  "--id %d" % (impact["tests_before"], impact["tests_after"], impact["files"], impact["insertions"],
+                               impact["deletions"], item["id"]))
         elif not a.dry_run:
             print("\nNothing committed (%s). The branch stays for inspection: %s" %
                   ("gates failed" if not ok else "no changes", branch))

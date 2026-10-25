@@ -79,6 +79,21 @@ def unit_suite(name):
     return None
 
 
+def default_free_agent(agents):
+    return next((a for a in agents if a.startswith("opencode:")), "claude:haiku")
+
+
+def measurable():
+    """Implemented proposals whose branch still exists (merged and deleted branches cannot be measured)."""
+    from tidos_learn import evolve
+    out = set()
+    for item in evolve.load():
+        if item.get("branch") and subprocess.run(["git", "rev-parse", "--verify", "--quiet", item["branch"]],
+                                                 cwd=REPO_ROOT, capture_output=True).returncode == 0:
+            out.add(item["id"])
+    return out
+
+
 class JobError(ValueError):
     pass
 
@@ -128,6 +143,15 @@ def build(conn, job, p):
         pid = _need(int(p.get("id", -1)), accepted, "accepted proposal")
         return ([PY, "scripts/self_improve.py", "--id", str(pid), "--model", "haiku", "--budget",
                  str(SELF_IMPROVE_BUDGET_USD)], {}, SELF_IMPROVE_BUDGET_USD, "Implement proposal #%d (branch auto/...)" % pid)
+    if job == "measure":
+        pid = _need(int(p.get("id", -1)), measurable(), "implemented proposal with a branch")
+        agents = allowed_agents(conn)
+        agent = _need(p.get("agent") or default_free_agent(agents), agents, "agent")
+        diff = _need(p.get("min_difficulty", "B"), DIFFICULTIES, "difficulty")
+        attempts = count_tasks(None, diff) * 2
+        return ([PY, "scripts/measure_proposal.py", "--id", str(pid), "--agent", agent, "--min-difficulty", diff,
+                 "--budget", str(ATTEMPT_BUDGET_USD)], {}, round(attempts * attempt_cost(conn, agent), 2),
+                "Measure proposal #%d with %s" % (pid, agent))
     if job == "scout_needs":
         cwd = _need(p.get("project"), projects(conn), "project")
         return ([PY, "-I", "tidos_scout/__main__.py", "needs", "--project", cwd, "--trust"], {}, 0.0,
