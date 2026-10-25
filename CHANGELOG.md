@@ -10,6 +10,8 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 - START TIDOS installs `/TIDOSZIT` as a user-level Claude Code command (`~/.claude/commands/`, this machine's TIDOS
   path filled in), so it works in every project, not only inside the TIDOS folder; a copy you edited is never
   overwritten (`tidos_session/commands.py`).
+- `/TIDOSZIT` in EVERY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): each START TIDOS brief ends with a
+  'TIDOS commands' section telling the model to run this machine's control-center launcher when you type it.
 
 ---
 

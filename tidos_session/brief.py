@@ -12,7 +12,7 @@ import os
 import re
 
 from . import pbstate
-from .detect import tidos_home
+from .detect import REPO_ROOT, tidos_home
 
 GUIDE_LIMIT = 4096
 PLAYBOOK_LIMIT = 1000
@@ -168,6 +168,21 @@ def guide_brief(session, facts, record=True, ablate=None):
     if len(lines) < len(text.split("\n")):
         text = "\n".join(lines).rstrip() + "\n...[more]\n"
     return text
+
+
+def commands_footer():
+    """Slash commands that work in ANY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): the model follows the brief,
+    so it runs TIDOS's launcher itself when the user types the command."""
+    if os.name == "nt":
+        launch = ('powershell -NoProfile -ExecutionPolicy Bypass -File "%s"'
+                  % os.path.join(REPO_ROOT, "scripts", "tidoszit.ps1"))
+    else:
+        launch = 'bash "%s"' % os.path.join(REPO_ROOT, "scripts", "tidoszit.sh")
+    return ("\n## TIDOS commands\n"
+            "If the user types `/TIDOSZIT` (or `TIDOSZIT`), open the TIDOS control center by running:\n"
+            "  %s\n"
+            "then say it is open at http://localhost:8767/ and that login happens in the browser only: never ask for,\n"
+            "accept or repeat the control password in this chat.\n" % launch)
 
 
 def learn_brief(session, facts):

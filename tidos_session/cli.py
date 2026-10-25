@@ -82,6 +82,7 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
                "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     facts = detect.project_facts(project)
     text = brief.learn_brief(session, facts) if session["mode"] == "learn" else brief.guide_brief(session, facts)
+    text += brief.commands_footer()  # /TIDOSZIT in every tool, not only Claude Code
     os.makedirs(detect.tidos_home(), exist_ok=True)
     with open(_session_path(), "w", encoding="utf-8") as f:
         json.dump(dict(session, facts=facts), f, indent=2)

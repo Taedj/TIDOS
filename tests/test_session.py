@@ -124,6 +124,10 @@ class BriefTests(Isolated):
         self.assertEqual(saved["model"], "opencode/glm-5.3-flash-free")
         with open(os.path.join(self.tidos, "brief.md"), encoding="utf-8") as f:
             self.assertEqual(f.read(), text)
+        # every tool (Antigravity, OpenCode, Gemini CLI...) learns /TIDOSZIT from the brief itself
+        self.assertIn("If the user types `/TIDOSZIT`", text)
+        self.assertIn("tidoszit.", text)
+        self.assertTrue(os.path.isfile(os.path.join(self.home, ".claude", "commands", "TIDOSZIT.md")))  # Claude Code
 
 
 class AgentsMdTests(Isolated):
