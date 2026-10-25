@@ -128,10 +128,10 @@
         <h2>Autopilot — TIDOS decides what to run</h2>
         <div class="kv" id="apInfo"></div>
         <form class="ap-row" id="apForm" autocomplete="off">
-          <label>Daily budget (USD) <input type="number" id="apBudget" min="0" max="20" step="0.1"></label>
+          <label>Helper model <select id="apHelper"></select></label>
           <button class="btn ghost" type="submit">Save</button>
         </form>
-        <p class="small faint note">Free jobs run by themselves; paid ones (Claude calls) only within the daily budget. Switch the autopilot on or off in Security. It never installs, pushes, merges, activates a unit or changes a switch.</p>
+        <p class="small faint note">TIDOS is free and works with any model. Jobs that need a model use the helper model: by default a free model you already use (auto). Switch the autopilot on or off in Security. It never installs, pushes, merges, activates a unit or changes a switch.</p>
 
         <h2 class="mt">Recommended now</h2>
         <div id="recs"></div>
@@ -177,7 +177,7 @@
 
         <h2 class="mt">Jobs</h2>
         <div class="table-wrap"><table>
-          <thead><tr><th>When</th><th>Job</th><th>By</th><th>State</th><th>Cost</th><th>Actions</th></tr></thead>
+          <thead><tr><th>When</th><th>Job</th><th>By</th><th>State</th><th>Model</th><th>Actions</th></tr></thead>
           <tbody id="jobList"></tbody>
         </table></div>
       </div>
@@ -275,7 +275,7 @@
       <div class="window">
         <h2>Arena Leaderboard — does TIDOS make models stronger?</h2>
         <div class="table-wrap"><table>
-          <thead><tr><th>Agent</th><th>Without TIDOS</th><th>With TIDOS</th><th>TIDOS lift</th><th>Cost</th></tr></thead>
+          <thead><tr><th>Agent</th><th>Without TIDOS</th><th>With TIDOS</th><th>TIDOS lift</th><th>Avg time</th></tr></thead>
           <tbody id="leaderboard"></tbody>
         </table></div>
         <p class="small faint note" id="dungeonMeta"></p>

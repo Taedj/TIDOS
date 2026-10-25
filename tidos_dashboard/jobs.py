@@ -3,37 +3,46 @@
 Only the jobs in JOBS can run. Every parameter is checked against a list of known values (agents, suites,
 units, proposals, projects): nothing typed in the browser ever reaches a command line unchecked, and there is
 no shell. One job at a time; each has a log in ~/.tidos/jobs/ and can be cancelled (process tree killed).
-Paid jobs (Claude calls) carry a cost estimate from your own past runs and a hard per-attempt budget.
+Jobs that need a model use TIDOS's helper model by default (a free model you already use, see
+tidos_session.helper); you can pick any other model you have. TIDOS itself never costs anything.
 """
 import json
 import os
-import re
 import subprocess
 import sys
 import threading
 import time
 from datetime import datetime, timezone
 
-from tidos_brain import db
 from tidos_session.detect import REPO_ROOT, tidos_home
 
 PY = sys.executable
 DIFFICULTIES = ["E", "D", "C", "B", "A", "S"]
 MODES = ["off", "guide", "compare", "both"]
-CLAUDE_AGENTS = ["claude:haiku", "claude:sonnet"]
-FALLBACK_ATTEMPT_USD = {"claude:haiku": 0.02, "claude:sonnet": 0.10}
-ATTEMPT_BUDGET_USD = 0.25          # hard cap per Claude attempt in jobs started from the dashboard
-SELF_IMPROVE_BUDGET_USD = 0.5
+CLAUDE_AGENTS = ["claude:haiku", "claude:sonnet"]  # only when you choose them (your own Claude account)
 KEEP = 100
 _LOCK = threading.Lock()
 
 
 # --- the values a job may receive ---------------------------------------------------------------------
 def allowed_agents(conn):
-    """Claude models + the free OpenCode models you have actually used."""
-    free = [r[0] for r in conn.execute("SELECT DISTINCT model FROM sessions WHERE source = 'opencode' AND model IS NOT NULL")
-            if r[0] and ("free" in r[0] or r[0] == "opencode/big-pickle")]
-    return CLAUDE_AGENTS + ["opencode:" + m for m in sorted(free)] + ["reference"]
+    """Free OpenCode models first (the ones you use, then known free ones), the helper model, then Claude."""
+    from tidos_session import helper
+    free = ["opencode:" + m for m in helper.free_models(conn)]
+    chosen = helper.resolve(conn=conn)
+    extra = [chosen] if chosen and chosen not in free and chosen not in CLAUDE_AGENTS else []
+    return free + extra + CLAUDE_AGENTS + ["reference"]
+
+
+def default_agent(conn):
+    """The helper model (free by default); a free OpenCode model when the helper is 'none'."""
+    from tidos_session import helper
+    return helper.resolve(conn=conn) or "opencode:" + helper.free_models(conn)[0]
+
+
+def _cap(agent):
+    """Internal safety net only for Claude, which bills your own account: a small per-attempt cap."""
+    return ["--budget", "0.25"] if agent.startswith("claude:") else []
 
 
 def suites():
@@ -60,13 +69,6 @@ def count_tasks(suite=None, min_difficulty="E"):
                and DIFFICULTIES.index(t.difficulty) >= DIFFICULTIES.index(min_difficulty))
 
 
-def attempt_cost(conn, agent):
-    if not agent.startswith("claude:"):
-        return 0.0
-    row = conn.execute("SELECT AVG(cost_usd) FROM evals WHERE model = ? AND cost_usd IS NOT NULL", (agent,)).fetchone()
-    return float(row[0]) if row and row[0] else FALLBACK_ATTEMPT_USD.get(agent, 0.10)
-
-
 def unit_suite(name):
     """The dungeon suite that tests a unit's specialty (None: no dungeon covers it)."""
     words = name.lower()
@@ -77,10 +79,6 @@ def unit_suite(name):
         if any(k in words for k in keys):
             return suite
     return None
-
-
-def default_free_agent(agents):
-    return next((a for a in agents if a.startswith("opencode:")), "claude:haiku")
 
 
 def measurable():
@@ -106,58 +104,58 @@ def _need(value, allowed, what):
 
 # --- the jobs -----------------------------------------------------------------------------------------
 def build(conn, job, p):
-    """(argv, env, estimate_usd, title) for a job + params, or JobError. Never a shell, never free text."""
+    """(argv, env, title, model) for a job + params, or JobError. Never a shell, never free text.
+    model = the model the job uses (None: no model at all); by default the helper model (free)."""
     p = p or {}
     if job == "distill":
-        return [PY, "-I", "tidos_learn/__main__.py", "distill", "--quiet"], {}, 0.0, "Refresh learning"
+        return [PY, "-I", "tidos_learn/__main__.py", "distill", "--quiet"], {}, "Refresh learning", None
     if job == "daily_quest":
-        return [PY, "scripts/daily_quest.py"], {"TIDOS_E2E": "1"}, 0.0, "Daily quest (health check)"
+        return [PY, "scripts/daily_quest.py"], {"TIDOS_E2E": "1"}, "Daily quest (health check)", None
     if job == "validate_dungeons":
-        return [PY, "-I", "tidos_evals/__main__.py", "validate"], {}, 0.0, "Validate dungeons"
+        return [PY, "-I", "tidos_evals/__main__.py", "validate"], {}, "Validate dungeons", None
     if job == "backup":
-        return [PY, "-I", "tidos_brain/__main__.py", "backup"], {}, 0.0, "Back up the brain"
+        return [PY, "-I", "tidos_brain/__main__.py", "backup"], {}, "Back up the brain", None
+    agents = allowed_agents(conn)
     if job in ("raid", "trial"):
-        agent = _need(p.get("agent", "claude:haiku"), allowed_agents(conn), "agent")
+        agent = _need(p.get("agent") or default_agent(conn), agents, "agent")
         suite = p.get("suite") or None
         if suite is not None:
             _need(suite, suites(), "suite")
-        argv = [PY, "-I", "tidos_evals/__main__.py", "run", "--agent", agent, "--budget", str(ATTEMPT_BUDGET_USD)]
+        argv = [PY, "-I", "tidos_evals/__main__.py", "run", "--agent", agent] + _cap(agent)
         if suite:
             argv += ["--suite", suite]
         if job == "raid":
             mode = _need(p.get("mode", "compare"), MODES, "mode")
             diff = _need(p.get("min_difficulty", "E"), DIFFICULTIES, "difficulty")
             argv += ["--tidos", mode, "--min-difficulty", diff]
-            attempts = count_tasks(suite, diff) * (2 if mode in ("compare", "both") else 1)
             title = "Raid: %s (%s%s)" % (agent, mode, ", " + suite if suite else "")
         else:
             from tidos_learn import army
             unit = _need(p.get("unit"), set(army.units()), "unit")
             argv += ["--unit", unit]
-            attempts = count_tasks(suite) * 2
             title = "Trial: %s with %s%s" % (unit, agent, " (" + suite + ")" if suite else "")
-        return argv, {}, round(attempts * attempt_cost(conn, agent), 2), title
+        return argv, {}, title, agent
     if job == "self_improve":
         from tidos_learn import evolve
         accepted = {i["id"] for i in evolve.load() if i["status"] == "accepted"}
         pid = _need(int(p.get("id", -1)), accepted, "accepted proposal")
-        return ([PY, "scripts/self_improve.py", "--id", str(pid), "--model", "haiku", "--budget",
-                 str(SELF_IMPROVE_BUDGET_USD)], {}, SELF_IMPROVE_BUDGET_USD, "Implement proposal #%d (branch auto/...)" % pid)
+        agent = _need(p.get("agent") or default_agent(conn), [a for a in agents if a != "reference"], "agent")
+        return ([PY, "scripts/self_improve.py", "--id", str(pid), "--agent", agent], {},
+                "Implement proposal #%d with %s (branch auto/...)" % (pid, agent), agent)
     if job == "measure":
         pid = _need(int(p.get("id", -1)), measurable(), "implemented proposal with a branch")
-        agents = allowed_agents(conn)
-        agent = _need(p.get("agent") or default_free_agent(agents), agents, "agent")
+        agent = _need(p.get("agent") or default_agent(conn), agents, "agent")
         diff = _need(p.get("min_difficulty", "B"), DIFFICULTIES, "difficulty")
-        attempts = count_tasks(None, diff) * 2
-        return ([PY, "scripts/measure_proposal.py", "--id", str(pid), "--agent", agent, "--min-difficulty", diff,
-                 "--budget", str(ATTEMPT_BUDGET_USD)], {}, round(attempts * attempt_cost(conn, agent), 2),
-                "Measure proposal #%d with %s" % (pid, agent))
+        return ([PY, "scripts/measure_proposal.py", "--id", str(pid), "--agent", agent, "--min-difficulty", diff]
+                + _cap(agent), {}, "Measure proposal #%d with %s" % (pid, agent), agent)
     if job == "scout_needs":
         cwd = _need(p.get("project"), projects(conn), "project")
-        return ([PY, "-I", "tidos_scout/__main__.py", "needs", "--project", cwd, "--trust"], {}, 0.0,
-                "Tool needs: %s" % projects(conn)[cwd])
+        return ([PY, "-I", "tidos_scout/__main__.py", "needs", "--project", cwd, "--trust"], {},
+                "Tool needs: %s" % projects(conn)[cwd], None)
     if job == "summarize":
-        return [PY, "-I", "tidos_learn/__main__.py", "summarize", "--pending"], {}, 0.10, "Strong-model advice notes"
+        from tidos_session import helper
+        return ([PY, "-I", "tidos_learn/__main__.py", "summarize", "--pending"], {}, "Advice notes for weaker models",
+                helper.resolve(conn=conn))
     raise JobError("unknown job %r" % job)
 
 
@@ -236,18 +234,12 @@ def log_text(job_id, offset=0):
         return {"text": "", "offset": offset, "state": job["state"]}
 
 
-def spent_today(by="autopilot"):
-    today = datetime.now(timezone.utc).date().isoformat()
-    return round(sum((j.get("cost") if j.get("cost") is not None else j["estimate"]) for j in history()
-                     if j["by"] == by and j["started"].startswith(today)), 2)
-
-
 _PROCS = {}
 
 
 def start(conn, job, params=None, by="owner", db_path=None, _popen=subprocess.Popen):
     """Start a job in the background. Raises JobError (bad job/params) or RuntimeError (another job running)."""
-    argv, extra_env, estimate, title = build(conn, job, params)
+    argv, extra_env, title, model = build(conn, job, params)
     with _LOCK:
         busy = running()
         if busy:
@@ -255,10 +247,10 @@ def start(conn, job, params=None, by="owner", db_path=None, _popen=subprocess.Po
         os.makedirs(_dir(), exist_ok=True)
         job_id = "%s-%s-%s" % (datetime.now().strftime("%Y%m%d-%H%M%S"), job, os.urandom(2).hex())
         log = os.path.join(_dir(), job_id + ".log")
-        record = {"id": job_id, "job": job, "params": params or {}, "title": title, "by": by, "estimate": estimate,
+        record = {"id": job_id, "job": job, "params": params or {}, "title": title, "by": by, "model": model,
                   "argv": " ".join(os.path.basename(a) if a == PY else a for a in argv), "state": "running",
                   "started": datetime.now(timezone.utc).isoformat(timespec="seconds"), "ended": None, "exit": None,
-                  "cost": None, "log": log}
+                  "log": log}
         items = [dict(i, state="interrupted") if i["state"] in ("running", "cancelling") else i for i in history()]
         _save(items + [record])
     out = open(log, "w", encoding="utf-8")
@@ -281,27 +273,7 @@ def _wait(job_id, proc, out, db_path):
     job = get(job_id) or {}
     # cancelled from another TIDOS process: that process may already have written "cancelled"
     state = "cancelled" if job.get("state") in ("cancelling", "cancelled") else ("done" if code == 0 else "failed")
-    _update(job_id, state=state, exit=code, ended=datetime.now(timezone.utc).isoformat(timespec="seconds"),
-            cost=_actual_cost(job, db_path))
-
-
-def _actual_cost(job, db_path):
-    """Real spend of an eval job (sum of its dungeon runs); other paid jobs keep their estimate."""
-    if job.get("job") not in ("raid", "trial"):
-        return None if job.get("estimate") else 0.0
-    try:
-        with open(job["log"], "r", encoding="utf-8", errors="replace") as f:
-            m = re.search(r"^Run (\S+):", f.read(), re.M)
-        if not m:
-            return 0.0
-        conn = db.connect(db_path)
-        try:
-            row = conn.execute("SELECT COALESCE(SUM(cost_usd), 0) FROM evals WHERE run_id = ?", (m.group(1),)).fetchone()
-        finally:
-            conn.close()
-        return round(float(row[0]), 3)
-    except OSError:
-        return None
+    _update(job_id, state=state, exit=code, ended=datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 
 def cancel(job_id):
@@ -335,4 +307,4 @@ def options(conn):
                                                                                                    key=lambda kv: kv[1])],
             "accepted": [{"id": i["id"], "title": i["title"]} for i in evolve.load() if i["status"] == "accepted"
                          and not i.get("branch")],
-            "attempt_usd": {a: round(attempt_cost(conn, a), 4) for a in CLAUDE_AGENTS}}
+            "default_agent": default_agent(conn)}

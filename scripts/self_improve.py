@@ -1,6 +1,8 @@
 """TIDOS self-improvement: implement ONE accepted proposal on a separate branch, gated by the full checks.
 
-  python scripts/self_improve.py [--id N] [--model sonnet] [--budget 2.0] [--dry-run]
+  python scripts/self_improve.py [--id N] [--agent opencode:<provider/model> | claude:<model>] [--dry-run]
+
+The agent is TIDOS's helper model by default (tidos_session.helper: a free model you already use).
 
 Safety:
   - works in a temporary git WORKTREE on branch auto/<id>-<slug>: the user's checkout is never touched
@@ -52,6 +54,47 @@ def count_tests(cwd):
     return int(m.group(1)) if m else None
 
 
+def implement(agent, prompt, work):
+    """Let the agent edit the worktree: OpenCode (any provider, free by default) or Claude Code."""
+    env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
+    family, _, model = agent.partition(":")
+    if family == "claude":
+        exe = shutil.which("claude")
+        if not exe:
+            print("claude CLI not found.")
+            return False
+        # the per-run cap is only a safety net for people who chose Claude (it bills their own account)
+        proc = subprocess.run([exe, "-p", "--model", model, "--output-format", "json", "--permission-mode",
+                               "acceptEdits", "--allowedTools", AGENT_TOOLS, "--max-budget-usd", "0.5"],
+                              input=prompt, cwd=work, capture_output=True, text=True, encoding="utf-8",
+                              errors="replace", timeout=3600, env=env)
+        try:
+            print(str(json.loads(proc.stdout.strip().splitlines()[-1]).get("result"))[-800:])
+        except (ValueError, IndexError):
+            print("Agent output unreadable:\n" + (proc.stdout + proc.stderr)[-800:])
+        return True
+    exe = shutil.which("opencode")
+    if not exe:
+        print("opencode CLI not found.")
+        return False
+    from tidos_evals.agents import OPENCODE_SANDBOX  # edits + language runners only; no web, no other shell
+    scratch = [os.path.join(work, n) for n in ("PROPOSAL.md", "opencode.json")]
+    with open(scratch[0], "w", encoding="utf-8") as f:
+        f.write(prompt)
+    with open(scratch[1], "w", encoding="utf-8") as f:
+        json.dump(OPENCODE_SANDBOX, f)
+    try:
+        proc = subprocess.run([exe, "run", "--dir", work, "-m", model, "Read PROPOSAL.md and do exactly what it says."],
+                              cwd=work, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                              timeout=3600, env=dict(env, PWD=work), stdin=subprocess.DEVNULL)
+        print((proc.stdout + proc.stderr)[-1200:])
+    finally:
+        for path in scratch:  # TIDOS's own instructions never end up in the commit
+            if os.path.exists(path):
+                os.remove(path)
+    return True
+
+
 def gates(cwd):
     results = []
     for argv in GATES:
@@ -63,8 +106,7 @@ def gates(cwd):
 def main(args=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--id", type=int)
-    ap.add_argument("--model", default="sonnet")
-    ap.add_argument("--budget", type=float, default=2.0)
+    ap.add_argument("--agent", help="opencode:<provider/model> or claude:<model> (default: TIDOS's helper model)")
     ap.add_argument("--dry-run", action="store_true", help="create the worktree and run the gates, no agent")
     a = ap.parse_args(args)
 
@@ -82,25 +124,18 @@ def main(args=None):
         print("Cannot create worktree/branch %s:\n%s" % (branch, out))
         return 1
     print("Worktree %s on branch %s" % (work, branch))
-    impact = {"tests_before": count_tests(work), "cost_usd": None}
+    impact = {"tests_before": count_tests(work)}
     try:
         if not a.dry_run:
-            exe = shutil.which("claude")
-            if not exe:
-                print("claude CLI not found.")
+            from tidos_session import helper
+            agent = a.agent or helper.resolve()
+            if not agent:
+                print("No model available: install OpenCode (free models) or pass --agent.")
                 return 1
-            env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
-            proc = subprocess.run([exe, "-p", "--model", a.model, "--output-format", "json", "--permission-mode",
-                                   "acceptEdits", "--allowedTools", AGENT_TOOLS, "--max-budget-usd", str(a.budget)],
-                                  input=PROMPT.format(**item), cwd=work, capture_output=True, text=True,
-                                  encoding="utf-8", errors="replace", timeout=3600, env=env)
-            try:
-                data = json.loads(proc.stdout.strip().splitlines()[-1])
-                impact["cost_usd"] = round(float(data.get("total_cost_usd") or 0), 3)
-                print("Agent: %s (cost %.2f USD)\n%s" % ("error" if data.get("is_error") else "done",
-                                                        data.get("total_cost_usd", 0), str(data.get("result"))[-800:]))
-            except (ValueError, IndexError):
-                print("Agent output unreadable:\n" + (proc.stdout + proc.stderr)[-800:])
+            impact["agent"] = agent
+            print("Agent: %s" % agent)
+            if not implement(agent, PROMPT.format(**item), work):
+                return 1
         results = gates(work)
         for name, rc, out in results:
             print("[%s] %s" % ("PASS" if rc == 0 else "FAIL", name))

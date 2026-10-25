@@ -5,7 +5,7 @@
   status                          TIDOS STATUS window: level, rank, stats, domains, daily quests, unlocked drafts
   show PATH_OR_NAME               print one playbook
   note --project P --stack S "advice"   (LEARN mode) a strong model records advice for weaker models
-  summarize [--pending | --session ID]  a cheap strong model turns finished sessions into advice notes
+  summarize [--pending | --session ID]  the helper model (free by default) turns finished sessions into advice notes
   army [--lessons NAME | --activate NAME | --deactivate NAME]   Shadow Army: units ranked by mission evidence
 """
 import argparse

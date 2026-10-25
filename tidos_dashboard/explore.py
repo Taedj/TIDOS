@@ -1,7 +1,8 @@
 """Control center tools: global search, "Ask TIDOS", settings editor, brain backups.
 
 Search and the Ask digest only read TIDOS's own private data (brain.db, ~/.tidos). Ask TIDOS sends that digest
-to a cheap Claude model with every tool disabled, only when the `ask_llm` switch is on.
+to TIDOS's helper model (free by default, any model you choose) with every tool disabled, only when the
+`ask_llm` switch is on.
 """
 import glob
 import os
@@ -121,8 +122,9 @@ def ask(conn, question, llm=None, lang=None):
     data = digest(conn, question)
     if control.is_on("ask_llm"):
         if llm is None:
-            from tidos_learn.summarize import ask_strong_model as llm  # noqa: N813  (tools disabled below)
-        language = " Write the answer in %s (keep project names, commands and numbers as they are)."             % LANGUAGES[lang] if lang in LANGUAGES else ""
+            from tidos_learn.summarize import ask_strong_model as llm  # noqa: N813  (helper model, no tools)
+        language = (" Write the answer in %s (keep project names, commands and numbers as they are)."
+                    % LANGUAGES[lang]) if lang in LANGUAGES else ""
         text, err = llm(ASK_PROMPT.format(question=question[:500], data=data, language=language))
         if text:
             return {"answer": text.strip(), "source": "llm", "digest": data}

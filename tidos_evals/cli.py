@@ -114,9 +114,8 @@ def cmd_run(args):
                     conn.execute("INSERT INTO evals (%s) VALUES (%s)" % (
                         ", ".join(row), ", ".join("?" * len(row))), tuple(row.values()))
                 results.append(row)
-                print(" %s  %5.1fs%s%s" % ("CLEAR" if passed else "FAIL ", seconds,
-                                           "  $%.3f" % res.cost_usd if res.cost_usd else "",
-                                           "  (%s)" % res.error if res.error else ""))
+                print(" %s  %5.1fs%s" % ("CLEAR" if passed else "FAIL ", seconds,
+                                         "  (%s)" % res.error if res.error else ""))
     with open(os.path.join(run_dir, "results.json"), "w", encoding="utf-8") as f:
         json.dump(results, f, indent=1)
     print()
@@ -194,19 +193,18 @@ def _print_report(conn, run_id=None):
     where, params = ("WHERE run_id = ?", (run_id,)) if run_id else ("WHERE 1=1", ())
     where += " AND COALESCE(error, '') NOT LIKE 'contaminated%'"
     rows = conn.execute(
-        "SELECT model, with_tidos, COUNT(*) n, SUM(passed) p, SUM(COALESCE(cost_usd,0)) c, AVG(duration_s) d"
+        "SELECT model, with_tidos, COUNT(*) n, SUM(passed) p, AVG(duration_s) d"
         " FROM evals %s GROUP BY model, with_tidos ORDER BY model, with_tidos" % where, params).fetchall()
     if not rows:
         print("No eval results yet.")
         return
-    print("%-44s %-6s %8s %9s %8s %8s" % ("agent", "TIDOS", "cleared", "rate", "cost", "avg s"))
+    print("%-44s %-6s %8s %9s %8s" % ("agent", "TIDOS", "cleared", "rate", "avg s"))
     by_model = {}
     for r in rows:
         rate = 100.0 * (r["p"] or 0) / r["n"]
         by_model.setdefault(r["model"], {})[r["with_tidos"]] = rate
-        print("%-44s %-6s %5d/%-3d %8.0f%% %8s %8.0f" % (r["model"], {0: "off", 1: "on", 2: "guide", 3: "unit"}[r["with_tidos"]],
-                                                       r["p"] or 0, r["n"], rate,
-                                                       "$%.2f" % r["c"] if r["c"] else "-", r["d"] or 0))
+        print("%-44s %-6s %5d/%-3d %8.0f%% %8.0f" % (r["model"], {0: "off", 1: "on", 2: "guide", 3: "unit"}[r["with_tidos"]],
+                                                  r["p"] or 0, r["n"], rate, r["d"] or 0))
     for model, rates in by_model.items():
         for mode, name in ((1, "TIDOS"), (2, "GUIDE")):
             if 0 in rates and mode in rates:

@@ -1,6 +1,6 @@
 """Measure what an implemented proposal does to TIDOS's guidance, before you merge it (plan 10.1).
 
-  python scripts/measure_proposal.py --id N [--agent opencode:opencode/big-pickle] [--min-difficulty B]
+  python scripts/measure_proposal.py --id N [--agent AGENT] [--min-difficulty B]   (default agent: the free helper model)
   python scripts/measure_proposal.py --branch NAME ...   any branch, e.g. a community pull request (plan 13.1):
                                                           git fetch origin pull/123/head:pr-123 ; --branch pr-123
 
@@ -58,10 +58,13 @@ def main(args=None):
     who = ap.add_mutually_exclusive_group(required=True)
     who.add_argument("--id", type=int, help="an implemented proposal (the delta is saved on it)")
     who.add_argument("--branch", help="any branch, e.g. a contributor's pull request (the delta is only printed)")
-    ap.add_argument("--agent", default="opencode:opencode/big-pickle")
+    ap.add_argument("--agent", help="any agent tidos_evals knows (default: TIDOS's helper model, free)")
     ap.add_argument("--min-difficulty", default="B", choices=list("EDCBAS"))
-    ap.add_argument("--budget", type=float, default=0.25, help="max USD per Claude attempt")
+    ap.add_argument("--budget", type=float, default=0.25, help=argparse.SUPPRESS)  # Claude-only safety net
     a = ap.parse_args(args)
+    if not a.agent:
+        from tidos_session import helper
+        a.agent = helper.resolve() or "opencode:" + helper.free_models()[0]
     if a.branch:
         branch, tag = a.branch, a.branch
     else:

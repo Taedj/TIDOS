@@ -51,15 +51,16 @@ class JobsTests(unittest.TestCase):
                             ("scout_needs", {"project": "C:/Windows"})):
             with self.assertRaises(jobs.JobError, msg=(job, params)):
                 jobs.build(self.conn, job, params)
-        argv, env, estimate, title = jobs.build(self.conn, "raid", {"agent": "opencode:opencode/big-pickle",
-                                                                    "mode": "compare", "min_difficulty": "A"})
+        argv, env, title, model = jobs.build(self.conn, "raid", {"agent": "opencode:opencode/big-pickle",
+                                                                 "mode": "compare", "min_difficulty": "A"})
         self.assertEqual(argv[0], PY)
-        self.assertIn("opencode:opencode/big-pickle", argv)
-        self.assertEqual(estimate, 0.0)                             # free model
-        argv, _, estimate, _ = jobs.build(self.conn, "trial", {"unit": "tidos-tester", "agent": "claude:haiku",
-                                                               "suite": "python"})
-        self.assertEqual(argv[argv.index("--budget") + 1], str(jobs.ATTEMPT_BUDGET_USD))  # hard cap per attempt
-        self.assertGreater(estimate, 0)
+        self.assertEqual(model, "opencode:opencode/big-pickle")
+        self.assertNotIn("--budget", argv)                          # free model: no money anywhere
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: "opencode"):
+            _, _, _, model = jobs.build(self.conn, "trial", {"unit": "tidos-tester", "suite": "python"})
+        self.assertEqual(model, "opencode:opencode/big-pickle")     # default = the free helper model
+        argv, _, _, _ = jobs.build(self.conn, "trial", {"unit": "tidos-tester", "agent": "claude:haiku", "suite": "python"})
+        self.assertIn("--budget", argv)                             # Claude only if you choose it, capped internally
         with mock.patch("tidos_brain.claude_code.is_synthetic", lambda cwd: False):  # temp dirs count as test runs
             self.assertEqual(jobs.build(self.conn, "scout_needs", {"project": self.tmp.name})[0][-2], self.tmp.name)
         item = evolve.add("x", "y")
@@ -67,7 +68,7 @@ class JobsTests(unittest.TestCase):
         self.assertIn("--id", jobs.build(self.conn, "self_improve", {"id": item["id"]})[0])
 
     def fake(self, code):
-        return mock.patch.object(jobs, "build", lambda conn, job, p: ([PY, "-c", code], {}, 0.0, "fake " + job))
+        return mock.patch.object(jobs, "build", lambda conn, job, p: ([PY, "-c", code], {}, "fake " + job, None))
 
     def test_run_log_busy_and_cancel(self):
         with self.fake("print('hello from the job')"):
@@ -91,14 +92,12 @@ class JobsTests(unittest.TestCase):
         self.assertEqual(recs["distill"]["verdict"], "autopilot is off")
         self.assertIsNone(autopilot.tick(self.conn))                # switch off: nothing runs
         control.set_switch("autopilot", True)
-        control.set_value("autopilot_budget_usd", 0)
-        item = evolve.add("paid one", "r")
+        item = evolve.add("an accepted one", "r")
         evolve.set_status(item["id"], "accepted")
         recs = {r["key"]: r for r in autopilot.decide(self.conn)}
-        paid = recs["self_improve:%d" % item["id"]]
-        self.assertFalse(paid["auto"])
-        self.assertIn("over today's budget", paid["verdict"])
-        self.assertTrue(recs["distill"]["auto"])
+        self.assertTrue(recs["self_improve:%d" % item["id"]]["auto"])  # no budget: every due job is no-cost
+        self.assertEqual(recs["distill"]["verdict"], "autopilot will run it")
+        self.assertNotIn("estimate", recs["distill"])
         with self.fake("print('ok')"):
             record = autopilot.tick(self.conn)
         self.assertEqual((record["by"], record["job"]), ("autopilot", recs[next(k for k in recs if recs[k]["auto"])]["job"]))
@@ -113,14 +112,24 @@ class JobsTests(unittest.TestCase):
         self.assertFalse(rec["auto"])
         self.assertIn("failed in the last 24 h", rec["verdict"])
 
-    def test_values_are_validated(self):
-        self.assertEqual(control.values()["autopilot_budget_usd"], 0.5)
-        with self.assertRaises(ValueError):
-            control.set_value("autopilot_budget_usd", 500)
-        control.set_value("autopilot_budget_usd", 1.5)
-        control.set_switch("tracing", False)                        # switches keep the values and vice versa
-        self.assertEqual(control.values()["autopilot_budget_usd"], 1.5)
+    def test_helper_model_setting(self):
+        from tidos_session import helper
+        self.assertEqual(control.text("helper_model"), "auto")
+        for bad in ("rm -rf /", "claude:haiku; x", "opencode:noslash", 5):
+            with self.assertRaises(ValueError):
+                control.set_text("helper_model", bad)
+        control.set_text("helper_model", "opencode:google/gemini-2.5-flash")   # any model you have
+        control.set_switch("tracing", False)                        # switches keep the texts and vice versa
+        self.assertEqual(control.text("helper_model"), "opencode:google/gemini-2.5-flash")
         self.assertFalse(control.is_on("tracing"))
+        self.assertEqual(helper.resolve(), "opencode:google/gemini-2.5-flash")
+        control.set_text("helper_model", "auto")
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: None):
+            self.assertIsNone(helper.resolve())                     # no free model -> local only, never paid
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: "opencode"):
+            self.assertEqual(helper.resolve(conn=self.conn), "opencode:opencode/big-pickle")  # the free one you use
+        control.set_text("helper_model", "none")
+        self.assertEqual(helper.ask("hi")[0], None)                 # 'none': no model is ever called
 
 
 if __name__ == "__main__":

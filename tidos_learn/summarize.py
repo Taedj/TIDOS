@@ -1,14 +1,12 @@
-"""LEARN mode, automatic: a strong model turns a finished session into advice for weaker models.
+"""LEARN mode, automatic: a finished strong-model session becomes advice for weaker models.
 
 At START TIDOS (no hooks needed), up to MAX_PER_START recent strong-model sessions that have not been
-summarized yet are digested (prompts, files, checks, corrections - no file contents) and sent to a cheap
-strong model (`claude -p`, budget-capped). Its 1-3 lines of advice become notes in that project's
-playbooks. Switch "auto_summarize" in /TIDOSZIT turns it off.
+summarized yet are digested (prompts, files, checks, corrections - no file contents) and sent to TIDOS's
+helper model (tidos_session.helper: a free model you already use, or any model you choose; no tools).
+Its 1-3 lines of advice become notes in that project's playbooks. Switch "auto_summarize" turns it off.
 """
 import json
 import os
-import shutil
-import subprocess
 from datetime import datetime, timezone
 
 from tidos_brain import control
@@ -17,8 +15,6 @@ from tidos_session.detect import tidos_home, tier_for
 from . import distill
 
 MAX_PER_START = 2
-MODEL = "haiku"
-BUDGET_USD = 0.05
 MIN_TASKS = 2
 
 PROMPT = """You are the learning engine of TIDOS. Below is a digest of a coding session a strong AI model did with
@@ -84,23 +80,13 @@ def pending_sessions(conn, limit=MAX_PER_START):
     return out
 
 
-def ask_strong_model(prompt, model=MODEL, budget=BUDGET_USD):
-    exe = shutil.which("claude")
-    if not exe:
-        return None, "claude CLI not found"
-    env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
-    try:
-        proc = subprocess.run([exe, "-p", "--model", model, "--output-format", "json", "--max-budget-usd", str(budget),
-                               # text in, text out: no built-in tools and no MCP servers (no files, shell, web)
-                               "--tools", "", "--strict-mcp-config"],
-                              input=prompt, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              timeout=180, env=env, cwd=tidos_home())
-        data = json.loads(proc.stdout.strip().splitlines()[-1])
-    except (subprocess.TimeoutExpired, ValueError, IndexError, OSError) as e:
-        return None, str(e)
-    if data.get("is_error"):
-        return None, data.get("subtype") or "error"
-    return data.get("result", ""), None
+def ask_helper(prompt):
+    """TIDOS's helper model (free by default, any model you choose): text in, text out, no tools."""
+    from tidos_session import helper
+    return helper.ask(prompt)
+
+
+ask_strong_model = ask_helper  # old name, kept for callers and tests
 
 
 def advice_lines(text):
@@ -108,7 +94,7 @@ def advice_lines(text):
             if line.strip().startswith("- ") and len(line.strip()) > 12][:3]
 
 
-def summarize_session(conn, session_id, ask=ask_strong_model):
+def summarize_session(conn, session_id, ask=ask_helper):
     project, text = digest(conn, session_id)
     result, error = ask(PROMPT.format(project=project, digest=text))
     state = _load_state()
@@ -121,7 +107,7 @@ def summarize_session(conn, session_id, ask=ask_strong_model):
     return lines, error
 
 
-def summarize_pending(conn, ask=ask_strong_model, limit=MAX_PER_START):
+def summarize_pending(conn, ask=ask_helper, limit=MAX_PER_START):
     if not control.is_on("auto_summarize"):
         return []
     return [(sid,) + summarize_session(conn, sid, ask) for sid in pending_sessions(conn, limit)]

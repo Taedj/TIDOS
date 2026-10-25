@@ -1,16 +1,16 @@
 """Autopilot: TIDOS decides what to run next, and runs it when the `autopilot` switch is on.
 
-decide() looks at the brain and the files and returns recommendations, each with its reason and cost:
-  - refresh learning        when the last refresh is older than 6 h                      free, auto
-  - daily quest             when today has no report                                     free, auto
-  - back up the brain       when the newest backup is older than 7 days                  free, auto
-  - trial a draft unit      when a draft has no trial and a dungeon suite tests it       paid, auto within budget
-  - implement a proposal    when you accepted it and it has no branch yet                paid, auto within budget
-  - measure a proposal      when its branch exists and its effect was never measured    free model, auto
-  - weekly weak-model check GUIDE vs plain with a free OpenCode model (plan 6.8)         free, auto, weekly
-  - tool needs              per active project (installing still needs your approval)    free, shown only
-Rules: one job at a time; paid jobs only while today's autopilot spend + the estimate stays within
-autopilot_budget_usd; a job that failed in the last 24 h is not retried automatically; nothing here installs,
+decide() looks at the brain and the files and returns recommendations, each with its reason and the model it uses (if any):
+  - refresh learning        when the last refresh is older than 6 h                      auto
+  - daily quest             when today has no report                                     auto
+  - back up the brain       when the newest backup is older than 7 days                  auto
+  - trial a draft unit      when a draft has no trial and a dungeon suite tests it       auto
+  - implement a proposal    when you accepted it and it has no branch yet                auto
+  - measure a proposal      when its branch exists and its effect was never measured    auto
+  - weekly weak-model check GUIDE vs plain with a free model (plan 6.8)                 auto, weekly
+  - tool needs              per active project (installing still needs your approval)    shown only
+Jobs that need a model use the helper model (free by default: tidos_session.helper). TIDOS never costs anything.
+Rules: one job at a time; a job that failed in the last 24 h is not retried automatically; nothing here installs,
 pushes, merges, activates a unit or changes a switch: those stay yours.
 
   python -I tidos_dashboard/autopilot.py --once      run every due job, one after another (START TIDOS calls this
@@ -68,11 +68,11 @@ def decide(conn):
 
     def add(key, job, params, title, reason, auto=True):
         try:
-            _, _, estimate, _ = jobs.build(conn, job, params)
+            _, _, _, model = jobs.build(conn, job, params)
         except jobs.JobError:
             return
         recs.append({"key": key, "job": job, "params": params, "title": title, "reason": reason,
-                     "estimate": estimate, "auto": auto})
+                     "model": model, "auto": auto})
 
     last = _last("distill")
     row = conn.execute("SELECT MAX(updated_at) FROM playbooks").fetchone()  # START TIDOS refreshes learning too
@@ -93,7 +93,7 @@ def decide(conn):
     for name, u in sorted(army.units().items()):
         suite = jobs.unit_suite(name)
         if u["state"] == "draft" and name not in trials and suite:
-            add("trial:" + name, "trial", {"unit": name, "agent": "claude:haiku", "suite": suite},
+            add("trial:" + name, "trial", {"unit": name, "suite": suite},
                 "Trial %s" % name, "draft unit, never tested: %s dungeons with and without it" % suite)
     for item in evolve.load():
         if item["status"] == "accepted" and not item.get("branch"):
@@ -107,7 +107,7 @@ def decide(conn):
 
     weak = [a for a in jobs.allowed_agents(conn) if a.startswith("opencode:")]
     if weak:
-        agent = weak[0]
+        agent = jobs.default_agent(conn) if jobs.default_agent(conn) in weak else weak[0]
         lastw = _last("raid", {"agent": agent, "mode": "compare", "min_difficulty": "A"})
         if lastw is None or _now() - lastw > WEAK_CHECK_EVERY:
             add("weak_check", "raid", {"agent": agent, "mode": "compare", "min_difficulty": "A"},
@@ -126,15 +126,11 @@ def decide(conn):
 
 def _with_verdicts(recs):
     on = control.is_on("autopilot")
-    budget = control.values()["autopilot_budget_usd"]
-    left = round(budget - jobs.spent_today(), 2)
     for r in recs:
         if not r["auto"]:
             r["verdict"] = "your call"
         elif _recently_failed(r["job"], r["params"]):
             r["auto"], r["verdict"] = False, "failed in the last 24 h: run it yourself after a look at its log"
-        elif r["estimate"] > left:
-            r["auto"], r["verdict"] = False, "over today's budget (%.2f left of %.2f USD)" % (max(left, 0), budget)
         else:
             r["verdict"] = "autopilot will run it" if on else "autopilot is off"
     return recs
@@ -148,7 +144,7 @@ def tick(conn, db_path=None, log=None):
         if r["auto"]:
             record = jobs.start(conn, r["job"], r["params"], by="autopilot", db_path=db_path)
             if log:
-                log("autopilot", "%s (%s, est. %.2f USD)" % (record["title"], r["reason"][:80], r["estimate"]))
+                log("autopilot", "%s (%s)" % (record["title"], r["reason"][:80]))
             return record
     return None
 
@@ -199,6 +195,6 @@ if __name__ == "__main__":
     else:
         conn = db.connect()
         for r in decide(conn):
-            print("%-40s %-6s %-28s %s" % (r["title"][:40], "$%.2f" % r["estimate"] if r["estimate"] else "free",
-                                          r["verdict"][:28], r["reason"]))
+            print("%-40s %-28s %-28s %s" % (r["title"][:40], (r["model"] or "no model")[:28], r["verdict"][:28],
+                                           r["reason"]))
         conn.close()

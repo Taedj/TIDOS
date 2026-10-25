@@ -116,19 +116,20 @@ def dungeons(conn):
         if col not in columns:
             columns.append(col)
         cells["%s/%s|%s" % (r["suite"], r["task_name"], col)] = {"passed": r["passed"], "seconds": r["duration_s"],
-                                                                 "cost": r["cost_usd"], "error": r["error"]}
-        b = board.setdefault(r["model"], {"model": r["model"], "off": [0, 0], "on": [0, 0], "cost": 0.0})
+                                                                 "error": r["error"]}
+        b = board.setdefault(r["model"], {"model": r["model"], "off": [0, 0], "on": [0, 0], "seconds": []})
         side = b["on" if r["with_tidos"] else "off"]
         side[0] += r["passed"]
         side[1] += 1
-        b["cost"] += r["cost_usd"] or 0
+        if r["duration_s"]:
+            b["seconds"].append(r["duration_s"])
     leaderboard = []
     for b in board.values():
         off = round(100 * b["off"][0] / b["off"][1]) if b["off"][1] else None
         on = round(100 * b["on"][0] / b["on"][1]) if b["on"][1] else None
         leaderboard.append({"model": b["model"], "off": off, "on": on, "off_n": b["off"], "on_n": b["on"],
                             "lift": on - off if off is not None and on is not None else None,
-                            "cost": round(b["cost"], 3)})
+                            "avg_s": round(sum(b["seconds"]) / len(b["seconds"])) if b["seconds"] else None})
     leaderboard.sort(key=lambda b: max(b["on"] or 0, b["off"] or 0), reverse=True)
     columns.sort(key=lambda c: (c.split("|")[0], c.split("|")[1]))
     last = conn.execute("SELECT MAX(run_at) FROM evals").fetchone()[0]

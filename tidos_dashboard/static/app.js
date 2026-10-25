@@ -303,7 +303,7 @@ async function loadDungeons() {
   $("leaderboard").innerHTML = d.leaderboard.map((b) => `
     <tr><td>${esc(b.model)}</td><td>${pct(b.off, b.off_n)}</td><td>${pct(b.on, b.on_n)}</td>
     <td>${b.lift === null ? '<span class="faint">—</span>' : `<span class="${b.lift > 0 ? "lift-up" : b.lift < 0 ? "lift-down" : ""}">${t("{n} pts", { n: (b.lift > 0 ? "+" : "") + b.lift })}</span>`}</td>
-    <td>${b.cost ? "$" + b.cost.toFixed(2) : `<span class="faint">${t("free")}</span>`}</td></tr>`).join("")
+    <td>${b.avg_s ? b.avg_s + " s" : '<span class="faint">—</span>'}</td></tr>`).join("")
     || `<tr><td colspan="5" class="muted">${t("No raids yet. Run the command below.")}</td></tr>`;
   $("dungeonMeta").textContent = t("{n} dungeons · last raid {w} · lift = pass rate with TIDOS minus without.", { n: d.tasks.length, w: d.last_run ? when(d.last_run) : t("never") });
   const label = (c) => { const [m, x] = c.split("|"); return `${esc(m.replace("opencode:", "").replace("opencode/", ""))}<br>${{ 1: "+TIDOS", 2: "+GUIDE", 3: "+UNIT" }[x] || t("plain")}`; };
@@ -392,6 +392,7 @@ async function loadTools() {
 
 // ---- autopilot + jobs (buttons instead of terminal commands)
 let jobOptions = null, logJob = null, logOffset = 0, logTimer = null, jobsTimer = null;
+const shortModel = (m) => String(m || "").replace("opencode:opencode/", "").replace("opencode:", "").replace("claude:", "claude ");
 const openTab = (view) => { const tab = document.querySelector(`.tab[data-view=${view}]`); if (tab) tab.click(); };
 
 function fillSelects() {
@@ -419,9 +420,8 @@ async function runJob(job, params = {}) {
   if (!dry.ok) { toast(`<b>[SYSTEM]</b> ${esc(t(dry.data.error || "failed"))}`, "warn"); return; }
   const d = dry.data;
   if (d.busy) { toast(`<b>[SYSTEM]</b> ${esc(t("Another job is running. Wait for it or cancel it."))}`, "warn"); openTab("jobs"); return; }
-  const msg = d.estimate > 0
-    ? t("Run {title}? Estimated cost ${usd} (at most $0.25 per Claude attempt).", { title: d.title, usd: d.estimate.toFixed(2) })
-    : (job === "raid" || job === "trial" || job === "daily_quest") ? t("Run {title}? It can take a while; you can cancel it.", { title: d.title }) : null;
+  const long = ["raid", "trial", "daily_quest", "measure", "self_improve"].includes(job);
+  const msg = long ? t("Run {title}? It can take a while; you can cancel it.", { title: d.title }) : null;
   if (msg && !confirm(msg)) return;
   const r = await api("/api/jobs/run", { job, params });
   if (!r.ok) { toast(`<b>[SYSTEM]</b> ${esc(t(r.data.error || "failed"))}`, "warn"); return; }
@@ -459,14 +459,19 @@ async function loadJobs() {
   const d = r.data, ap = d.autopilot;
   jobOptions = d.options;
   fillSelects();
+  const hp = d.helper;
   $("apInfo").innerHTML = [
     ["Autopilot", `<span class="pill ${ap.on ? "ok" : ""}">${t(ap.on ? "ON" : "OFF")}</span>`],
-    ["Spent today", `$${ap.spent_today.toFixed(2)} / $${ap.budget.toFixed(2)}`],
+    ["Helper model", `${esc(hp.model ? shortModel(hp.model) : t("none (local only)"))} <span class="pill">${esc(t(hp.note))}</span>`],
   ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
-  if (document.activeElement !== $("apBudget")) $("apBudget").value = ap.budget;
+  if (document.activeElement !== $("apHelper")) {
+    const choices = ["auto", "none"].concat(jobOptions.agents.filter((a) => a !== "reference"));
+    $("apHelper").innerHTML = choices.map((c) => `<option value="${esc(c)}">${esc(c === "auto" ? t("auto (a free model you use)") : c === "none" ? t("none (local only)") : c)}</option>`).join("");
+    $("apHelper").value = hp.setting;
+  }
   $("recs").innerHTML = d.recommendations.map((x, i) => `
     <div class="rec"><div><b>${esc(t(x.title))}</b><div class="small faint">${esc(t(x.reason))}</div></div>
-      <span class="pill">${x.estimate ? "$" + x.estimate.toFixed(2) : t("free")}</span>
+      <span class="pill">${x.model ? esc(shortModel(x.model)) : t("no model")}</span>
       <span class="small ${x.auto && ap.on ? "lift-up" : "muted"}">${esc(t(x.verdict))}</span>
       <button class="btn ghost rec-run" type="button" data-i="${i}">${t("Run")}</button></div>`).join("")
     || `<p class="muted">${t("Nothing is due. TIDOS is up to date.")}</p>`;
@@ -478,7 +483,7 @@ async function loadJobs() {
   $("jobList").innerHTML = d.jobs.map((j) => `
     <tr><td>${esc(when(j.started))}</td><td title="${esc(j.argv)}">${esc(t(j.title))}</td><td>${esc(t(j.by))}</td>
       <td><span class="pill ${stateCls[j.state] || ""}">${esc(t(j.state))}</span></td>
-      <td>${j.cost !== null && j.cost !== undefined ? "$" + Number(j.cost).toFixed(2) : j.estimate ? "~$" + j.estimate.toFixed(2) : t("free")}</td>
+      <td>${j.model ? esc(shortModel(j.model)) : '<span class="faint">—</span>'}</td>
       <td><button class="btn ghost job-log" type="button" data-id="${esc(j.id)}" data-title="${esc(t(j.title))}">${t("Log")}</button>
         ${j.id === d.running ? `<button class="btn ghost job-cancel" type="button" data-id="${esc(j.id)}">${t("Cancel")}</button>` : ""}</td></tr>`).join("")
     || `<tr><td colspan="6" class="muted">${t("No jobs yet.")}</td></tr>`;
@@ -530,8 +535,8 @@ $("trialForm").elements.unit.addEventListener("change", (e) => {
 });
 $("apForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  const r = await api("/api/autopilot", { budget: Number($("apBudget").value) });
-  toast(`<b>[SYSTEM]</b> ${esc(r.ok ? t("Autopilot budget: ${usd}/day", { usd: r.data.budget.toFixed(2) }) : t(r.data.error || "failed"))}`, r.ok ? "" : "warn");
+  const r = await api("/api/helper", { model: $("apHelper").value });
+  toast(`<b>[SYSTEM]</b> ${esc(r.ok ? t("Helper model: {m}", { m: r.data.model ? shortModel(r.data.model) : t("none (local only)") }) : t(r.data.error || "failed"))}`, r.ok ? "" : "warn");
   loadJobs();
 });
 

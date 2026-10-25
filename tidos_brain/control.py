@@ -8,9 +8,10 @@ Enforced by code, not by prompts:
   gptid           - scripts/gptid.* refuse to start the ChatGPT relay when off
   auth_gate       - scripts/start_tidos.* ask for Google sign-in only when on (opt-in)
   tool_install    - Tool Scout installs an approved tool only when on
-  autopilot       - the control center runs the jobs TIDOS recommends by itself (paid ones within the budget)
+  autopilot       - the control center runs the jobs TIDOS recommends by itself
 
-Values (numbers, same file): autopilot_budget_usd - max USD per day the autopilot may spend on model calls.
+Texts (same file): helper_model - the model TIDOS uses for its own jobs (tidos_session.helper): auto = a free
+model you already use, none = local only. TIDOS is no-cost by design and works with any model.
 
 Shell scripts read it with:  python -I tidos_brain/control.py get <switch>   (prints on/off, exit 0/1)
 """
@@ -25,16 +26,18 @@ SWITCHES = {
     "factory_sync": (True, "Persona factory may commit + push generated personas"),
     "community_sync": (True, "Community sync may open upstream pull requests"),
     "gptid": (False, "ChatGPT browser relay (experimental, ToS risk)"),
-    "auto_summarize": (True, "After strong-model sessions, a cheap strong model writes advice notes (max 2 per START, $0.05 each)"),
+    "auto_summarize": (True, "After strong-model sessions, the helper model writes advice notes for weaker models (max 2 per START)"),
     "auth_gate": (False, "Require Google sign-in at START TIDOS (the /TIDOSZIT owner login is always on)"),
     "tool_install": (False, "Tool Scout may install a tool you approved when you press Install (pinned version or verified download, your user account only)"),
-    "autopilot": (False, "Autopilot: TIDOS runs the jobs it recommends by itself (free ones always, paid ones within the daily budget)"),
-    "ask_llm": (True, "Ask TIDOS may send a sanitized digest of your traces to a cheap Claude model ($0.05 cap); off = local search only"),
+    "autopilot": (False, "Autopilot: TIDOS runs the jobs it recommends by itself (one at a time, no-cost models only)"),
+    "ask_llm": (True, "Ask TIDOS may send a sanitized digest of your traces to the helper model; off = local search only"),
 }
 
 
-VALUES = {  # name -> (default, min, max, description)
-    "autopilot_budget_usd": (0.5, 0.0, 20.0, "Max USD per day the autopilot may spend on model calls (trials, self-improve)"),
+TEXTS = {  # name -> (default, validator regex, description)
+    "helper_model": ("auto", r"^(auto|none|claude:[A-Za-z0-9.\-]+|opencode:[A-Za-z0-9._\-]+/[A-Za-z0-9._\-/]+)$",
+                     "Model TIDOS uses for its own jobs: auto (a free model you use), none, opencode:<provider/model>, "
+                     "claude:<model>"),
 }
 
 
@@ -51,11 +54,11 @@ def _read():
         return {}  # missing/corrupt file -> safe defaults
 
 
-def _write(switches, values):
+def _write(switches, texts):
     os.makedirs(os.path.dirname(path()), exist_ok=True)
     tmp = path() + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
-        json.dump({"switches": switches, "values": values,
+        json.dump({"switches": switches, "texts": texts,
                    "updated_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}, f, indent=2)
     os.replace(tmp, path())
 
@@ -66,21 +69,26 @@ def load():
     return state
 
 
-def values():
-    out = {name: spec[0] for name, spec in VALUES.items()}
-    for k, v in _read().get("values", {}).items():
-        if k in VALUES and isinstance(v, (int, float)) and VALUES[k][1] <= v <= VALUES[k][2]:
-            out[k] = float(v)
+def texts():
+    import re
+    out = {name: spec[0] for name, spec in TEXTS.items()}
+    for k, v in _read().get("texts", {}).items():
+        if k in TEXTS and isinstance(v, str) and re.match(TEXTS[k][1], v):
+            out[k] = v
     return out
 
 
-def set_value(name, value):
-    if name not in VALUES:
+def text(name):
+    return texts()[name]
+
+
+def set_text(name, value):
+    import re
+    if name not in TEXTS:
         raise KeyError(name)
-    value = float(value)
-    if not VALUES[name][1] <= value <= VALUES[name][2]:
-        raise ValueError("%s must be between %s and %s" % (name, VALUES[name][1], VALUES[name][2]))
-    current = values()
+    if not isinstance(value, str) or not re.match(TEXTS[name][1], value):
+        raise ValueError("%s: not a valid value: %r" % (name, value))
+    current = texts()
     current[name] = value
     _write(load(), current)
     return current
@@ -95,7 +103,7 @@ def set_switch(name, value):
         raise KeyError(name)
     state = load()
     state[name] = bool(value)
-    _write(state, values())
+    _write(state, texts())
     return state
 
 

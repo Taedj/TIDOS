@@ -12,7 +12,7 @@
 | Phase | Name | Goal | Status |
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
-| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except user items (1.20 history purge, 1.27 first CI run on push) |
+| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except 1.20 (history purge prepared; the owner force-pushes) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.5 Gemini, 2.7 router) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | ✅ Done (15/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
@@ -66,7 +66,7 @@
 ### 1C. Privacy
 - [x] **1.18** Remove personal project data from the public repo (`memory/LESSONS.md`, `memory/PROJECT_HISTORY.md`, `memory/USER_PROFILE.md`, etc.); ship only empty templates — done 2026-10-24 (repo memory/ holds templates only; ULTIDOS_persona.md (jailbreak-style prompt with a plain-text password) removed from the repo and kept only privately - treat that password as public)
 - [x] **1.19** Move user memory to `~/.tidos/memory/` (outside repo); add `memory/*` user files to `.gitignore` — done 2026-10-24 (tidos_session/memory.py: START TIDOS migrates personal memory to ~/.tidos/memory/ without overwriting; rule memory/X.md = ~/.tidos/memory/X.md in TIDSTART + memory/README; uncommitted edits preserved (37/37 lines); test added)
-- [ ] **1.20** *(waiting for the user: needs git filter-repo + force-push of the public repo; personal files and the ULTIDOS password stay in git history until then)* Purge personal data from git history (optional, `git filter-repo`) — needs user approval
+- [ ] **1.20** *(prepared and verified 2026-10-25: a rewritten mirror removes memory/ULTIDOS_persona.md and the 7 old personal memory/*.md versions from every commit; current branches/tags keep identical files; backups in ~/.tidos/backups. The force-push is the owner's command)* Purge personal data from git history (optional, `git filter-repo`) — needs user approval
 
 ### 1D. Consistency & cleanup
 - [x] **1.21** Unify version numbers everywhere (README, TIDSTART, VERSION, engines, start banners) — single source in `config/framework.md` — done 2026-10-24 (VERSION.md is the single source (config/framework.md mirrors it, checked in CI); README, TIDSTART, ROADMAP, CONTRIBUTING and start banners carry no version; banners read VERSION.md)
@@ -78,7 +78,7 @@
 
 ### 1E. CI
 - [x] **1.30** *(found and fixed 2026-10-24)* `scripts/factory_sync.ps1` never parsed on Windows since v4.0 (unclosed `if` block + UTF-8 `✓` read as a smart quote by PowerShell 5.1) — fixed; all `.ps1` files now parse and are ASCII-only. CI should run a PowerShell parse check (see 1.27)
-- [ ] **1.27** *(written 2026-10-24: .github/workflows/ci.yml = tests on Linux + Windows, spec validator, update-gate scenarios (sh + ps1), dungeon validation (node/dart/PowerShell), .ps1 parse + ASCII check, PSScriptAnalyzer and shellcheck (errors only), gitleaks on the working tree with .gitleaks.toml allowlist. Every step that can run locally passes; the workflow itself runs for the first time when the branch is pushed)* Add `.github/workflows/ci.yml`: pytest, ruff, markdown-lint, link check, gitleaks secret scan, PowerShell lint (PSScriptAnalyzer), shellcheck
+- [x] **1.27** Add `.github/workflows/ci.yml`: pytest, ruff, markdown-lint, link check, gitleaks secret scan, PowerShell lint (PSScriptAnalyzer), shellcheck — done 2026-10-25 (first CI runs on GitHub found and fixed 6 problems: old gitleaks without 'dir', CI username 'runner' redacted by the firewall, update.sh without shebang, a test assuming Playwright, 2 Windows-path bugs on Linux; run on f0fe932: all 5 jobs green on Ubuntu + Windows; failing tests now appear as annotations)
 - [x] **1.28** Add persona/skill schema validator (required sections, routing signals) to CI — done 2026-10-24 (scripts/validate_specs.py: persona title + registration, factory schema for generated personas, registry links, VERSION vs config, models.json, dungeon task.json, repo-relative Markdown links; 0 errors; in CI and tests/test_specs.py)
 - [x] **1.29** Release v4.1.0 (changelog, tag) — done 2026-10-24 (VERSION.md + config/framework.md 4.1.0 (status Beta), CHANGELOG + ROADMAP entries, annotated tag v4.1.0 created locally (unsigned, not pushed))
 
@@ -313,3 +313,4 @@
 | 2026-10-24 | (superseded) Driver orchestrates sandboxed agents (Claude Code, OpenCode), not raw completions | OpenCode free tier only works inside its agent; agents already read/edit/run, the driver adds the loop, checks and escalation |
 | 2026-10-24 | The strong model writes the checks ("defines done"), the weak model does the work | Spec -> tests is cheap for a strong model and the hardest part for a weak one |
 | 2026-10-24 | Agent cannot edit `~/.claude/settings.json` or deploy to Firebase (Claude Code safety) — owner runs those two commands | Self-modification and production deploys need a human |
+| 2026-10-25 | TIDOS is always no-cost and works with any model: one helper model (default: a free model you use, with fallback), no money in the UI, Claude only by choice | User: "using all TIDOS sys is always free ... tidos can work with any model" |

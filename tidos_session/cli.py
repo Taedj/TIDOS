@@ -57,7 +57,7 @@ def _spawn_summaries():
         kwargs["start_new_session"] = True
     subprocess.Popen([sys.executable, "-I", learn, "summarize", "--pending"], **kwargs)
     from tidos_brain import control
-    if control.is_on("autopilot"):  # TIDOS runs what it decided is due (one job at a time, within the budget)
+    if control.is_on("autopilot"):  # TIDOS runs what it decided is due (one job at a time)
         pilot = os.path.join(detect.REPO_ROOT, "tidos_dashboard", "autopilot.py")
         subprocess.Popen([sys.executable, "-I", pilot, "--once"], **kwargs)
 

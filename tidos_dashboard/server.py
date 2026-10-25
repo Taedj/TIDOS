@@ -168,13 +168,13 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, stats.army(conn))
             if path == "/api/jobs":
                 from tidos_dashboard import autopilot, jobs
+                from tidos_session import helper
                 return self._json(200, {
                     "jobs": [{k: v for k, v in j.items() if k != "log"} for j in reversed(jobs.history()[-30:])],
                     "running": (jobs.running() or {}).get("id"), "options": jobs.options(conn),
                     "recommendations": autopilot.decide(conn),
-                    "autopilot": {"on": control.is_on("autopilot"),
-                                  "budget": control.values()["autopilot_budget_usd"],
-                                  "spent_today": jobs.spent_today()}})
+                    "autopilot": {"on": control.is_on("autopilot")},
+                    "helper": helper.describe(conn)})
             if path == "/api/jobs/log":
                 from tidos_dashboard import jobs
                 data = jobs.log_text((query.get("id") or [""])[0], (query.get("offset") or ["0"])[0])
@@ -274,7 +274,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/army/action": self._army_action,
             "/api/jobs/run": self._job_run,
             "/api/jobs/cancel": self._job_cancel,
-            "/api/autopilot": self._autopilot,
+            "/api/helper": self._helper,
             "/api/tools/action": self._tool_action,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
@@ -388,9 +388,9 @@ class Handler(BaseHTTPRequestHandler):
         conn = db.connect(self.server.db_path)
         try:
             params = body.get("params") if isinstance(body.get("params"), dict) else {}
-            if body.get("dry"):  # what it would run and cost, for the confirmation
-                argv, _, estimate, title = jobs.build(conn, str(body.get("job") or ""), params)
-                return self._json(200, {"title": title, "estimate": estimate, "busy": bool(jobs.running())})
+            if body.get("dry"):  # what it would run, for the confirmation
+                argv, _, title, model = jobs.build(conn, str(body.get("job") or ""), params)
+                return self._json(200, {"title": title, "model": model, "busy": bool(jobs.running())})
             record = jobs.start(conn, str(body.get("job") or ""), params, by="owner", db_path=self.server.db_path)
         except (jobs.JobError, TypeError) as e:
             return self._json(400, {"error": str(e)})
@@ -398,7 +398,7 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(409, {"error": str(e)})
         finally:
             conn.close()
-        self.server.lockout.log("job", "%s (est. %.2f USD)" % (record["title"], record["estimate"]))
+        self.server.lockout.log("job", record["title"])
         return self._json(200, {k: v for k, v in record.items() if k != "log"})
 
     def _job_cancel(self, body):
@@ -412,17 +412,22 @@ class Handler(BaseHTTPRequestHandler):
         self.server.lockout.log("job", "cancelled %s" % body.get("id"))
         return self._json(200, {"ok": True})
 
-    def _autopilot(self, body):
-        """Autopilot daily budget (the on/off switch is a normal kill switch)."""
+    def _helper(self, body):
+        """The model TIDOS uses for its own jobs (free by default; any model you have)."""
         if not self._session():
             return self._json(401, {"error": "login required"})
         from tidos_brain import control
+        from tidos_session import helper
         try:
-            values = control.set_value("autopilot_budget_usd", body.get("budget"))
+            control.set_text("helper_model", body.get("model"))
         except (KeyError, ValueError, TypeError) as e:
             return self._json(400, {"error": str(e)})
-        self.server.lockout.log("autopilot", "budget %.2f USD/day" % values["autopilot_budget_usd"])
-        return self._json(200, {"budget": values["autopilot_budget_usd"]})
+        self.server.lockout.log("helper", str(body.get("model")))
+        conn = db.connect(self.server.db_path)
+        try:
+            return self._json(200, helper.describe(conn))
+        finally:
+            conn.close()
 
     def _army_action(self, body):
         """ARISE: activate a draft unit (-> ~/.claude/agents, personal) or undo it. Owner only, logged."""
