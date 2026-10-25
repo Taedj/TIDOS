@@ -25,6 +25,8 @@ sys.path.insert(0, ROOT)
 from tidos_brain import db  # noqa: E402
 from tidos_learn import evolve  # noqa: E402
 
+INSTRUMENT = ["tidos_evals", os.path.join("evals", "dungeons")]  # held constant: a proposal changing them is not measured here
+
 
 def git(args, cwd=ROOT):
     proc = subprocess.run(["git"] + args, cwd=cwd, capture_output=True, text=True, encoding="utf-8", errors="replace")
@@ -73,6 +75,12 @@ def main(args=None):
             if code:
                 print("Cannot create the %s worktree: %s" % (name, out))
                 return 1
+            # the measuring instrument (eval runner + dungeons) is today's, identical for both runs:
+            # only the guidance code that the proposal changed differs
+            for part in INSTRUMENT:
+                src, dst = os.path.join(ROOT, part), os.path.join(trees[name], part)
+                shutil.rmtree(dst, ignore_errors=True)
+                shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__"))
         results = {}
         for name in ("base", "after"):
             print("== %s (%s)" % (name, base[:8] if name == "base" else branch), flush=True)
