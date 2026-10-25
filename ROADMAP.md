@@ -67,6 +67,9 @@
 - Every TIDOS `/` command in the `/` menu of each tool on the machine (Claude Code, OpenCode, Gemini CLI,
   Antigravity, Cline, Cursor, Codex, Windsurf); `/TIDOSZIT` lists them; the START TIDOS brief covers the rest.
 
+### v5.3.1 — Guild (2026-10-25, beta)
+- Background dungeon raids no longer open cmd windows on Windows.
+
 ### Future — Planned (v6.0)
 - TIDOS-native small model: LoRA fine-tune on the workflow dataset, benchmarked on the dungeons against the base
   model and strong models (needs a GPU and a provider-terms review).

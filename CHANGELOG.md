@@ -8,6 +8,15 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [5.3.1] - 2026-10-25
+
+### Fixed
+- Background dungeon raids (run under `pythonw`) no longer open a visible cmd window for every agent run that
+  stays on the desktop after the editor is closed: agents and checks are spawned with `CREATE_NO_WINDOW`
+  (`tidos_evals/agents.py`, `tidos_driver/driver.py`).
+
+---
+
 ## [5.3.0] - 2026-10-25
 
 "Guild": every user gets their own TIDOS, consented learning feeds the main brain, and every TIDOS command
