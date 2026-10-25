@@ -4,6 +4,15 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [Unreleased]
+
+### Added
+- START TIDOS installs `/TIDOSZIT` as a user-level Claude Code command (`~/.claude/commands/`, this machine's TIDOS
+  path filled in), so it works in every project, not only inside the TIDOS folder; a copy you edited is never
+  overwritten (`tidos_session/commands.py`).
+
+---
+
 ## [5.2.0] - 2026-10-25
 
 "Arise": TIDOS runs itself from the control center, grows its Shadow Army from evidence, and costs nothing:

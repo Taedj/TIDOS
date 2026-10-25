@@ -13,7 +13,7 @@ import re
 import sys
 from datetime import datetime, timezone
 
-from . import brief, detect, effect, memory
+from . import brief, commands, detect, effect, memory
 
 
 def _session_path():
@@ -66,6 +66,10 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
     project = os.path.abspath(project)
     try:
         memory.migrate()  # personal memory never stays in the repository
+    except OSError:
+        pass
+    try:
+        commands.install()  # /TIDOSZIT works in every folder of this machine, not only inside TIDOS
     except OSError:
         pass
     if learn:

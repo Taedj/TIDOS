@@ -186,5 +186,23 @@ class VersionFlagTests(Isolated):
             self.assertEqual(cli.version(), "unknown")
 
 
+class UserCommandTests(Isolated):
+    def test_start_tidos_installs_tidoszit_for_the_whole_machine(self):
+        from tidos_session import commands
+        target = os.path.join(self.tmp.name, "claude-commands")
+        written = commands.install(target)
+        path = os.path.join(target, "TIDOSZIT.md")
+        self.assertEqual(written, [path])
+        with open(path, encoding="utf-8") as f:
+            text = f.read()
+        self.assertIn(detect.REPO_ROOT.replace("\\", "/"), text)       # this machine's TIDOS folder
+        self.assertIn(commands.MARK, text)
+        self.assertEqual(commands.install(target), [])                   # already current: untouched
+        write(path, "my own version of the command")                     # edited by the user (no marker)
+        self.assertEqual(commands.install(target), [])
+        with open(path, encoding="utf-8") as f:
+            self.assertEqual(f.read(), "my own version of the command")
+
+
 if __name__ == "__main__":
     unittest.main()

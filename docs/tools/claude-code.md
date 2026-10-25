@@ -11,7 +11,8 @@ git clone https://github.com/Taedj/TIDOS.git TIDOS     # or: git submodule add h
 
 - Put the snippet in the project's `CLAUDE.md` (or `~/.claude/CLAUDE.md` for every project).
 - Live recording into the brain (optional, recommended): run once in a terminal `python -I <TIDOS>/tidos_brain/__main__.py install-hooks` — it backs up `~/.claude/settings.json`, keeps your existing hooks, and `--uninstall` removes it. Restart Claude Code afterwards. Without hooks, START TIDOS still imports your sessions from Claude Code's transcripts.
-- Control center command: copy `<TIDOS>/.claude/commands/TIDOSZIT.md` to `~/.claude/commands/` to get `/TIDOSZIT` in every project.
+- Control center command: `/TIDOSZIT` works in every project automatically: each START TIDOS installs it in
+  `~/.claude/commands/` with this machine's TIDOS path (a copy you edited yourself is never overwritten).
 - Model detection: automatic (read from the session transcript).
 
 Snippet (Windows):
