@@ -62,6 +62,11 @@
   evidence, lessons, ARISE, trials); proposals measured before merging; tools vetted before install.
 - Arabic control center (right to left) and an Arabic guide; CI green on Linux and Windows.
 
+### v5.3.0 — Guild (2026-10-25, beta)
+- Every user gets their own control center (Google sign-in); consented anonymous learning feeds the main brain.
+- Every TIDOS `/` command in the `/` menu of each tool on the machine (Claude Code, OpenCode, Gemini CLI,
+  Antigravity, Cline, Cursor, Codex, Windsurf); `/TIDOSZIT` lists them; the START TIDOS brief covers the rest.
+
 ### Future — Planned (v6.0)
 - TIDOS-native small model: LoRA fine-tune on the workflow dataset, benchmarked on the dungeons against the base
   model and strong models (needs a GPU and a provider-terms review).

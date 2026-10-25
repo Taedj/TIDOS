@@ -1,10 +1,10 @@
 # Version
 
-**Current Version**: 5.2.0
+**Current Version**: 5.3.0
 **Release Date**: 2026-10-25
 **Status**: Beta — learn/guide modes are new; open items in docs/ENHANCEMENT_PLAN.md
 
-**Codename**: Arise
+**Codename**: Guild
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

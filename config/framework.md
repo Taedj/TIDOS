@@ -16,8 +16,8 @@ repository:
 
 ```yaml
 version:
-  current: 5.2.0
-  codename: Arise
+  current: 5.3.0
+  codename: Guild
   release_date: 2026-10-25
 ```
 

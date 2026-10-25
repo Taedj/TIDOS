@@ -6,6 +6,13 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ## [Unreleased]
 
+---
+
+## [5.3.0] - 2026-10-25
+
+"Guild": every user gets their own TIDOS, consented learning feeds the main brain, and every TIDOS command
+is in the `/` menu of every tool.
+
 ### Added
 - **Every user gets their own TIDOS control center** (sign in with Google, no separate sign-up): the first account
   that signs in on a computer owns that installation (`tidos_dashboard/accounts.py`); each account has its own
@@ -22,6 +29,14 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
   overwritten (`tidos_session/commands.py`).
 - `/TIDOSZIT` in EVERY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): each START TIDOS brief ends with a
   'TIDOS commands' section telling the model to run this machine's control-center launcher when you type it.
+- **Every TIDOS command in the `/` drop-down of every tool**: START TIDOS installs one registry of commands
+  (`/TIDOSZIT`, `/tidos`, `/tidos-help`, `/tidos-start`, `/tidos-guide`, `/tidos-status`, `/tidos-note`,
+  `/tidos-learn`, `/tidos-army`, `/tidos-tools`, `/tidos-share`, `/tidos-backup`) user-level into each installed
+  tool's own format: Claude Code, OpenCode, Gemini CLI (TOML), Antigravity, Cline, Cursor, Codex CLI, Windsurf.
+  A tool is served only if its folder already exists; edited copies are never overwritten
+  (`tidos_session/commands.py`, `python -I tidos_session commands [--install|--json]`).
+- `/TIDOSZIT` opens the control center and lists every TIDOS `/` command; the control center shows the same list.
+  The START TIDOS brief lists every command too, for tools without a `/` menu.
 
 ---
 
