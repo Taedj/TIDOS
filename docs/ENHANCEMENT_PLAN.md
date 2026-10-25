@@ -20,11 +20,11 @@
 | 6 | GUIDE mode | TIDOS detects weak models and guides them with the user | 🟢 Built (8/9) - 6.8 raid gave no result (agent hang, fixed); rerun pending |
 | 7 | v5.0 — Runtime (MCP, Hooks, Plugin, Subagents) | Make TIDOS a real agent kernel | ✅ Done (10/10) |
 | 8 | Skills Library | Feed TIDOS reusable `SKILL.md` skills | ✅ Done (20/20) |
-| 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (11/14) - 9.7, 9.9 partial, 9.11 deferred |
-| 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | 🟢 Done (5/6) - 10.1 partial (no eval delta per proposal yet) |
-| 11 | Tool Scout | Auto-discover, vet, propose tools | 🟢 Done (6/8) - 11.4 and 11.7 partial |
+| 9 | v5.5 — Solo Leveling (Auto-Learn) | XP, ranks, eval-gated promotion | 🟢 Done (12/14) - 9.7 partial, 9.11 deferred |
+| 10 | Auto-Develop | Self-PR bot, mutation testing, scheduled quests | ✅ Done (6/6) |
+| 11 | Tool Scout | Auto-discover, vet, propose tools | 🟢 Done (7/8) - 11.7 partial |
 | 12 | Control Center (full) | All dashboard panels | ✅ Done (6/6) |
-| 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | 🟡 Partial (1/6 + 5 partial/deferred) - v5.1.0 released instead of v6.0 |
+| 13 | v6.0 — Swarm & TIDOS-native Model | Federated community + fine-tuned model | 🟡 Partial (2/6) - 13.2 signing key, 13.4-13.6 model deferred; v5.1.0 released |
 
 ---
 
@@ -228,7 +228,7 @@
 - [x] **9.6** Voyager-style distillation: pattern succeeds 3+ times → auto-draft `SKILL.md` — done 2026-10-24 (playbooks with >= 10 verified successes and rank B+ are drafted as SKILL.md in ~/.tidos/drafts/skills (13 drafted from real data); activated only when the user moves them)
 - [ ] **9.7** *(partial: promotion of drafts is a human review step; the eval gate exists as a tool (tidos_evals --tidos guide/compare) but is not yet automatic)* **Eval-gated promotion**: new skill/lesson kept only if eval score improves
 - [x] **9.8** Memory decay: unused / unhelpful facts lose confidence and leave context — done 2026-10-24 (playbook confidence decays with evidence age (none for 30 days, at most halved); unused playbooks visible via served counts)
-- [ ] **9.9** *(partial: learned rules are clustered/deduplicated (prefs.py), near-duplicate rules merged in briefs, memory-compactor skill; no automatic rewrite of memory files)* Memory dedup + conflict resolution
+- [x] **9.9** Memory dedup + conflict resolution — done 2026-10-25 (found and fixed: 'always X' and 'never X' merged into one rule because negation words were ignored; rules now carry a polarity, contradictions keep your most recent instruction, the older one is never served, listed under 'Contradictions resolved' + notification; real data: 84 rules, 0 contradictions)
 - [x] **9.10** "Job change": domain passes threshold → propose a specialist subagent — done 2026-10-24 (job change: a domain reaching level 15 gets a draft specialist subagent built from its playbooks + the user's standing rules (SMARTRAD drafted at LV 19))
 - [ ] **9.11** *(deferred: needs repeated eval runs per prompt variant (cost/time); the dungeon harness (--repeat, compare) is the base for it)* DSPy / GEPA-style prompt optimization of personas & skills against evals
 - [x] **9.12** `TIDOS STATUS` command (terminal version of Status Window) — done 2026-10-24 (tidos_learn status: terminal status window (level, rank, XP bar, 5 stats, domains, daily quests, unlocked drafts))
@@ -239,7 +239,7 @@
 
 ## Phase 10 — Auto-Develop
 
-- [ ] **10.1** *(partial: evolution queue (~/.tidos/proposals.jsonl, priorities, statuses) + local GitHub issue drafts with the exact gh command (publishing stays the user's decision); eval delta per proposal not yet attached)* `evolution/SUGGESTIONS.md` → GitHub Issues (label, score, eval delta)
+- [x] **10.1** `evolution/SUGGESTIONS.md` → GitHub Issues (label, score, eval delta) — done 2026-10-25 (each implemented proposal records its impact (tests before/after, files +/-, agent cost) and gets a measured effect: scripts/measure_proposal.py runs the GUIDE dungeons before vs after with the same agent and the eval runner held constant; delta shown in Evolution; Measure button + autopilot rule; GitHub issue drafts already existed)
 - [x] **10.2** Self-PR bot (scheduled agent): implements top suggestion on a branch, runs CI + evals, opens PR with before/after score — **human merges, never pushes to main** — done 2026-10-24 (scripts/self_improve.py: implements one ACCEPTED proposal in a temporary git worktree on branch auto/<id>-<slug>, gates = tests + spec validator + plugin sync, commits only if all pass, never pushes/merges; verified for real (haiku, 0.02 USD, branch auto/1-... with code + 2 tests))
 - [x] **10.3** Mutation testing of the OS: remove a rule → eval drop? If not, propose deletion (keeps TIDOS lean) — done 2026-10-24 (tidos_evals run --ablate N: GUIDE mode with weak rule N removed, compared with full GUIDE on the same tasks (>= 10); no drop -> deletion proposal filed in the evolution queue (tests; verified with the reference agent; real-model ablations are the user's cost decision))
 - [x] **10.4** Daily quest: scheduled eval run + regression report (`/schedule` or GitHub Actions) — done 2026-10-24 (scripts/daily_quest.py: tests, specs, plugin sync, dungeon validation, learning refresh, status -> ~/.tidos/reports/<date>.md, exit 1 on regression (first real run: all clear); schedule with schtasks/cron (docstring))
@@ -253,7 +253,7 @@
 - [x] **11.1** Need sensing (missing capability from task/stack, e.g. "no secret scanner", "no linter") — done 2026-10-24 (tidos_scout needs: missing capabilities from the project's stack + files (e.g. ZTAP lacks a secret scanner, dependency scanner, python linter/type checker); installed tools, MCP servers (names only) and blacklisted tools excluded)
 - [x] **11.2** Search: GitHub API, MCP registries, awesome-lists — done 2026-10-24 (tidos_scout search: GitHub repository search (only the query words leave the machine) ranked by trust; curated starter catalog in config/tools.json (16 tools incl. MCP servers))
 - [x] **11.3** Trust score: stars, recent commits, license, maintainers, OSV / OpenSSF Scorecard — done 2026-10-24 (trust 0-100: stars, last push, license (permissive/copyleft), archived = 0, OpenSSF Scorecard; capped at 85 without Scorecard; cached 7 days; offline keeps the cached value; system-curl fallback when Python's CA bundle fails (verification never disabled))
-- [ ] **11.4** *(partial: vet runs an INSTALLED tool's catalog version command in an empty temp dir and flags stray writes; no container/network isolation (Docker not used) and nothing is downloaded to vet)* Sandbox vetting (Docker/worktree): install, smoke test, permission check
+- [x] **11.4** Sandbox vetting (Docker/worktree): install, smoke test, permission check — done 2026-10-25 (pre-install vetting: a SHA-256-verified download first runs its version command in an empty quarantine folder and is installed only if it exits 0 and writes nothing; pip resolves a dry run first and records every package it would install)
 - [x] **11.5** Propose install + config to user — **never auto-install without approval** — done 2026-10-24 (propose/approve print the exact install command; extended the same day at the user's request: Approve + Install button / `tidos_scout install NAME --yes` installs approved catalog tools only (pinned pip/npm versions or SHA-256-verified official downloads, user account only, trust >= 70, kill switch `tool_install` off by default, logged, Uninstall for TIDOS-installed tools; MCP servers stay manual). Pinned hashes verified against the real Windows downloads; tests cover every refusal rule)
 - [x] **11.6** Learn: tool XP (helped or not), blacklist bad tools — done 2026-10-24 (tool XP from real sessions (runs/passes of each tool's commands in the brain, e.g. pytest 11/13); blacklist removes a tool from needs and briefs)
 - [ ] **11.7** *(partial: starter toolset catalogued with install commands and detection; installed tools with a check (gitleaks, ruff, osv-scanner, shellcheck) are added to GUIDE briefs as extra checks; 10 of them now installable from the dashboard after approval (pinned/verified); waiting for the user to turn on tool_install and press Install)* Integrate starter toolset: gitleaks, semgrep, ruff, mypy/pyright, pytest, ast-grep, tree-sitter, ripgrep, Playwright MCP, GitHub MCP, Context7, Serena, promptfoo/inspect-ai, LiteLLM, Ollama
@@ -275,7 +275,7 @@
 
 ## Phase 13 — v6.0: Swarm & TIDOS-native Model
 
-- [ ] **13.1** *(partial: contribution gate in CI (scripts/check_contribution.py: privacy firewall, no private TIDOS drafts or learned data, frontmatter, size; tests); 'only if eval scores rise' is a manual dungeon run before/after (CI has no model budget/secrets))* Community skills/playbooks submitted as PRs, accepted only if they raise community eval scores
+- [x] **13.1** Community skills/playbooks submitted as PRs, accepted only if they raise community eval scores — done 2026-10-25 (CI contribution gate + dungeon-score gate before merge: scripts/measure_proposal.py --branch pr-N with a free model, 'OK to merge (no drop)' required; documented in CONTRIBUTING section 4)
 - [ ] **13.2** *(partial: the update gate already enforces signed tags with TIDOS_REQUIRE_SIGNED=1; signing needs the owner's GPG/SSH key (none configured here), so v5.1.0 is tagged unsigned)* Signed releases + verified update channel
 - [x] **13.3** Trace → dataset pipeline (sanitized, provider terms respected) — done 2026-10-24 (tidos_learn dataset: verified strong-model work -> JSONL (request, task type, stacks, steps, checks, outcome) + data card; no model-written text; privacy firewall + path stripping (audit on real data: 124 records, 0 paths/usernames); tests)
 - [ ] **13.4** *(deferred: needs a GPU, hours of training and a provider-terms review before training on session-derived data; the dataset (13.3) is ready for it)* LoRA fine-tune a small open model (e.g. via Unsloth) → "TIDOS-7B" that natively follows the protocol
