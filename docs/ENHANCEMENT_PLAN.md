@@ -12,7 +12,7 @@
 | Phase | Name | Goal | Status |
 | :--- | :--- | :--- | :--- |
 | 0 | Review & Design | Understand TIDOS, agree on the vision | ✅ Done |
-| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | 🟢 Done except 1.20 (history purge prepared; the owner force-pushes) |
+| 1 | v4.1 — Fix & Clean | Stop data loss, security holes, inconsistencies | ✅ Done (30/30) |
 | 2 | Brain & Traces | Record every task outside the repo (`~/.tidos/brain.db`) | 🟢 Done except user/deferred items (2.5 Gemini, 2.7 router) |
 | 3 | `/TIDOSZIT` Control Center (core) | Secure dashboard: Google + Firestore password gate | ✅ Done (15/15) |
 | 4 | v4.5 — Measure (Evals / Dungeons) | Ground-truth scoring of models and TIDOS | 🟢 Built (5/8) - baselines superseded by 6.8 |
@@ -36,7 +36,7 @@
 - [x] **0.4** Design "learn from strong models → drive weak models" pipeline — done 2026-10-24
 - [x] **0.5** Design the `/TIDOSZIT` control center and its security model — done 2026-10-24
 - [x] **0.6** Write this plan (`docs/ENHANCEMENT_PLAN.md`) — done 2026-10-24
-- [ ] **0.7** User answers open questions (see [Open Questions](#open-questions)) — Q1, Q2, Q3 answered 2026-10-24; Q4 pending
+- [x] **0.7** User answers open questions (see [Open Questions](#open-questions)) — Q1-Q4 answered (Q4 on 2026-10-25)
 
 ---
 
@@ -66,7 +66,7 @@
 ### 1C. Privacy
 - [x] **1.18** Remove personal project data from the public repo (`memory/LESSONS.md`, `memory/PROJECT_HISTORY.md`, `memory/USER_PROFILE.md`, etc.); ship only empty templates — done 2026-10-24 (repo memory/ holds templates only; ULTIDOS_persona.md (jailbreak-style prompt with a plain-text password) removed from the repo and kept only privately - treat that password as public)
 - [x] **1.19** Move user memory to `~/.tidos/memory/` (outside repo); add `memory/*` user files to `.gitignore` — done 2026-10-24 (tidos_session/memory.py: START TIDOS migrates personal memory to ~/.tidos/memory/ without overwriting; rule memory/X.md = ~/.tidos/memory/X.md in TIDSTART + memory/README; uncommitted edits preserved (37/37 lines); test added)
-- [ ] **1.20** *(prepared and verified 2026-10-25: a rewritten mirror removes memory/ULTIDOS_persona.md and the 7 old personal memory/*.md versions from every commit; current branches/tags keep identical files; backups in ~/.tidos/backups. The force-push is the owner's command)* Purge personal data from git history (optional, `git filter-repo`) — needs user approval
+- [x] **1.20** Purge personal data from git history (optional, `git filter-repo`) — needs user approval — done 2026-10-25 (owner force-pushed the verified rewrite: memory/ULTIDOS_persona.md and the 7 old personal memory/*.md versions removed from every commit and tag on GitHub; current files unchanged (identical trees); backups in ~/.tidos/backups; local repo re-synced. Treat the old ULTIDOS password as public: earlier clones keep it)
 
 ### 1D. Consistency & cleanup
 - [x] **1.21** Unify version numbers everywhere (README, TIDSTART, VERSION, engines, start banners) — single source in `config/framework.md` — done 2026-10-24 (VERSION.md is the single source (config/framework.md mirrors it, checked in CI); README, TIDSTART, ROADMAP, CONTRIBUTING and start banners carry no version; banners read VERSION.md)
@@ -289,7 +289,7 @@
 - [x] **Q1** Which models/tools are used day to day? → **Mostly Claude (Claude Code); sometimes Gemini and OpenCode models.** Collector order: 2.3/2.4 Claude Code → 2.5 Gemini CLI → 2.6 OpenCode — answered 2026-10-24
 - [x] **Q2** Owner Firebase UID → `YTU4IuDy3SaGKOPt9E34iSge8Mo1` — answered 2026-10-24 *(rules deployed by the user's request at task 3.2)*
 - [x] **Q3** Dashboard stack → user delegated ("go with the best way you see"): **Python stdlib server + plain HTML/JS + SSE**, no FastAPI/React — answered 2026-10-24
-- [ ] **Q4** Purge personal data from git history (1.20)? Requires force-push to GitHub
+- [x] **Q4** Purge personal data from git history (1.20)? → **Yes** — purged and force-pushed 2026-10-25
 
 ---
 
