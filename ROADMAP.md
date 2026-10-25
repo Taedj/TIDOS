@@ -55,11 +55,17 @@
 - Control center: Ask TIDOS, global search, settings editor, backups, Memory / Evolution / Tool Scout tabs, E2E tests.
 - Workflow dataset export and a community contribution gate.
 
+### v5.2.0 — Arise (2026-10-25, beta)
+- TIDOS is no-cost and works with any model: its own jobs use the model of your last START TIDOS (Claude Code,
+  OpenCode, Gemini CLI) or a free model; no money anywhere in the control center.
+- Buttons instead of commands and an Autopilot that runs due jobs by itself; Shadow Army v2 (rank from mission
+  evidence, lessons, ARISE, trials); proposals measured before merging; tools vetted before install.
+- Arabic control center (right to left) and an Arabic guide; CI green on Linux and Windows.
+
 ### Future — Planned (v6.0)
 - TIDOS-native small model: LoRA fine-tune on the workflow dataset, benchmarked on the dungeons against the base
   model and strong models (needs a GPU and a provider-terms review).
 - Signed releases end to end (the update gate already verifies signatures with `TIDOS_REQUIRE_SIGNED=1`).
-- Community skills accepted only when the dungeon scores go up.
 
 ---
 

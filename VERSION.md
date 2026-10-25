@@ -1,10 +1,10 @@
 # Version
 
-**Current Version**: 5.1.0
-**Release Date**: 2026-10-24
+**Current Version**: 5.2.0
+**Release Date**: 2026-10-25
 **Status**: Beta — learn/guide modes are new; open items in docs/ENHANCEMENT_PLAN.md
 
-**Codename**: Level Up
+**Codename**: Arise
 
 **Semantic Versioning**: MAJOR.MINOR.PATCH
 

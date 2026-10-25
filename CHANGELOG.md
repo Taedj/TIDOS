@@ -4,7 +4,10 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
-## [Unreleased]
+## [5.2.0] - 2026-10-25
+
+"Arise": TIDOS runs itself from the control center, grows its Shadow Army from evidence, and costs nothing:
+it works with whatever model you use.
 
 ### Changed
 - **TIDOS is no-cost and model-agnostic by design.** Its own jobs (advice notes, Ask TIDOS, unit trials,

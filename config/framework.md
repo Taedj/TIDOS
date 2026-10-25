@@ -16,9 +16,9 @@ repository:
 
 ```yaml
 version:
-  current: 5.1.0
-  codename: Level Up
-  release_date: 2026-10-24
+  current: 5.2.0
+  codename: Arise
+  release_date: 2026-10-25
 ```
 
 ## Persona Factory (self-learning persona generation)
