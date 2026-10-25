@@ -279,7 +279,8 @@ def _wait(job_id, proc, out, db_path):
     out.close()
     _PROCS.pop(job_id, None)
     job = get(job_id) or {}
-    state = "cancelled" if job.get("state") == "cancelling" else ("done" if code == 0 else "failed")
+    # cancelled from another TIDOS process: that process may already have written "cancelled"
+    state = "cancelled" if job.get("state") in ("cancelling", "cancelled") else ("done" if code == 0 else "failed")
     _update(job_id, state=state, exit=code, ended=datetime.now(timezone.utc).isoformat(timespec="seconds"),
             cost=_actual_cost(job, db_path))
 

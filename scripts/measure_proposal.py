@@ -1,6 +1,8 @@
 """Measure what an implemented proposal does to TIDOS's guidance, before you merge it (plan 10.1).
 
   python scripts/measure_proposal.py --id N [--agent opencode:opencode/big-pickle] [--min-difficulty B]
+  python scripts/measure_proposal.py --branch NAME ...   any branch, e.g. a community pull request (plan 13.1):
+                                                          git fetch origin pull/123/head:pr-123 ; --branch pr-123
 
 The same agent runs the same dungeons in GUIDE mode twice, each from a clean git worktree:
   base   = the code the proposal's branch started from
@@ -53,16 +55,21 @@ def rates(conn, run_id):
 
 def main(args=None):
     ap = argparse.ArgumentParser()
-    ap.add_argument("--id", type=int, required=True)
+    who = ap.add_mutually_exclusive_group(required=True)
+    who.add_argument("--id", type=int, help="an implemented proposal (the delta is saved on it)")
+    who.add_argument("--branch", help="any branch, e.g. a contributor's pull request (the delta is only printed)")
     ap.add_argument("--agent", default="opencode:opencode/big-pickle")
     ap.add_argument("--min-difficulty", default="B", choices=list("EDCBAS"))
     ap.add_argument("--budget", type=float, default=0.25, help="max USD per Claude attempt")
     a = ap.parse_args(args)
-    item = next((i for i in evolve.load() if i["id"] == a.id), None)
-    if not item or not item.get("branch"):
-        print("Proposal #%d has no implemented branch to measure." % a.id)
-        return 1
-    branch = item["branch"]
+    if a.branch:
+        branch, tag = a.branch, a.branch
+    else:
+        item = next((i for i in evolve.load() if i["id"] == a.id), None)
+        if not item or not item.get("branch"):
+            print("Proposal #%d has no implemented branch to measure." % a.id)
+            return 1
+        branch, tag = item["branch"], "#%d" % a.id
     code, base = git(["merge-base", "HEAD", branch])
     if code:
         print("Branch %s not found: %s" % (branch, base))
@@ -84,7 +91,7 @@ def main(args=None):
         results = {}
         for name in ("base", "after"):
             print("== %s (%s)" % (name, base[:8] if name == "base" else branch), flush=True)
-            run_id, _ = raid(trees[name], a.agent, a.min_difficulty, "%s [#%d %s]" % (a.agent, a.id, name), a.budget)
+            run_id, _ = raid(trees[name], a.agent, a.min_difficulty, "%s [%s %s]" % (a.agent, tag, name), a.budget)
             if not run_id:
                 print("The %s run produced no results." % name)
                 return 1
@@ -102,10 +109,15 @@ def main(args=None):
         f = 100.0 * sum(after[t] for t in common) / len(common)
         measure = {"agent": a.agent, "tasks": len(common), "base": round(b), "after": round(f), "delta": round(f - b),
                    "min_difficulty": a.min_difficulty, "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
-        evolve.update(a.id, measure=measure)
-        print("\nProposal #%d on %d dungeons (GUIDE, %s): before %d%%, after %d%% (%+d points)." % (
-            a.id, len(common), a.agent, measure["base"], measure["after"], measure["delta"]))
-        return 0
+        if a.id:
+            evolve.update(a.id, measure=measure)
+        print("\n%s on %d dungeons (GUIDE, %s): before %d%%, after %d%% (%+d points)." % (
+            "Proposal " + tag if a.id else "Branch " + tag, len(common), a.agent, measure["base"], measure["after"],
+            measure["delta"]))
+        if a.branch:  # community rule (13.1): merge guidance changes only when they do not lower the score
+            print("Verdict: %s" % ("OK to merge (no drop)" if measure["delta"] >= 0 else
+                                   "do NOT merge: it lowers the dungeon pass rate"))
+        return 0 if measure["delta"] >= 0 or a.id else 2
     finally:
         for path in trees.values():
             git(["worktree", "remove", "--force", path])
