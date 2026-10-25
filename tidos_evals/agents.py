@@ -61,7 +61,10 @@ def _run(argv, workdir, timeout):
         return None, "%s not found on PATH" % argv[0]
     proc = subprocess.Popen([exe] + argv[1:], cwd=workdir, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                             text=True, encoding="utf-8", errors="replace", env=_env(workdir),
-                            stdin=subprocess.DEVNULL)
+                            stdin=subprocess.DEVNULL,
+                            # under pythonw there is no console to inherit, so a .cmd shim would open a
+                            # visible cmd window that outlives the editor
+                            creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
     try:
         out, err = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:

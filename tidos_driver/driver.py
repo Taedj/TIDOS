@@ -97,7 +97,8 @@ class Driver:
         env = dict(os.environ, PYTHONDONTWRITEBYTECODE="1", PYTHONUTF8="1", PWD=workdir)
         try:
             proc = subprocess.run([exe] + argv[1:], cwd=workdir, capture_output=True, text=True, encoding="utf-8",
-                                  errors="replace", timeout=CHECK_TIMEOUT, env=env)
+                                  errors="replace", timeout=CHECK_TIMEOUT, env=env,
+                                  creationflags=0x08000000 if os.name == "nt" else 0)  # CREATE_NO_WINDOW
         except subprocess.TimeoutExpired:
             return False, "checks timed out after %ds" % CHECK_TIMEOUT
         except OSError as e:
