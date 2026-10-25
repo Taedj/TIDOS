@@ -1,5 +1,5 @@
 ---
-description: Open the TIDOS Control Center (owner-only dashboard, login in the browser)
+description: Open the TIDOS Control Center (login in the browser) and list every TIDOS / command
 ---
 
 Open the TIDOS Control Center.
@@ -9,7 +9,9 @@ Open the TIDOS Control Center.
 2. Run its launcher **once**:
    - Windows: `powershell -NoProfile -ExecutionPolicy Bypass -File "<TIDOS>/scripts/tidoszit.ps1"`
    - Linux/macOS/Git Bash: `bash "<TIDOS>/scripts/tidoszit.sh"`
-3. Reply in one or two lines: the control center is open at http://localhost:8767/ and the user must
+3. Run `python -I "<TIDOS>/tidos_session/__main__.py" commands` and show the user the list of TIDOS
+   commands it prints (every `/` command TIDOS adds to this tool).
+4. Reply in one or two lines: the control center is open at http://localhost:8767/ and the user must
    sign in **in the browser** with their Google owner account, then enter the control password there.
 
 Rules:

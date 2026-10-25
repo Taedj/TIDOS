@@ -153,6 +153,16 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(self.req("POST", "/api/share", {"answer": "decline"})[1]["consent"], "decline")
         self.assertEqual(self.req("POST", "/api/share", {"answer": "maybe"})[0], 400)
 
+    def test_control_center_lists_every_tidos_command(self):
+        self.assertEqual(self.req("GET", "/api/commands")[0], 401)               # behind the login like the rest
+        self.login_with_setup()
+        code, body = self.req("GET", "/api/commands")[:2]
+        names = [c["name"] for c in body["commands"]]
+        self.assertEqual(code, 200)
+        self.assertEqual(names[0], "/TIDOSZIT")
+        self.assertIn("/tidos-status", names)
+        self.assertIsInstance(body["tools"], list)
+
     def test_first_run_setup_stores_only_a_hash(self):
         self.assertEqual(self.req("POST", "/api/auth/google", {"idToken": "owner-token"})[1]["stage"], "setup")
         self.assertEqual(self.req("POST", "/api/auth/setup", {"password": "short"})[0], 400)

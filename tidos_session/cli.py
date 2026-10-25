@@ -104,7 +104,7 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
     except OSError:
         pass
     try:
-        commands.install()  # /TIDOSZIT works in every folder of this machine, not only inside TIDOS
+        commands.install()  # every TIDOS / command, in the / menu of each tool on this machine
     except OSError:
         pass
     if learn:
@@ -117,7 +117,7 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
                "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     facts = detect.project_facts(project)
     text = brief.learn_brief(session, facts) if session["mode"] == "learn" else brief.guide_brief(session, facts)
-    text += brief.commands_footer()  # /TIDOSZIT in every tool, not only Claude Code
+    text += brief.commands_footer()  # the same commands for tools without a / menu
     from tidos_brain import control
     if control.text("share_learning") == "unasked":  # asked once, until the user answers; never blocks TIDOS
         text += brief.consent_block()
@@ -227,10 +227,22 @@ def main(argv=None):
     sn.add_argument("--tool", default="claude-code")
     t = sub.add_parser("tier")
     t.add_argument("model")
+    cm = sub.add_parser("commands", help="every TIDOS / command; --install puts them in each tool's / menu")
+    cm.add_argument("--install", action="store_true")
+    cm.add_argument("--json", action="store_true")
     c = sub.add_parser("consent", help="community learning: agree (share anonymous lessons) / decline / status")
     c.add_argument("answer", choices=["agree", "decline", "status"])
     args = parser.parse_args(argv)
 
+    if args.command == "commands":
+        if args.install:
+            for path in commands.install():
+                print("installed " + path)
+        if args.json:
+            print(json.dumps(commands.listing(), indent=1))
+        else:
+            print(commands.text_listing())
+        return 0
     if args.command == "consent":
         return consent(args.answer)
 

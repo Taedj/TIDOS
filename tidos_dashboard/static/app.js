@@ -176,7 +176,15 @@ const fmt = (n) => Number(n || 0).toLocaleString();
 const LOCALE = lang === "ar" ? "ar-u-nu-latn" : undefined; // Arabic month names, Western digits (match the data)
 const when = (iso) => { if (!iso) return ""; const d = new Date(iso); return d.toLocaleDateString(LOCALE, { month: "short", day: "numeric" }) + " " + d.toLocaleTimeString(LOCALE, { hour: "2-digit", minute: "2-digit", hour12: false }); };
 
+async function loadCommands() {
+  const r = await api("/api/commands");
+  if (!r.ok) return;
+  $("cmdList").innerHTML = r.data.commands.map((c) => `<tr><td><code class="sys">${esc(c.name + (c.args ? " " + c.args : ""))}</code></td><td>${esc(t(c.description))}</td></tr>`).join("");
+  $("cmdTools").innerHTML = `<span class="muted">${t("Installed in")}</span><b>${esc(r.data.tools.join(", ") || t("none yet (say START TIDOS)"))}</b>`;
+}
+
 async function loadStatus() {
+  loadCommands();
   const r = await api("/api/status");
   if (!r.ok) return;
   const d = r.data, p = d.player;

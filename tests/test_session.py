@@ -125,7 +125,9 @@ class BriefTests(Isolated):
         with open(os.path.join(self.tidos, "brief.md"), encoding="utf-8") as f:
             self.assertEqual(f.read(), text)
         # every tool (Antigravity, OpenCode, Gemini CLI...) learns /TIDOSZIT from the brief itself
-        self.assertIn("If the user types `/TIDOSZIT`", text)
+        self.assertIn("## TIDOS commands", text)
+        self.assertIn("`/TIDOSZIT`", text)
+        self.assertIn("`/tidos-status`", text)
         self.assertIn("tidoszit.", text)
         self.assertTrue(os.path.isfile(os.path.join(self.home, ".claude", "commands", "TIDOSZIT.md")))  # Claude Code
 
@@ -196,16 +198,44 @@ class UserCommandTests(Isolated):
         target = os.path.join(self.tmp.name, "claude-commands")
         written = commands.install(target)
         path = os.path.join(target, "TIDOSZIT.md")
-        self.assertEqual(written, [path])
+        self.assertIn(path, written)
+        self.assertEqual(len(written), len(commands.COMMANDS))           # every TIDOS / command
         with open(path, encoding="utf-8") as f:
             text = f.read()
-        self.assertIn(detect.REPO_ROOT.replace("\\", "/"), text)       # this machine's TIDOS folder
+        self.assertIn(detect.REPO_ROOT.replace("\\", "/"), text)      # this machine's TIDOS folder
         self.assertIn(commands.MARK, text)
+        self.assertIn("tidos_session/__main__.py\" commands", text)    # /TIDOSZIT also lists the commands
+        self.assertIn(commands.PASSWORD_RULE, text)                      # never asks for the password
         self.assertEqual(commands.install(target), [])                   # already current: untouched
         write(path, "my own version of the command")                     # edited by the user (no marker)
         self.assertEqual(commands.install(target), [])
         with open(path, encoding="utf-8") as f:
             self.assertEqual(f.read(), "my own version of the command")
+
+    def test_every_installed_tool_gets_the_commands_in_its_own_format(self):
+        from tidos_session import commands
+        home = os.path.join(self.tmp.name, "pc")
+        for root in (".config/opencode", ".gemini", "Documents/Cline"):
+            os.makedirs(os.path.join(home, root))
+        commands.install(home=home)
+        j = os.path.join
+        with open(j(home, ".claude", "commands", "tidos-guide.md"), encoding="utf-8") as f:
+            claude = f.read()
+        self.assertIn("argument-hint: <request>", claude)
+        self.assertIn('guide "$ARGUMENTS"', claude)
+        with open(j(home, ".gemini", "commands", "tidos-guide.toml"), encoding="utf-8") as f:
+            toml = f.read()
+        self.assertIn('guide "{{args}}"', toml)
+        self.assertTrue(toml.startswith("# " + commands.MARK_TEXT))
+        import tomllib
+        self.assertIn("{{args}}", tomllib.loads(toml)["prompt"])           # valid TOML for Gemini CLI
+        self.assertTrue(os.path.isfile(j(home, ".config", "opencode", "command", "TIDOSZIT.md")))
+        with open(j(home, ".gemini", "config", "skills", "tidoszit", "SKILL.md"), encoding="utf-8") as f:
+            self.assertIn("name: tidoszit", f.read())                      # Antigravity
+        self.assertTrue(os.path.isfile(j(home, "Documents", "Cline", "Workflows", "tidos-status.md")))
+        self.assertFalse(os.path.exists(j(home, ".cursor")))               # never creates another tool's folder
+        self.assertEqual(commands.installed_tools(home), ["claude", "opencode", "gemini", "antigravity", "cline"])
+        self.assertIn("/tidos-help", commands.text_listing(home))
 
 
 if __name__ == "__main__":

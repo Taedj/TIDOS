@@ -190,18 +190,21 @@ def consent_block():
 
 
 def commands_footer():
-    """Slash commands that work in ANY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): the model follows the brief,
-    so it runs TIDOS's launcher itself when the user types the command."""
-    if os.name == "nt":
-        launch = ('powershell -NoProfile -ExecutionPolicy Bypass -File "%s"'
-                  % os.path.join(REPO_ROOT, "scripts", "tidoszit.ps1"))
-    else:
-        launch = 'bash "%s"' % os.path.join(REPO_ROOT, "scripts", "tidoszit.sh")
-    return ("\n## TIDOS commands\n"
-            "If the user types `/TIDOSZIT` (or `TIDOSZIT`), open the TIDOS control center by running:\n"
-            "  %s\n"
-            "then say it is open at http://localhost:8767/ and that login happens in the browser only: never ask for,\n"
-            "accept or repeat the control password in this chat.\n" % launch)
+    """Slash commands that work in ANY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): tools with a "/" menu get
+    them from commands.install(); every other tool's model follows this list when the user types one."""
+    from . import commands
+    lines = ["", "## TIDOS commands",
+             "When the user types one of these (with or without the leading /), do what it says. `/tidos-help` lists them.",
+             "Never ask for, accept or repeat the control password in this chat: login happens in the browser only."]
+    for c in commands.COMMANDS:
+        name = "/" + c.name + (" " + c.args if c.args else "")
+        if c.cli:
+            run = commands.run_line(c.cli).replace(commands.ARGS, c.args or "")
+            lines.append("- `%s`: %s. Run: %s" % (name, c.description, run))
+        else:
+            lines.append("- `%s`: %s." % (name, c.description))
+    lines.append("After `/TIDOSZIT`: say the control center is open at http://localhost:8767/ (sign in there).")
+    return "\n".join(lines) + "\n"
 
 
 def learn_brief(session, facts):

@@ -167,6 +167,9 @@ class Handler(BaseHTTPRequestHandler):
                 return self._json(200, {"notifications": stats.notifications(conn)})
             if path == "/api/army":
                 return self._json(200, stats.army(conn))
+            if path == "/api/commands":
+                from tidos_session import commands
+                return self._json(200, {"commands": commands.listing(), "tools": commands.installed_tools()})
             if path == "/api/share":
                 from tidos_learn import share
                 return self._json(200, {"consent": share.consent(), "last": share.last_upload(),
