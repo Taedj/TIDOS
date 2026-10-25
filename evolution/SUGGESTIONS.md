@@ -156,25 +156,25 @@ This file tracks non-invasive improvement proposals for TIDOS. All suggestions a
 
 ---
 
-### Title: GPTID follow-up — unassisted `start` failure (TRACKED, not implemented)
+### Title: GPTID follow-up — unassisted `start` failure (RESOLVED upstream, verified 2026-10-11)
 
 - **Date**: 2026-09-22
 - **Observed**: `scripts/gptid.ps1 start` → `gptid_cli.py cmd_start` never brings the relay up unassisted. Two defects identified during the acceptance session: (1) `cmd_start` spawns `Popen([sys.executable, "-u"] + cmd)` where `cmd[0]` is already the interpreter → the interpreter binary is passed as a script argument and the child exits immediately; (2) the 15s health window (`30 × 0.5s`) is too short for headed Chromium launch + navigation + classification (observed 45–75s), so even a healthy launch reports `STATUS=UNAVAILABLE (reason=relay did not become healthy)`. Workaround used: direct `relay_server.py` launch with PID recorded manually.
 - **Proposed scope**: fix argv construction (single interpreter), extend/parameterize the health window (e.g. 120s for headed), reuse don't respawn when a live relay already answers.
 - **Priority**: Medium
 - **Affected Modules**: `browser_relay/gptid_cli.py` (`cmd_start`), optionally `scripts/gptid.ps1` (pass-through timeout)
-- **Status**: TRACKED 2026-09-22 — do NOT implement without explicit authorization.
+- **Status**: RESOLVED upstream — both defects fixed in current `cmd_start` (single-interpreter `cmd` + `DEFAULT_STARTUP_TIMEOUT = 120` + "already running" reuse). Verified 2026-10-11: multiple unassisted headed starts succeeded tonight; unit tests 89/89. No change needed.
 
 ---
 
-### Title: GPTID follow-up — relay PID-file lifecycle hygiene (TRACKED, not implemented)
+### Title: GPTID follow-up — relay PID-file lifecycle hygiene (RESOLVED upstream, verified 2026-10-11)
 
 - **Date**: 2026-09-22
 - **Observed**: `~/.tidos/gptid-relay.pid` (outside repo) pointed at manually launched relay PIDs during acceptance (PID 4836/6952/12728) rather than a CLI-managed lifecycle; `stop` kills whatever PID is recorded without verifying it is a relay; stale PID files survive dead processes.
 - **Proposed scope**: `stop`/`start` verify the recorded PID is a live `relay_server.py` process before kill/reuse; stale PID invalidated with a warning; document PID ownership in `docs/gptid.md`.
 - **Priority**: Low
 - **Affected Modules**: `browser_relay/gptid_cli.py` (`cmd_start`, `cmd_stop`), `docs/gptid.md`
-- **Status**: TRACKED 2026-09-22 — do NOT implement without explicit authorization.
+- **Status**: RESOLVED upstream — `_is_relay_process` identity checks in `cmd_stop` (refuses blind kill, PID-reuse safe), `_reap_stale_pidfile` on start, `_stop_owned` with re-check. Verified 2026-10-11 live: CONNECTED → owned-PID stop → DISCONNECTED → fresh headed start; stale PID 9536 cleared without harm. No change needed.
 
 ---
 
@@ -204,3 +204,8 @@ This file tracks non-invasive improvement proposals for TIDOS. All suggestions a
 - **Priority**: High
 - **Affected Modules**: `browser_relay/chatgpt_adapter.py`, `browser_relay/selector_registry.json`
 - **Status**: Implemented & Verified 2026-10-11 (v4.0.1).
+- **Follow-up 2026-10-11 (live-DOM correction, committed v1.0.3)**:
+  - Live `/dom_probe` on the real thread (`UIUX Task`, wall=ok) proved v4.0.1's article/markdown/role/testid selectors ALL match 0 nodes in this DOM (`article`=0, `.markdown`=0, `[data-message-author-role]`=0) — yet 8 `button[aria-label*='Copy']` + 16 `div[class*='message']` + 29 `main p` exist. The v4.0.1 echo guards DO work (honest `TIMEOUT` instead of false `OK`), but its selectors cannot extract here.
+  - Working structure found by probe ladder: turns are `div[class*='turn']` (12 live, 28 `p`), original fallback #2 was right all along. Registry bumped to **v1.0.3** (uncommitted): prepended `div[class*='turn']:has(button[aria-label*='Copy'])`, `:has(Copier)` variant, bare `div[class*='turn']` — echo guards disambiguate user vs assistant turns.
+  - **Live proof**: `ask --mode UIUX gtask-9ae8770a7af6` → `CAPTURED (2652 chars, correlation=True)` — first genuine ChatGPT review (3 UX observations + 2 accessibility notes + ranked fix list), evaluated by TIDOS against `tableau_de_bord.py` evidence (see `Prog Info/log.md` 2026-10-11). Unit tests 89/89 OK on v1.0.3.
+  - Commit only on explicit authorization (`browser_relay/selector_registry.json` v1.0.2 → v1.0.3) — authorized & committed 2026-10-11, push pending user action.
