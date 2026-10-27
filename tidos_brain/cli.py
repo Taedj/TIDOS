@@ -140,7 +140,12 @@ def cmd_restore(args):
 
 def _hook_command():
     main = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
-    return '"%s" -I "%s" hook' % (sys.executable, main)
+    python = sys.executable
+    if os.name == "nt":  # python.exe flashes a console window on every hook when Claude has no console
+        windowless = os.path.join(os.path.dirname(python), "pythonw.exe")
+        if os.path.isfile(windowless):
+            python = windowless
+    return '"%s" -I "%s" hook' % (python, main)
 
 
 def cmd_install_hooks(args):

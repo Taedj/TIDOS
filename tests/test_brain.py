@@ -193,6 +193,14 @@ class InstallerTests(unittest.TestCase):
             data = json.load(open(settings))
             self.assertEqual(data["hooks"], {"PostToolUse": [user_hook]})
 
+    @unittest.skipUnless(os.name == "nt", "pythonw.exe exists only on Windows")
+    def test_hook_uses_windowless_python_on_windows(self):
+        # python.exe would flash a console window on every tool call
+        windowless = os.path.join(os.path.dirname(sys.executable), "pythonw.exe")
+        if not os.path.isfile(windowless):
+            self.skipTest("no pythonw.exe next to this interpreter")
+        self.assertTrue(cli._hook_command().startswith('"%s"' % windowless))
+
 
 if __name__ == "__main__":
     unittest.main()
