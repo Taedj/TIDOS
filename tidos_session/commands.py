@@ -63,6 +63,8 @@ COMMANDS = [
             "tidos_session consent " + ARGS, "If no answer was given, use `status`. Never choose agree or decline for "
             "the user. Not agree never limits TIDOS."),
     Command("tidos-backup", "", "Back up the TIDOS brain (your private learning)", "tidos_brain backup", ""),
+    Command("tidos-orb", "", "Show the floating TIDOS orb and open its panel (journey, evolution, solutions, next moves)",
+            "tidos_orb open", "The orb can be dragged anywhere; a click opens or closes the panel."),
 ]
 
 PLACEHOLDER = {"claude": "$ARGUMENTS", "opencode": "$ARGUMENTS", "cursor": "$ARGUMENTS", "codex": "$ARGUMENTS",

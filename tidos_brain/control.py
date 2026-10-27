@@ -31,6 +31,8 @@ SWITCHES = {
     "tool_install": (False, "Tool Scout may install a tool you approved when you press Install (pinned version or verified download, your user account only)"),
     "autopilot": (False, "Autopilot: TIDOS runs the jobs it recommends by itself (one at a time, no-cost models only)"),
     "ask_llm": (True, "Ask TIDOS may send a sanitized digest of your traces to the helper model; off = local search only"),
+    "orb": (True, "Floating TIDOS orb on the desktop after START TIDOS: drag it anywhere, click it for your progress, "
+                  "evolution, solutions and next moves (read-only)"),
 }
 
 

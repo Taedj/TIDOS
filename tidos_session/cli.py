@@ -248,6 +248,11 @@ def main(argv=None):
 
     if args.command == "start":
         session, facts, text = start(args.tool, args.model, args.project, learn=not args.no_learn)
+        try:
+            from tidos_orb import launch as orb
+            orb.spawn()  # the floating orb; refreshes the one already open
+        except Exception:  # noqa: BLE001 - the orb must never break START TIDOS
+            pass
         if args.json:
             print(json.dumps(dict(session, facts=facts, brief=text), indent=2))
         else:

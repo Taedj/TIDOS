@@ -6,6 +6,19 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ## [Unreleased]
 
+### Added
+- **TIDOS orb** (`tidos_orb/`, stdlib Tkinter): START TIDOS puts a floating bubble on the desktop (level, rank,
+  XP ring, a badge when something needs you). Drag it anywhere (the position is remembered); a click opens a
+  flat panel: *Journey* (level, five stats, 14-day XP/cleared chart, domains), *Evolution* (system messages,
+  daily quest, unlocked drafts, proposals), *Solutions* (cleared tasks) and *Next moves* (today's quests,
+  autopilot recommendations). Read-only: anything that changes TIDOS opens the Control Center login.
+  One orb per user (127.0.0.1:8769); `orb` switch (default on), `TIDOS_NO_ORB=1` and CI turn it off;
+  `/tidos-orb` brings it back with the panel open.
+
+### Fixed
+- Claude Code hooks no longer flash a console window on every tool call on Windows: `install-hooks` writes
+  `pythonw.exe` (re-run `python -I tidos_brain/__main__.py install-hooks` once to update existing hooks).
+
 ---
 
 ## [5.3.1] - 2026-10-25
