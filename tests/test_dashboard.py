@@ -288,6 +288,12 @@ class DashboardTests(unittest.TestCase):
             from tidos_brain import trust
             item = trust.record("backup", "Back up")
             self.assertEqual(self.req("POST", "/api/actions/undo", {"id": item["id"]})[0], 409)  # nothing to undo
+            self.assertEqual(self.req("GET", "/api/update")[1]["update"], {})
+            self.assertEqual(self.req("POST", "/api/update", {"action": "pull"})[0], 400)
+            code, body = self.req("POST", "/api/update", {"action": "apply"})[:2]
+            self.assertEqual(code, 409)                                   # nothing passed staging
+            self.assertIn("staging", body["error"])
+            self.assertEqual(self.req("POST", "/api/update", {"action": "rollback"})[0], 409)
 
     def test_memory_and_army_endpoints(self):
         home = os.path.join(self.tmp.name, "tidoshome2")

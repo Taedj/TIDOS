@@ -5,6 +5,8 @@ decide() looks at the brain and the files and returns recommendations, each with
   - daily quest             when today has no report                                     auto
   - back up the brain       when the newest backup is older than 7 days                  auto
   - diagnose                once a day: read the evidence, file improvement proposals    auto (you accept them)
+  - update check            once a day (switch auto_update): stage a new release in a separate copy and run
+                            its checks; a PATCH that passes is applied, minor/major wait for you   undo: roll back
   - trial a draft unit      when a draft has no trial and its suite has enough dungeons  auto
   - activate a unit         when a draft WON its trial (better than plain, not a tie)   trust: propose at first
   - implement a proposal    when you accepted it and it has no branch yet                auto
@@ -42,6 +44,7 @@ from tidos_session.detect import tidos_home  # noqa: E402
 LEARN_EVERY = timedelta(hours=6)
 BACKUP_EVERY = timedelta(days=7)
 DIAGNOSE_EVERY = timedelta(hours=24)
+UPDATE_EVERY = timedelta(hours=24)
 WEAK_CHECK_EVERY = timedelta(days=7)
 RETRY_AFTER = timedelta(hours=24)
 DAILY_CAP = {"distill": 5}  # runs per job + params in 24 h; every other job: 1
@@ -108,6 +111,11 @@ def decide(conn):
     newest = max((os.path.getmtime(b) for b in backups), default=0)
     if _now().timestamp() - newest > BACKUP_EVERY.total_seconds():
         add("backup", "backup", {}, "Back up the brain", "newest backup is older than 7 days" if backups else "no backup yet")
+
+    lastu = _last("self_update")
+    if control.is_on("auto_update") and (lastu is None or _now() - lastu > UPDATE_EVERY):
+        add("self_update", "self_update", {}, "Update check",
+            "test a new TIDOS release in a separate copy; a patch that passes is applied (undo: roll back)")
 
     lastd = _last("diagnose")
     if lastd is None or _now() - lastd > DIAGNOSE_EVERY:

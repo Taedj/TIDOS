@@ -235,7 +235,12 @@ def main(argv=None):
     cm = sub.add_parser("commands", help="every TIDOS / command; --install puts them in each tool's / menu")
     cm.add_argument("--install", action="store_true")
     cm.add_argument("--json", action="store_true")
-    w = sub.add_parser("wire", help="connect TIDOS to an AI tool (MCP server + global instructions); no --tool: list")
+    u = sub.add_parser("update", help="safe self-update: test a new release in a separate copy, then switch")
+    u.add_argument("--auto", action="store_true", help="check + stage; apply a PATCH release that passed")
+    u.add_argument("--stage", action="store_true", help="check + run the gates on the new release only")
+    u.add_argument("--apply", action="store_true", help="switch to the release that passed staging (you approve)")
+    u.add_argument("--rollback", action="store_true", help="back to the version before the last apply")
+    w = sub.add_parser("wire",help="connect TIDOS to an AI tool (MCP server + global instructions); no --tool: list")
     w.add_argument("--tool", help="tool id from the list (opencode, gemini-cli, antigravity, vscode-copilot...)")
     w.add_argument("--undo", action="store_true", help="disconnect: remove exactly what was added")
     c = sub.add_parser("consent",help="community learning: agree (share anonymous lessons) / decline / status")
@@ -250,6 +255,27 @@ def main(argv=None):
             print(json.dumps(commands.listing(), indent=1))
         else:
             print(commands.text_listing())
+        return 0
+    if args.command == "update":
+        from . import updater
+        try:
+            if args.auto:
+                lines = updater.auto()
+            elif args.stage:
+                info = updater.check()
+                lines = ["up to date"] if not info["target"] else [
+                    "%s %s: staging %s" % (info["bump"], info["target"],
+                                          "PASSED" if updater.stage(info)["ok"] else "FAILED")]
+            elif args.apply:
+                lines = ["applied: %(from)s -> %(to)s" % updater.apply()]
+            elif args.rollback:
+                lines = ["rolled back to %(to)s (from %(from)s)" % updater.rollback()]
+            else:
+                lines = [json.dumps(updater.status(), indent=1) or "{}"]
+        except updater.Refused as e:
+            print("REFUSED: %s" % e)
+            return 2
+        print("\n".join(lines))
         return 0
     if args.command == "wire":
         if not args.tool:

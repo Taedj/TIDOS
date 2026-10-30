@@ -539,8 +539,31 @@ async function loadJobs() {
   loadActions();
 }
 
+// ---- safe self-update: tested in a separate copy before use
+async function loadUpdate() {
+  const r = await api("/api/update");
+  if (!r.ok) return;
+  const u = r.data.update, s = u.staged;
+  $("updInfo").innerHTML = [
+    ["Release", u.target ? `${esc(u.target)} <span class="pill">${esc(u.bump || "")}</span>` : `<span class="pill ok">${t("up to date")}</span>`],
+    ["Staging", s ? `<span class="pill ${s.ok ? "ok" : "bad"}">${t(s.ok ? "passed" : "failed")}</span> <span class="small faint">${s.gates.map((g) => esc(g.gate)).join(" · ")}</span>` : "—"],
+    ["Previous version", u.previous ? `<code class="sys">${esc(u.previous.slice(0, 12))}</code>` : "—"],
+  ].map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
+  document.querySelectorAll(".upd").forEach((b) => {
+    b.disabled = b.dataset.a === "apply" ? !(u.target && s && s.ok) : !u.previous;
+    b.onclick = async () => {
+      if (!confirm(t(b.dataset.a === "apply" ? "Apply this release now?" : "Roll back to the previous version?"))) return;
+      b.disabled = true;
+      const res = await api("/api/update", { action: b.dataset.a });
+      toast(`<b>[SYSTEM]</b> ${esc(res.ok ? `${res.data.done.from} → ${res.data.done.to}` : t(res.data.error || "failed"))}`, res.ok ? "" : "warn");
+      loadUpdate();
+    };
+  });
+}
+
 // ---- action journal (undo) + graduated trust
 async function loadActions() {
+  loadUpdate();
   const r = await api("/api/actions");
   if (!r.ok) return;
   const cls = { kept: "ok", failed: "bad", undone: "warn", open: "" };

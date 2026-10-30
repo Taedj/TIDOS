@@ -169,6 +169,12 @@
           <tbody id="actionList"></tbody>
         </table></div>
 
+        <h2 class="mt">TIDOS updates — tested before they are used</h2>
+        <div class="kv" id="updInfo"></div>
+        <div class="job-actions"><button class="btn ghost upd" type="button" data-a="apply">Apply the tested release</button>
+          <button class="btn ghost upd" type="button" data-a="rollback">Roll back</button></div>
+        <p class="small faint note">A new release is first checked out in a separate copy and its checks are run there. A patch release that passes is applied by itself (switch auto_update); a minor or major one waits for your click. Roll back returns to the exact version you ran before.</p>
+
         <h2 class="mt">Trust — what TIDOS may do by itself</h2>
         <div class="table-wrap"><table>
           <thead><tr><th>Kind</th><th>Level</th><th>Good in a row</th></tr></thead>

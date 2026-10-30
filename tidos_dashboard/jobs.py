@@ -130,6 +130,9 @@ def build(conn, job, p):
         name = _need(p.get("unit"), {n for n, u in army.units().items() if u["state"] == "draft"}, "draft unit")
         return ([PY, "-I", "tidos_learn/__main__.py", "army", "--activate", name], {},
                 "Activate %s (undo: Actions)" % name, None)
+    if job == "self_update":
+        return ([PY, "-I", "tidos_session/__main__.py", "update", "--auto"], {},
+                "Update check: test a new release, apply a patch that passed", None)
     if job == "configure_tool":
         from tidos_scout import recipes
         name = _need(p.get("tool"), set(recipes.RECIPES), "recipe")

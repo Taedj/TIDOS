@@ -23,8 +23,10 @@ LEVELS = ["observe", "propose", "act_undo", "act"]
 AUTO = ("act_undo", "act")
 DEFAULTS = {"distill": "act", "daily_quest": "act", "backup": "act", "diagnose": "act", "validate_dungeons": "act",
             "trial": "act", "raid": "act", "measure": "act", "summarize": "act",
-            "self_improve": "act_undo", "activate_unit": "propose", "configure_tool": "propose"}
-CEILING = {"self_improve": "act_undo", "activate_unit": "act_undo", "configure_tool": "act_undo"}
+            "self_improve": "act_undo", "activate_unit": "propose", "configure_tool": "propose",
+            "self_update": "act_undo"}
+CEILING = {"self_improve": "act_undo", "activate_unit": "act_undo", "configure_tool": "act_undo",
+           "self_update": "act_undo"}
 PROMOTE_AFTER = 3
 SETTLE_DAYS = 3
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -60,8 +62,16 @@ def _undo_configure(action):
     return "; ".join(recipes.unconfigure(t.get("tool"), t.get("project")))
 
 
+def _undo_update(action):
+    from tidos_session import updater
+    try:
+        return "rolled back to %(to)s" % updater.rollback()
+    except updater.Refused as e:
+        raise ValueError(str(e))
+
+
 UNDO = {"activate_unit": _undo_activate, "self_improve": _undo_self_improve,
-        "configure_tool": _undo_configure}  # kind -> reverses one action
+        "configure_tool": _undo_configure, "self_update": _undo_update}  # kind -> reverses one action
 
 
 def _now():

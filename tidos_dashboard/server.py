@@ -161,6 +161,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 from tidos_scout import scout
                 return self._json(200, {"tools": scout.overview(conn)})
+            if path == "/api/update":
+                from tidos_session import updater
+                return self._json(200, {"update": updater.status()})
             if path == "/api/actions":
                 from tidos_brain import trust
                 return self._json(200, {"actions": list(reversed(trust.journal(50))), "levels": trust.levels()})
@@ -303,6 +306,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/connect": self._connect,
             "/api/actions/undo": self._action_undo,
             "/api/trust": self._trust_level,
+            "/api/update": self._update,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
             "/api/backups": self._backup,
@@ -510,6 +514,29 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(409, {"error": str(e)})
         self.server.lockout.log("action_undo", "#%d %s: %s" % (item["id"], item["kind"], item.get("undo_detail")))
         return self._json(200, {"action": item, "level": trust.level(item["kind"])})
+
+    def _update(self, body):
+        """Apply the release that passed staging (you approve a minor/major one) or roll back. Owner only, logged."""
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        if session.get("role", "owner") != "owner":
+            return self._json(403, {"error": "only the owner can update TIDOS"})
+        from tidos_brain import trust
+        from tidos_session import updater
+        action = body.get("action")
+        if action not in ("apply", "rollback"):
+            return self._json(400, {"error": "unknown action"})
+        try:
+            done = updater.apply() if action == "apply" else updater.rollback()
+        except updater.Refused as e:
+            return self._json(409, {"error": str(e)})
+        self.server.lockout.log("update", "%s: %s -> %s" % (action, done["from"], done["to"]))
+        if action == "apply":
+            trust.record("self_update", "Update to %s" % done["to"], by="owner")
+        else:
+            trust.reversed_by_you("self_update", None)
+        return self._json(200, {"done": done, "update": updater.status()})
 
     def _trust_level(self, body):
         """Set the trust level of one kind of action (pinned), or clear it back to earned trust. Owner only."""
