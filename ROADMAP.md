@@ -76,6 +76,9 @@
 - Connect TIDOS to any AI tool with one click; Tool Scout recipes set tools up in a project and verify them;
   new releases are tested in a separate copy before TIDOS switches, with rollback.
 
+### v5.4.1 — Monarch (2026-10-30, beta)
+- Test suite green on machines without OpenCode (CI).
+
 ### Future — Planned (v6.0)
 - TIDOS-native small model: LoRA fine-tune on the workflow dataset, benchmarked on the dungeons against the base
   model and strong models (needs a GPU and a provider-terms review).

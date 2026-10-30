@@ -1,6 +1,6 @@
 {
   "name": "tidos",
-  "version": "5.4.0",
+  "version": "5.4.1",
   "description": "TIDOS learns how your projects are built while you work with strong models, and guides weak or free models with that knowledge: per-request playbooks, read-before-edit and no-done-without-checks enforcement, subagents and an MCP server.",
   "author": {
     "name": "Tidjani Zitouni"

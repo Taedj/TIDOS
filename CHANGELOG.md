@@ -8,6 +8,14 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ---
 
+## [5.4.1] - 2026-10-30
+
+### Fixed
+- The test suite passes on machines without OpenCode (GitHub CI): the autopilot test no longer depends on a free
+  model being installed. No change to TIDOS itself.
+
+---
+
 ## [5.4.0] - 2026-10-30
 
 "Monarch": TIDOS closes its own loop. It notices what goes wrong, proposes fixes, earns the right to act by

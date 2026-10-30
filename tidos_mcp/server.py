@@ -27,7 +27,7 @@ from tidos_scout import scout  # noqa: E402
 from tidos_brain.paths import leaf  # noqa: E402
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
-SERVER_INFO = {"name": "tidos", "version": "5.4.0"}
+SERVER_INFO = {"name": "tidos", "version": "5.4.1"}
 VERIFY_TIMEOUT = 300
 # tidos_verify only runs check SUBCOMMANDS of known tools - never `python -c`, `node -e` or any shell
 CHECK_RULES = {

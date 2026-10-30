@@ -16,7 +16,7 @@ repository:
 
 ```yaml
 version:
-  current: 5.4.0
+  current: 5.4.1
   codename: Guild
   release_date: 2026-10-25
 ```
