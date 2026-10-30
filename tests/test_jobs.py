@@ -112,6 +112,36 @@ class JobsTests(unittest.TestCase):
         self.assertFalse(rec["auto"])
         self.assertIn("failed in the last 24 h", rec["verdict"])
 
+    def test_autopilot_uses_a_free_model_and_skips_trials_that_cannot_count(self):
+        import json
+        from tidos_learn import army
+        home = os.environ["TIDOS_HOME_DIR"]
+        os.makedirs(home, exist_ok=True)
+        with open(os.path.join(home, "session.json"), "w", encoding="utf-8") as f:
+            json.dump({"tool": "claude-code", "model": "claude-opus-5-5"}, f)   # you work with a frontier model
+        drafts = {"python-x": {"state": "draft"}, "node-javascript-x": {"state": "draft"}}
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: exe), \
+                mock.patch.object(army, "units", lambda: drafts), mock.patch.object(army, "load_state", lambda: {}), \
+                mock.patch.object(jobs, "trial_ready", lambda suite: suite == "python"):
+            self.assertEqual(jobs.default_agent(self.conn), "claude:claude-opus-5-5")  # your own jobs: your model
+            recs = {r["key"]: r for r in autopilot.decide(self.conn)}
+            self.assertEqual(recs["trial:python-x"]["model"], "opencode:opencode/big-pickle")  # background: free
+            self.assertNotIn("trial:node-javascript-x", recs)                  # 3 dungeons: a trial never counts
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: None), \
+                mock.patch.object(army, "units", lambda: drafts), mock.patch.object(army, "load_state", lambda: {}):
+            recs = {r["key"]: r for r in autopilot.decide(self.conn)}
+        self.assertFalse([k for k in recs if k.startswith(("trial:", "weak_check"))])  # no free model: no model job
+        self.assertFalse(jobs.trial_ready("javascript"))                       # the real suite is too small today
+
+    def test_autopilot_runs_a_job_at_most_once_a_day(self):
+        control.set_switch("autopilot", True)
+        with self.fake("print('nothing to do')"):
+            wait_done(jobs.start(self.conn, "backup", {}, by="autopilot")["id"])
+        rec = next(r for r in autopilot.decide(self.conn) if r["key"] == "backup")  # still due: no backup file
+        self.assertFalse(rec["auto"])
+        self.assertIn("already ran", rec["verdict"])
+        self.assertTrue(next(r for r in autopilot.decide(self.conn) if r["key"] == "distill")["auto"])  # other jobs run
+
     def test_helper_model_setting(self):
         from tidos_session import helper
         self.assertEqual(control.text("helper_model"), "auto")

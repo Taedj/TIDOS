@@ -77,6 +77,17 @@ def resolve(choice=None, conn=None):
     return _free(conn)
 
 
+def background(conn=None):
+    """Model for unattended work (autopilot): a free model, never your working model by surprise.
+    An explicit helper_model setting is respected; 'auto' means free here. None: no free model, skip the job."""
+    choice = control.text("helper_model")
+    if choice == "none":
+        return None
+    if choice != "auto":
+        return choice
+    return _free(conn)
+
+
 def describe(conn=None):
     """What the control center shows: the model in use and where it came from."""
     chosen = control.text("helper_model")

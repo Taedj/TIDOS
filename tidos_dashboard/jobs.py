@@ -40,6 +40,18 @@ def default_agent(conn):
     return helper.resolve(conn=conn) or "opencode:" + helper.free_models(conn)[0]
 
 
+def background_agent(conn):
+    """The model the autopilot uses: free by default (tidos_session.helper.background), None when there is none."""
+    from tidos_session import helper
+    return helper.background(conn)
+
+
+def trial_ready(suite):
+    """A trial is saved only with MIN_TRIAL_TASKS dungeons; a smaller suite would run forever for nothing."""
+    from tidos_evals.cli import MIN_TRIAL_TASKS
+    return count_tasks(suite) >= MIN_TRIAL_TASKS
+
+
 def _cap(agent):
     """Internal safety net only for Claude, which bills your own account: a small per-attempt cap."""
     return ["--budget", "0.25"] if agent.startswith("claude:") else []

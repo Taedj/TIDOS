@@ -10,6 +10,7 @@ import shutil
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from unittest import mock
 
@@ -141,10 +142,14 @@ class DashboardE2E(unittest.TestCase):
         with open(self.framework, encoding="utf-8") as f:
             self.assertIn("depth_threshold: 5", f.read())
 
-        before = len(explore.list_backups())  # other tests may have backed up already (shared test brain)
+        # other tests share this brain: older backups may be listed and the oldest is pruned at 10, so wait for
+        # a new name instead of counting
+        before = {b["name"] for b in explore.list_backups()}
         page.click("#backupBtn")
-        page.wait_for_selector("#backups .kv")
-        self.assertEqual(len(explore.list_backups()), before + 1)
+        deadline = time.time() + 15
+        while not {b["name"] for b in explore.list_backups()} - before and time.time() < deadline:
+            time.sleep(0.2)
+        self.assertTrue({b["name"] for b in explore.list_backups()} - before)
         self.assertEqual(errors, [])
         ctx.close()
 

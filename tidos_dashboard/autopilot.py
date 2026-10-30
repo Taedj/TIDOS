@@ -4,14 +4,16 @@ decide() looks at the brain and the files and returns recommendations, each with
   - refresh learning        when the last refresh is older than 6 h                      auto
   - daily quest             when today has no report                                     auto
   - back up the brain       when the newest backup is older than 7 days                  auto
-  - trial a draft unit      when a draft has no trial and a dungeon suite tests it       auto
+  - trial a draft unit      when a draft has no trial and its suite has enough dungeons  auto
   - implement a proposal    when you accepted it and it has no branch yet                auto
   - measure a proposal      when its branch exists and its effect was never measured    auto
   - weekly weak-model check GUIDE vs plain with a free model (plan 6.8)                 auto, weekly
   - tool needs              per active project (installing still needs your approval)    shown only
-Jobs that need a model use the helper model (free by default: tidos_session.helper). TIDOS never costs anything.
-Rules: one job at a time; a job that failed in the last 24 h is not retried automatically; nothing here installs,
-pushes, merges, activates a unit or changes a switch: those stay yours.
+Jobs that need a model use a FREE model (tidos_session.helper.background), never the model of your last START
+TIDOS; with no free model they are skipped. TIDOS never costs anything.
+Rules: one job at a time; a job that failed in the last 24 h is not retried automatically; each job runs at most
+DAILY_CAP times in 24 h, so a job that achieves nothing cannot loop; nothing here installs, pushes, merges,
+activates a unit or changes a switch: those stay yours.
 
   python -I tidos_dashboard/autopilot.py --once      run every due job, one after another (START TIDOS calls this
                                                       in the background when the autopilot switch is on)
@@ -34,6 +36,7 @@ LEARN_EVERY = timedelta(hours=6)
 BACKUP_EVERY = timedelta(days=7)
 WEAK_CHECK_EVERY = timedelta(days=7)
 RETRY_AFTER = timedelta(hours=24)
+DAILY_CAP = {"distill": 5}  # runs per job + params in 24 h; every other job: 1
 TICK_SECONDS = 300
 MAX_JOBS_PER_RUN = 6
 
@@ -63,6 +66,16 @@ def _recently_failed(job, params):
     return t is not None and _now() - t < RETRY_AFTER
 
 
+def _runs_today(job, params):
+    since = _now() - timedelta(hours=24)
+    n = 0
+    for j in jobs.history():
+        t = _ts(j.get("started"))
+        if j["job"] == job and j.get("by") == "autopilot" and j.get("params") == params and t and t > since:
+            n += 1
+    return n
+
+
 def decide(conn):
     recs = []
 
@@ -88,26 +101,27 @@ def decide(conn):
     if _now().timestamp() - newest > BACKUP_EVERY.total_seconds():
         add("backup", "backup", {}, "Back up the brain", "newest backup is older than 7 days" if backups else "no backup yet")
 
+    agent = jobs.background_agent(conn)  # free; None: no free model, so no model job runs by itself
     from tidos_learn import army, evolve
     trials = army.load_state().get("trials", {})
     for name, u in sorted(army.units().items()):
         suite = jobs.unit_suite(name)
-        if u["state"] == "draft" and name not in trials and suite:
-            add("trial:" + name, "trial", {"unit": name, "suite": suite},
+        if agent and u["state"] == "draft" and name not in trials and suite and jobs.trial_ready(suite):
+            add("trial:" + name, "trial", {"unit": name, "suite": suite, "agent": agent},
                 "Trial %s" % name, "draft unit, never tested: %s dungeons with and without it" % suite)
     for item in evolve.load():
-        if item["status"] == "accepted" and not item.get("branch"):
-            add("self_improve:%d" % item["id"], "self_improve", {"id": item["id"]}, "Implement proposal #%d" % item["id"],
-                "you accepted it: %s" % item["title"][:80])
+        if agent and item["status"] == "accepted" and not item.get("branch"):
+            add("self_improve:%d" % item["id"], "self_improve", {"id": item["id"], "agent": agent},
+                "Implement proposal #%d" % item["id"], "you accepted it: %s" % item["title"][:80])
 
     measured = {i["id"] for i in evolve.load() if i.get("measure")}
-    for pid in sorted(jobs.measurable() - measured):
-        add("measure:%d" % pid, "measure", {"id": pid}, "Measure proposal #%d" % pid,
+    for pid in sorted(jobs.measurable() - measured) if agent else ():
+        add("measure:%d" % pid, "measure", {"id": pid, "agent": agent}, "Measure proposal #%d" % pid,
             "implemented on a branch, effect never measured: GUIDE dungeons before vs after")
 
     weak = [a for a in jobs.allowed_agents(conn) if a.startswith("opencode:")]
-    if weak:
-        agent = jobs.default_agent(conn) if jobs.default_agent(conn) in weak else weak[0]
+    if weak and agent:
+        agent = agent if agent in weak else weak[0]
         lastw = _last("raid", {"agent": agent, "mode": "compare", "min_difficulty": "A"})
         if lastw is None or _now() - lastw > WEAK_CHECK_EVERY:
             add("weak_check", "raid", {"agent": agent, "mode": "compare", "min_difficulty": "A"},
@@ -131,6 +145,8 @@ def _with_verdicts(recs):
             r["verdict"] = "your call"
         elif _recently_failed(r["job"], r["params"]):
             r["auto"], r["verdict"] = False, "failed in the last 24 h: run it yourself after a look at its log"
+        elif _runs_today(r["job"], r["params"]) >= DAILY_CAP.get(r["job"], 1):
+            r["auto"], r["verdict"] = False, "already ran in the last 24 h: next run tomorrow"
         else:
             r["verdict"] = "autopilot will run it" if on else "autopilot is off"
     return recs
