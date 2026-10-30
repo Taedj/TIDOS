@@ -586,7 +586,9 @@ async function loadActions() {
         <option value="" ${x.pinned ? "" : "selected"}>${t("earned")}: ${esc(t(x.level))}</option>
         ${levels.slice(0, levels.indexOf(x.ceiling) + 1).map((l) => `<option value="${l}" ${x.pinned && x.level === l ? "selected" : ""}>${esc(t(l))}</option>`).join("")}
       </select></td>
-      <td>${x.streak}</td></tr>`).join("");
+      <td>${x.streak}</td>
+      <td>${x.score ? `${x.score.helped}/${x.score.runs}${x.score.harmful ? ` <span class="pill bad">${x.score.harmful} ${t("undone")}</span>` : ""}` : "—"}
+        ${x.paused ? `<br><span class="small warn">${esc(t(x.paused))}</span>` : ""}</td></tr>`).join("");
   $("trustList").querySelectorAll(".trust-sel").forEach((s) => s.addEventListener("change", async () => {
     const res = await api("/api/trust", { kind: s.dataset.kind, level: s.value || null });
     if (!res.ok) toast(`<b>[SYSTEM]</b> ${esc(t(res.data.error || "failed"))}`, "warn");

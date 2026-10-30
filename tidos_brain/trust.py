@@ -109,9 +109,10 @@ def allows_auto(kind):
 
 def levels():
     """[{kind, level, streak, pinned, default, ceiling}] for the control center."""
-    data = _load()
+    data, sc = _load(), scores()
     return [{"kind": k, "level": level(k), "streak": data.get(k, {}).get("streak", 0),
-             "pinned": bool(data.get(k, {}).get("pinned")), "default": DEFAULTS[k], "ceiling": CEILING.get(k, "act")}
+             "pinned": bool(data.get(k, {}).get("pinned")), "default": DEFAULTS[k], "ceiling": CEILING.get(k, "act"),
+             "score": sc.get(k), "paused": paused(k)}
             for k in DEFAULTS]
 
 
@@ -150,6 +151,95 @@ def set_level(kind, new_level):
     return level(kind)
 
 
+# --- did it help? (P6: TIDOS scores its own decisions) -----------------------------------------------------
+# A measured job takes a snapshot of what it should change when it starts; when it is settled, a changed value
+# means it helped and the same value means it changed nothing. Undone = harmful, failed = failed, other jobs
+# that finished = helped (housekeeping). A model job whose last PAUSE_AFTER runs changed nothing pauses.
+MEASURED = {"trial", "raid", "measure", "self_improve", "diagnose", "distill", "self_update"}
+PAUSABLE = {"trial", "raid", "measure", "self_improve", "summarize"}  # jobs that spend a model's time
+PAUSE_AFTER = 5
+PAUSE_DAYS = 7
+SCORE_DAYS = 30
+
+
+def target_of(kind, params):
+    """What an action is about, as written in the journal (jobs.start) and looked up by the autopilot."""
+    p = params or {}
+    return {"activate_unit": p.get("unit"), "self_improve": p.get("id")}.get(kind, p or None)
+
+
+def _brain_value(sql):
+    import sqlite3
+    path = os.environ.get("TIDOS_BRAIN_DB") or _path("brain.db")
+    if not os.path.isfile(path):
+        return None
+    conn = sqlite3.connect("file:%s?mode=ro" % path.replace("\\", "/"), uri=True, timeout=5)
+    try:
+        return conn.execute(sql).fetchone()[0]
+    finally:
+        conn.close()
+
+
+def snapshot(kind, target):
+    """The value a measured job should change (None when it cannot be read)."""
+    t = target if isinstance(target, dict) else {}
+    try:
+        if kind == "trial":
+            from tidos_learn import army
+            return (army.load_state().get("trials", {}).get(t.get("unit")) or {}).get("at")
+        if kind == "raid":
+            return _brain_value("SELECT COUNT(*) FROM evals")
+        if kind == "distill":
+            return _brain_value("SELECT MAX(updated_at) FROM playbooks")
+        if kind in ("measure", "self_improve", "diagnose"):
+            from tidos_learn import evolve
+            items = evolve.load()
+            if kind == "diagnose":
+                return len(items)
+            pid = t.get("id") if t else target
+            item = next((i for i in items if i["id"] == pid), {})
+            return item.get("measure" if kind == "measure" else "branch")
+        if kind == "self_update":
+            from tidos_session import updater
+            return updater.status().get("applied_at")
+    except (OSError, ValueError, KeyError, ImportError):
+        return None
+    return None
+
+
+def _effect(item, good):
+    if not good:
+        return "failed"
+    if item["kind"] in MEASURED and "before" in item:
+        return "helped" if snapshot(item["kind"], item.get("target")) != item["before"] else "no_effect"
+    return "helped"
+
+
+def scores(days=SCORE_DAYS):
+    """{kind: {runs, helped, no_effect, harmful, failed}} of settled actions in the last `days` days."""
+    since = (_now() - timedelta(days=days)).isoformat(timespec="seconds")
+    out = {}
+    for i in journal():
+        if i.get("effect") and i["at"] >= since:
+            s = out.setdefault(i["kind"], {"runs": 0, "helped": 0, "no_effect": 0, "harmful": 0, "failed": 0})
+            s["runs"] += 1
+            s[i["effect"]] += 1
+    return out
+
+
+def paused(kind, target=None):
+    """'' or why the autopilot pauses this job: its last PAUSE_AFTER autopilot runs changed nothing."""
+    if kind not in PAUSABLE:
+        return ""
+    runs = [i for i in journal() if i["kind"] == kind and i["by"] == "autopilot" and i.get("effect")
+            and (target is None or i.get("target") == target)][-PAUSE_AFTER:]
+    if len(runs) < PAUSE_AFTER or any(i["effect"] == "helped" for i in runs):
+        return ""
+    if _now() - datetime.fromisoformat(runs[-1]["at"]) > timedelta(days=PAUSE_DAYS):
+        return ""
+    return "paused %d days: its last %d runs changed nothing" % (PAUSE_DAYS, PAUSE_AFTER)
+
+
 # --- the action journal -----------------------------------------------------------------------------------
 def journal(limit=None):
     items = []
@@ -170,12 +260,15 @@ def _save_journal(items):
     os.replace(tmp, _path("actions.jsonl"))
 
 
-def record(kind, title, by="autopilot", target=None, job_id=None):
-    """Write an action to the journal; its outcome is settled later (settle())."""
+def record(kind, title, by="autopilot", target=None, job_id=None, before=None):
+    """Write an action to the journal; its outcome is settled later (settle()). `before`: snapshot() taken
+    before a measured job started (jobs.start), so its effect can be judged."""
     items = journal()
     item = {"id": max([i["id"] for i in items] or [0]) + 1, "at": _now().isoformat(timespec="seconds"),
             "kind": kind, "title": title[:200], "by": by, "target": target, "job_id": job_id,
             "level": level(kind), "state": "open", "undoable": kind in UNDO}
+    if kind in MEASURED and job_id:
+        item["before"] = before
     _save_journal(items + [item])
     return item
 
@@ -201,7 +294,8 @@ def undo(action_id):
         raise ValueError("%s cannot be undone" % item["kind"])
     detail = UNDO[item["kind"]](item)
     _move(item["kind"], -1, "you undid #%d" % action_id)
-    return _set(action_id, state="undone", undone_at=_now().isoformat(timespec="seconds"), undo_detail=detail)
+    return _set(action_id, state="undone", effect="harmful", undone_at=_now().isoformat(timespec="seconds"),
+                undo_detail=detail)
 
 
 def reversed_by_you(kind, target):
@@ -211,7 +305,8 @@ def reversed_by_you(kind, target):
     if item is None:
         return None
     _move(kind, -1, "you reversed #%d" % item["id"])
-    return _set(item["id"], state="undone", undone_at=_now().isoformat(timespec="seconds"), undo_detail="by you")
+    return _set(item["id"], state="undone", effect="harmful", undone_at=_now().isoformat(timespec="seconds"),
+                undo_detail="by you")
 
 
 def settle(job_state=None):
@@ -234,6 +329,6 @@ def settle(job_state=None):
         if good and young and (i["kind"] in UNDO or not i.get("job_id")):
             continue  # an action you can undo counts only once you kept it SETTLE_DAYS
         _move(i["kind"], 1 if good else 0, "%d good actions in a row" % PROMOTE_AFTER)
-        settled.append(_set(i["id"], state="kept" if good else "failed",
+        settled.append(_set(i["id"], state="kept" if good else "failed", effect=_effect(i, good),
                             settled_at=_now().isoformat(timespec="seconds")))
     return settled

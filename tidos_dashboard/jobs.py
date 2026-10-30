@@ -281,6 +281,9 @@ def start(conn, job, params=None, by="owner", db_path=None, _popen=subprocess.Po
                   "log": log}
         items = [dict(i, state="interrupted") if i["state"] in ("running", "cancelling") else i for i in history()]
         _save(items + [record])
+    from tidos_brain import trust
+    target = trust.target_of(job, params)
+    before = trust.snapshot(job, target) if job in trust.MEASURED else None  # judged when it is settled
     out = open(log, "w", encoding="utf-8")
     out.write("$ %s\n\n" % record["argv"])
     out.flush()
@@ -291,10 +294,7 @@ def start(conn, job, params=None, by="owner", db_path=None, _popen=subprocess.Po
     _PROCS[job_id] = proc
     _update(job_id, pid=proc.pid)
     try:  # the action journal: every job is an action; its outcome earns or costs trust (tidos_brain.trust)
-        from tidos_brain import trust
-        p = params or {}
-        trust.record(job, title, by=by, job_id=job_id,
-                     target={"activate_unit": p.get("unit"), "self_improve": p.get("id")}.get(job, p or None))
+        trust.record(job, title, by=by, job_id=job_id, target=target, before=before)
     except (OSError, ValueError):
         pass
     threading.Thread(target=_wait, args=(job_id, proc, out, db_path), daemon=True).start()

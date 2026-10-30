@@ -177,6 +177,10 @@ def _with_verdicts(recs):
     on = control.is_on("autopilot")
     for r in recs:
         r["trust"] = trust.level(r["job"]) if r["job"] in trust.DEFAULTS else None
+        why = trust.paused(r["job"], trust.target_of(r["job"], r["params"]))
+        if r["auto"] and why:  # TIDOS learned from its own results: this job keeps changing nothing
+            r["auto"], r["verdict"] = False, why
+            continue
         if r["auto"] and r["trust"] == "observe":
             r["auto"], r["verdict"] = False, "trust: observe only"
             continue

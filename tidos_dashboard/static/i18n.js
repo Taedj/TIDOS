@@ -137,6 +137,7 @@ const AR = {
   "A new release is first checked out in a separate copy and its checks are run there. A patch release that passes is applied by itself (switch auto_update); a minor or major one waits for your click. Roll back returns to the exact version you ran before.": "يُجلب الإصدار الجديد أولًا في نسخة منفصلة وتُشغَّل فحوصه هناك. الإصدار التصحيحي الذي ينجح يُطبَّق وحده (مفتاح auto_update)؛ أما الإصدار الثانوي أو الرئيسي فينتظر ضغطتك. الرجوع يعيدك إلى النسخة التي كنت تستعملها بالضبط.",
   "Release": "الإصدار", "Staging": "الاختبار المسبق", "Previous version": "النسخة السابقة", "passed": "نجح", "up to date": "محدَّث",
   "Apply this release now?": "تطبيق هذا الإصدار الآن؟", "Roll back to the previous version?": "الرجوع إلى النسخة السابقة؟",
+  "Helped (30 days)": "أفاد (30 يومًا)", "paused 7 days: its last 5 runs changed nothing": "متوقف 7 أيام: آخر 5 تشغيلات لم تغيّر شيئًا",
   "Action": "الإجراء", "Undo this action?": "التراجع عن هذا الإجراء؟", "No actions yet.": "لا إجراءات بعد.",
   "Model in use": "النموذج المستعمل", "from your last START TIDOS": "من آخر START TIDOS",
   "free fallback: no START TIDOS yet": "بديل مجاني: لا START TIDOS بعد", "set in control.json": "محدد في control.json",

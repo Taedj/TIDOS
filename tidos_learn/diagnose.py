@@ -9,6 +9,8 @@ result can be checked later. Nothing is applied: you accept or reject proposals;
   corrections       you keep correcting one kind of task in one project
   stuck             a weak model keeps hitting tool errors (5+ in one task)
   job_failing       an autopilot / control-center job failed several times this week
+  never_helps       an autopilot job ran 5+ times in 30 days and never helped (action journal effects)
+  often_undone      you undid 2+ of TIDOS's actions of one kind in 30 days
 One proposal per finding key: an open one gets fresh evidence; a rejected one is not filed again for REJECT_DAYS.
 
   python -I tidos_learn/__main__.py diagnose [--dry-run]
@@ -149,6 +151,26 @@ def job_failing(history, min_fails=2, days=7):
             for job, items in sorted(fails.items()) if len(items) >= min_fails]
 
 
+def own_decisions(scores, min_runs=5, min_undone=2):
+    """TIDOS judges its own autopilot decisions: a kind of job that never helps, or that you keep undoing."""
+    out = []
+    for kind, s in sorted(scores.items()):
+        if s["runs"] >= min_runs and s["helped"] == 0:
+            out.append(_finding(
+                "never_helps:" + kind, "TIDOS's `%s` job never helps" % kind,
+                "%d runs in %d days: %d changed nothing, %d failed, 0 helped. Change the autopilot rule that "
+                "schedules it (when it is due, which model, which suite) or remove it." % (
+                    s["runs"], WINDOW_DAYS, s["no_effect"], s["failed"]),
+                "at least one helpful run in the next 14 days, or the rule is removed", {"runs": s["runs"], "helped": 0}))
+        if s["harmful"] >= min_undone:
+            out.append(_finding(
+                "often_undone:" + kind, "You often undo TIDOS's `%s` actions" % kind,
+                "%d of %d were undone by you (last %d days). Find what they got wrong and tighten when TIDOS "
+                "does this by itself." % (s["harmful"], s["runs"], WINDOW_DAYS),
+                "no undo in the next 14 days", {"undone": s["harmful"]}, "high"))
+    return out
+
+
 # --- run ------------------------------------------------------------------------------------------------
 def findings(conn, history=None):
     from tidos_session import effect
@@ -158,7 +180,8 @@ def findings(conn, history=None):
         history = jobs.history()
     out = (weak_unguided(effect_rows) + guide_no_help(effect_rows) + failing_check(conn)
            + corrections(conn) + stuck(conn) + job_failing(history))
-    return out
+    from tidos_brain import trust
+    return out + own_decisions(trust.scores())
 
 
 def file(found):

@@ -126,6 +126,55 @@ class TrustTests(unittest.TestCase):
             self.assertTrue({r["key"]: r for r in autopilot.decide(conn)}["activate:win"]["auto"])
         conn.close()
 
+    def test_effects_are_measured(self):
+        from tidos_learn import evolve
+        quiet = trust.record("diagnose", "Diagnose", job_id="a", before=trust.snapshot("diagnose", None))
+        found = trust.record("diagnose", "Diagnose", job_id="b", before=trust.snapshot("diagnose", None))
+        trust.settle(job_state=lambda j: "done" if j == "a" else "running")
+        evolve.add("a finding", "evidence")                              # job b filed a proposal
+        trust.settle(job_state=lambda j: "done")
+        trust.record("raid", "Raid", job_id="c", before=None)
+        trust.settle(job_state=lambda j: "failed")
+        effects = {i["id"]: i["effect"] for i in trust.journal()}
+        self.assertEqual(effects[quiet["id"]], "no_effect")
+        self.assertEqual(effects[found["id"]], "helped")
+        self.assertEqual(trust.scores()["raid"]["failed"], 1)
+        self.assertEqual(trust.scores()["diagnose"], {"runs": 2, "helped": 1, "no_effect": 1, "harmful": 0, "failed": 0})
+        action = trust.record("activate_unit", "Activate z", target="z")
+        trust.undo(action["id"])
+        self.assertEqual(trust.scores()["activate_unit"]["harmful"], 1)
+
+    def test_a_model_job_that_changes_nothing_pauses(self):
+        target = {"unit": "u", "suite": "python", "agent": "opencode:x"}
+        for n in range(trust.PAUSE_AFTER):
+            item = trust.record("trial", "Trial u", job_id="t%d" % n, target=target, before="2026-01-01")
+            trust._set(item["id"], state="kept", effect="no_effect")
+        self.assertIn("changed nothing", trust.paused("trial", target))
+        self.assertEqual(trust.paused("trial", {"unit": "other"}), "")
+        self.assertEqual(next(x for x in trust.levels() if x["kind"] == "trial")["paused"], trust.paused("trial"))
+        item = trust.record("trial", "Trial u", job_id="t9", target=target)
+        trust._set(item["id"], state="kept", effect="helped")
+        self.assertEqual(trust.paused("trial", target), "")              # one helpful run resumes it
+        from tidos_dashboard import autopilot
+        for n in range(trust.PAUSE_AFTER):
+            item = trust.record("raid", "Raid", job_id="r%d" % n, target={"mode": "compare"})
+            trust._set(item["id"], state="kept", effect="no_effect")
+        rec = {"key": "weak_check", "job": "raid", "params": {"mode": "compare"}, "auto": True}
+        self.assertIn("paused", autopilot._with_verdicts([rec])[0]["verdict"])
+        for n in range(trust.PAUSE_AFTER):
+            item = trust.record("diagnose", "Diagnose", job_id="d%d" % n)
+            trust._set(item["id"], state="kept", effect="no_effect")
+        self.assertEqual(trust.paused("diagnose"), "")                   # cheap housekeeping never pauses
+
+    def test_diagnose_reads_tidos_own_results(self):
+        from tidos_learn import diagnose
+        found = {f["key"]: f for f in diagnose.own_decisions({
+            "trial": {"runs": 6, "helped": 0, "no_effect": 6, "harmful": 0, "failed": 0},
+            "raid": {"runs": 6, "helped": 2, "no_effect": 4, "harmful": 0, "failed": 0},
+            "configure_tool": {"runs": 3, "helped": 1, "no_effect": 0, "harmful": 2, "failed": 0}})}
+        self.assertEqual(set(found), {"never_helps:trial", "often_undone:configure_tool"})
+        self.assertEqual(found["often_undone:configure_tool"]["priority"], "high")
+
     def test_every_job_is_journaled(self):
         from tidos_dashboard import jobs
         conn = db.connect(":memory:")
