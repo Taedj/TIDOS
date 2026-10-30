@@ -94,7 +94,11 @@ class JobsTests(unittest.TestCase):
         control.set_switch("autopilot", True)
         item = evolve.add("an accepted one", "r")
         evolve.set_status(item["id"], "accepted")
-        recs = {r["key"]: r for r in autopilot.decide(self.conn)}
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: None):
+            no_free = {r["key"] for r in autopilot.decide(self.conn)}
+        self.assertNotIn("self_improve:%d" % item["id"], no_free)    # no free model here: model jobs wait
+        with mock.patch("tidos_session.helper.shutil.which", lambda exe: "opencode"):  # a free model is available
+            recs = {r["key"]: r for r in autopilot.decide(self.conn)}
         self.assertTrue(recs["self_improve:%d" % item["id"]]["auto"])  # no budget: every due job is no-cost
         self.assertEqual(recs["distill"]["verdict"], "autopilot will run it")
         self.assertNotIn("estimate", recs["distill"])
