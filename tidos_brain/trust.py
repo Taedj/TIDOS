@@ -23,8 +23,8 @@ LEVELS = ["observe", "propose", "act_undo", "act"]
 AUTO = ("act_undo", "act")
 DEFAULTS = {"distill": "act", "daily_quest": "act", "backup": "act", "diagnose": "act", "validate_dungeons": "act",
             "trial": "act", "raid": "act", "measure": "act", "summarize": "act",
-            "self_improve": "act_undo", "activate_unit": "propose"}
-CEILING = {"self_improve": "act_undo", "activate_unit": "act_undo"}
+            "self_improve": "act_undo", "activate_unit": "propose", "configure_tool": "propose"}
+CEILING = {"self_improve": "act_undo", "activate_unit": "act_undo", "configure_tool": "act_undo"}
 PROMOTE_AFTER = 3
 SETTLE_DAYS = 3
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -54,7 +54,14 @@ def _undo_self_improve(action):
     return "deleted %s" % branch if branch else "nothing was committed"
 
 
-UNDO = {"activate_unit": _undo_activate, "self_improve": _undo_self_improve}  # kind -> reverses one action
+def _undo_configure(action):
+    from tidos_scout import recipes
+    t = action["target"] or {}
+    return "; ".join(recipes.unconfigure(t.get("tool"), t.get("project")))
+
+
+UNDO = {"activate_unit": _undo_activate, "self_improve": _undo_self_improve,
+        "configure_tool": _undo_configure}  # kind -> reverses one action
 
 
 def _now():

@@ -11,6 +11,8 @@ decide() looks at the brain and the files and returns recommendations, each with
   - measure a proposal      when its branch exists and its effect was never measured    auto
   - weekly weak-model check GUIDE vs plain with a free model (plan 6.8)                 auto, weekly
   - tool needs              per active project (installing still needs your approval)    shown only
+  - set up a tool           recipe (gitleaks hook, ruff.toml, pytest.ini) for an active project whose tool is
+                            installed or approved: configure + verify, rolled back on failure  trust: propose
 Jobs that need a model use a FREE model (tidos_session.helper.background), never the model of your last START
 TIDOS; with no free model they are skipped. TIDOS never costs anything.
 Rules: one job at a time; a job that failed in the last 24 h is not retried automatically; each job runs at most
@@ -146,10 +148,20 @@ def decide(conn):
     since = (_now() - timedelta(days=14)).isoformat()
     active = {jobs._key(r[0]) for r in conn.execute("SELECT DISTINCT s.cwd FROM sessions s JOIN tasks t ON t.session_id = s.id "
                                          "WHERE t.started_at >= ?", (since,))}
+    from tidos_scout import recipes, scout
+    approved = {n for n, s in scout.state().items() if s.get("status") == "approved"}
     for cwd, name in sorted(jobs.projects(conn).items(), key=lambda kv: kv[1]):
         if jobs._key(cwd) in active:
             add("scout:" + cwd, "scout_needs", {"project": cwd}, "Tool needs for %s" % name,
                 "active in the last 14 days: which checks is it missing?", auto=False)
+            for tool in sorted(recipes.RECIPES):
+                try:
+                    p = recipes.plan(tool, cwd)
+                except ValueError:
+                    continue
+                if p["applies"] and (p["installed"] or tool in approved):
+                    add("setup:%s:%s" % (tool, cwd), "configure_tool", {"tool": tool, "project": cwd},
+                        "Set up %s in %s" % (tool, name), p["what"])
     return _with_verdicts(recs)
 
 

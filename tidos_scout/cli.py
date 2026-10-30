@@ -10,6 +10,9 @@
   install NAME [--yes]              install an APPROVED tool: pinned version or SHA-256-verified download, your
                                     user account only (needs the tool_install switch; without --yes: dry run)
   uninstall NAME [--yes]            remove a tool TIDOS installed (never one you installed yourself)
+  setup NAME [--project DIR] [--yes]    recipe: detect, install (approved only), configure, verify, roll back on
+                                        failure (gitleaks hook, ruff.toml, pytest.ini); without --yes: dry run
+  unsetup NAME [--project DIR]      undo a setup (files you changed since are kept)
 """
 import argparse
 import os
@@ -132,6 +135,29 @@ def cmd_install(args, remove=False):
     return 0 if result["ok"] else 1
 
 
+def cmd_setup(args, undo=False):
+    from . import recipes
+    try:
+        if undo:
+            for line in recipes.unconfigure(args.name, args.project):
+                print(line)
+            return 0
+        if not args.yes:
+            p = recipes.plan(args.name, args.project)
+            print("%s in %s: %s" % (args.name, args.project, p["what"] if p["applies"] else "not needed: " + p["reason"]))
+            if p["applies"]:
+                print("Would %swrite %s, then verify with `%s`. Add --yes to do it." % (
+                    "" if p["installed"] else "install it (approved tools only), ", ", ".join(p["files"]), p["verify"]))
+            return 0
+        result = recipes.apply(args.name, args.project)
+    except ValueError as e:
+        print("REFUSED: %s" % e)
+        return 1
+    for step, status, detail in result["steps"]:
+        print("%-10s %-7s %s" % (step, status, detail))
+    return 0 if result["ok"] else 1
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="tidos_scout", description=__doc__,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -163,6 +189,12 @@ def main(argv=None):
         p.add_argument("name")
         p.add_argument("--yes", action="store_true")
         p.set_defaults(func=lambda a, r=remove: cmd_install(a, r))
+    for name, undo in (("setup", False), ("unsetup", True)):
+        p = sub.add_parser(name)
+        p.add_argument("name")
+        p.add_argument("--project", default=os.getcwd())
+        p.add_argument("--yes", action="store_true")
+        p.set_defaults(func=lambda a, u=undo: cmd_setup(a, u))
     args = parser.parse_args(argv)
     return args.func(args)
 
