@@ -160,6 +160,7 @@ const AR = {
   "Autopilot: TIDOS runs the jobs it recommends by itself (one at a time, no-cost models only)": "الطيّار الآلي: يشغّل TIDOS بنفسه المهام التي يوصي بها (مهمة واحدة في كل مرة، بنماذج بلا تكلفة فقط)",
   "Measure": "قِس الأثر",
   "tests {a} → {b} · {f} file(s) +{i}/−{d}": "الاختبارات {a} ← {b} · {f} ملف +{i}/−{d}",
+  "Found by TIDOS · success = {m}": "اكتشفه TIDOS · النجاح = {m}", "Still seen after implementation": "لا يزال ظاهرًا بعد التنفيذ",
   "effect {d} pts": "الأثر {d} نقطة",
   "{b}% → {a}% on {n} dungeons ({agent})": "{b}% ← {a}% على {n} زنزانة ({agent})",
   "implemented on a branch, effect never measured: GUIDE dungeons before vs after": "نُفّذ على فرع ولم يُقَس أثره: زنزانات التوجيه قبل التغيير وبعده",

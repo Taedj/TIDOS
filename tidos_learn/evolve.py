@@ -63,6 +63,7 @@ def set_status(item_id, status, **extra):
     for item in items:
         if item["id"] == item_id:
             item["status"] = status
+            item["decided"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
             item.update(extra)
             save(items)
             return item

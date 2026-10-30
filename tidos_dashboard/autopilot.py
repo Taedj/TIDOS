@@ -4,6 +4,7 @@ decide() looks at the brain and the files and returns recommendations, each with
   - refresh learning        when the last refresh is older than 6 h                      auto
   - daily quest             when today has no report                                     auto
   - back up the brain       when the newest backup is older than 7 days                  auto
+  - diagnose                once a day: read the evidence, file improvement proposals    auto (you accept them)
   - trial a draft unit      when a draft has no trial and its suite has enough dungeons  auto
   - implement a proposal    when you accepted it and it has no branch yet                auto
   - measure a proposal      when its branch exists and its effect was never measured    auto
@@ -34,6 +35,7 @@ from tidos_session.detect import tidos_home  # noqa: E402
 
 LEARN_EVERY = timedelta(hours=6)
 BACKUP_EVERY = timedelta(days=7)
+DIAGNOSE_EVERY = timedelta(hours=24)
 WEAK_CHECK_EVERY = timedelta(days=7)
 RETRY_AFTER = timedelta(hours=24)
 DAILY_CAP = {"distill": 5}  # runs per job + params in 24 h; every other job: 1
@@ -100,6 +102,11 @@ def decide(conn):
     newest = max((os.path.getmtime(b) for b in backups), default=0)
     if _now().timestamp() - newest > BACKUP_EVERY.total_seconds():
         add("backup", "backup", {}, "Back up the brain", "newest backup is older than 7 days" if backups else "no backup yet")
+
+    lastd = _last("diagnose")
+    if lastd is None or _now() - lastd > DIAGNOSE_EVERY:
+        add("diagnose", "diagnose", {}, "Diagnose: propose improvements",
+            "read the evidence (checks, corrections, stuck models, failing jobs, guidance effect) once a day")
 
     agent = jobs.background_agent(conn)  # free; None: no free model, so no model job runs by itself
     from tidos_learn import army, evolve

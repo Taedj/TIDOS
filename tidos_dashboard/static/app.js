@@ -339,6 +339,8 @@ async function loadEvolution() {
   const d = r.data;
   $("evoList").innerHTML = d.proposals.map((p) => `
     <tr><td>${p.id}</td><td><b>${esc(p.title)}</b><br><span class="small faint">${esc(p.reason)}</span>${p.branch ? `<br><code class="sys">${esc(p.branch)}</code>` : ""}
+      ${p.measure ? `<br><span class="small">${esc(t("Found by TIDOS · success = {m}", { m: p.measure }))}</span>` : ""}
+      ${p.recurred ? `<br><span class="small warn">${esc(t("Still seen after implementation"))}</span>` : ""}
       ${p.impact ? `<br><span class="small">${esc(t("tests {a} → {b} · {f} file(s) +{i}/−{d}", { a: p.impact.tests_before ?? "?", b: p.impact.tests_after ?? "?", f: p.impact.files ?? 0, i: p.impact.insertions ?? 0, d: p.impact.deletions ?? 0 }))}</span>` : ""}
       ${p.measure ? `<br><span class="pill ${p.measure.delta > 0 ? "ok" : p.measure.delta < 0 ? "bad" : ""}">${esc(t("effect {d} pts", { d: (p.measure.delta > 0 ? "+" : "") + p.measure.delta }))}</span> <span class="small faint">${esc(t("{b}% → {a}% on {n} dungeons ({agent})", { b: p.measure.base, a: p.measure.after, n: p.measure.tasks, agent: p.measure.agent }))}</span>` : ""}</td>
     <td><span class="pill ${p.priority === "high" ? "warn" : ""}">${esc(t(p.priority))}</span></td>

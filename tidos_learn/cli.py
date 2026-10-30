@@ -6,6 +6,7 @@
   show PATH_OR_NAME               print one playbook
   note --project P --stack S "advice"   (LEARN mode) a strong model records advice for weaker models
   summarize [--pending | --session ID]  the helper model (free by default) turns finished sessions into advice notes
+  diagnose [--dry-run]            read the evidence, file improvement proposals for TIDOS (you accept or reject)
   army [--lessons NAME | --activate NAME | --deactivate NAME]   Shadow Army: units ranked by mission evidence
   share [--show | --auto]         community learning pack: --show prints exactly what is shared; --auto uploads
                                   once a day (only if you agreed: tidos_session consent agree)
@@ -197,6 +198,18 @@ def cmd_summarize(args):
     return 0
 
 
+def cmd_diagnose(args):
+    from . import diagnose
+    conn = db.connect(args.db)
+    done = diagnose.run(conn, dry_run=args.dry_run)
+    conn.close()
+    for status, item in done:
+        print("%-32s %s" % (status, item["title"]))
+    if not done:
+        print("No finding: nothing to propose.")
+    return 0
+
+
 def main(argv=None):
     for stream in (sys.stdout, sys.stderr):
         try:
@@ -243,6 +256,9 @@ def main(argv=None):
     p.add_argument("--type", default="notes")
     p.add_argument("text")
     p.set_defaults(func=cmd_note)
+    p = sub.add_parser("diagnose", help="read the evidence and file improvement proposals for TIDOS (never applied)")
+    p.add_argument("--dry-run", action="store_true", help="print the findings, file nothing")
+    p.set_defaults(func=cmd_diagnose)
     p = sub.add_parser("summarize")
     p.add_argument("--session")
     p.add_argument("--pending", action="store_true")

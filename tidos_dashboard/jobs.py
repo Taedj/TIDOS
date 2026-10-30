@@ -125,6 +125,8 @@ def build(conn, job, p):
         return [PY, "scripts/daily_quest.py"], {"TIDOS_E2E": "1"}, "Daily quest (health check)", None
     if job == "validate_dungeons":
         return [PY, "-I", "tidos_evals/__main__.py", "validate"], {}, "Validate dungeons", None
+    if job == "diagnose":
+        return [PY, "-I", "tidos_learn/__main__.py", "diagnose"], {}, "Diagnose: propose improvements", None
     if job == "backup":
         return [PY, "-I", "tidos_brain/__main__.py", "backup"], {}, "Back up the brain", None
     agents = allowed_agents(conn)
