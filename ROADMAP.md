@@ -70,6 +70,12 @@
 ### v5.3.1 — Guild (2026-10-25, beta)
 - Background dungeon raids no longer open cmd windows on Windows.
 
+### v5.4.0 — Monarch (2026-10-30, beta)
+- TIDOS closes its own loop: it diagnoses what goes wrong and proposes fixes, earns trust per kind of action, keeps
+  a journal where every action can be undone, and pauses jobs that never help.
+- Connect TIDOS to any AI tool with one click; Tool Scout recipes set tools up in a project and verify them;
+  new releases are tested in a separate copy before TIDOS switches, with rollback.
+
 ### Future — Planned (v6.0)
 - TIDOS-native small model: LoRA fine-tune on the workflow dataset, benchmarked on the dungeons against the base
   model and strong models (needs a GPU and a provider-terms review).

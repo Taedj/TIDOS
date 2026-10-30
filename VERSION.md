@@ -1,6 +1,6 @@
 # Version
 
-**Current Version**: 5.3.1
+**Current Version**: 5.4.0
 **Release Date**: 2026-10-25
 **Status**: Beta — learn/guide modes are new; open items in docs/ENHANCEMENT_PLAN.md
 

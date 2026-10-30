@@ -6,7 +6,37 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
 
 ## [Unreleased]
 
+---
+
+## [5.4.0] - 2026-10-30
+
+"Monarch": TIDOS closes its own loop. It notices what goes wrong, proposes fixes, earns the right to act by
+itself step by step, and every action it takes can be undone.
+
 ### Added
+- **Connect TIDOS to any AI tool** (`tidos_session/wire.py`): per tool, the `tidos` MCP server and a short note in
+  its global instructions, so any model there (free ones included) gets TIDOS without typing START TIDOS.
+  OpenCode, Gemini CLI, Antigravity, VS Code + Copilot, Codex CLI and Cline; Cursor and Windsurf get a snippet to
+  paste; Claude Code keeps the plugin. Only when you click Connect (control center > Tool Scout) or run
+  `tidos_session wire --tool X`; backup first, Disconnect removes exactly what was added. START TIDOS only prints a
+  hint. The MCP server now knows which tool launched it, and `tidos_guide` starts the session when a model skipped
+  `tidos_start`.
+- **Diagnose** (`tidos_learn/diagnose.py`): TIDOS reads its own evidence once a day and files improvement proposals
+  with their evidence, a success measure and a baseline: weak-model work never guided, guidance that does not help,
+  checks that keep failing, repeated corrections, weak models stuck on tool errors, failing jobs, jobs that never
+  help, actions you keep undoing. Nothing is applied: you accept or reject.
+- **Graduated trust and an action journal** (`tidos_brain/trust.py`): each kind of action is observe, propose,
+  act with undo or act; good results raise it, your undo lowers it, ceilings for what changes your agents, levels you
+  set are pinned. Every job and activation is journaled with Undo (control center > Jobs).
+- **Eval-gated activation**: a draft specialist that wins its trial (better than plain, not a tie) is proposed for
+  activation and can earn automatic activation with undo.
+- **Tool Scout recipes** (`tidos_scout/recipes.py`, `tidos_scout setup|unsetup`): detect, install (approved only),
+  configure, verify, roll back: gitleaks pre-commit hook, ruff.toml, pytest.ini. Never overwrites your files.
+- **Safe self-update** (`tidos_session/updater.py`, `tidos_session update`): a new release is tested in a separate
+  git worktree with the daily-quest checks before TIDOS switches to it; a patch that passes applies by itself
+  (switch auto_update), minor and major releases wait for you; Roll back returns to the exact previous version.
+- **TIDOS scores its own decisions**: each journaled action is helped, no effect, harmful or failed; scores in the
+  Trust table; a model job whose last 5 runs changed nothing pauses for 7 days.
 - **TIDOS orb** (`tidos_orb/`, stdlib Tkinter): START TIDOS puts a floating bubble on the desktop (level, rank,
   XP ring, a badge when something needs you). Drag it anywhere (the position is remembered); a click opens a
   flat panel: *Journey* (level, five stats, 14-day XP/cleared chart, domains), *Evolution* (system messages,
@@ -16,6 +46,11 @@ All notable changes to **TIDOS (Tidjani Development Operating System)** are docu
   `/tidos-orb` brings it back with the panel open.
 
 ### Fixed
+- The autopilot no longer loops: a draft trial was proposed for a suite with fewer dungeons than a trial needs, so
+  nothing was saved and it ran again every few minutes. Trials now need enough dungeons, and each job runs at most
+  once a day.
+- Unattended jobs always use a free model, never the model of your last START TIDOS.
+- The dashboard browser test no longer fails once 10 backups exist.
 - Claude Code hooks no longer flash a console window on every tool call on Windows: `install-hooks` writes
   `pythonw.exe` (re-run `python -I tidos_brain/__main__.py install-hooks` once to update existing hooks).
 
