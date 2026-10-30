@@ -6,6 +6,7 @@ decide() looks at the brain and the files and returns recommendations, each with
   - back up the brain       when the newest backup is older than 7 days                  auto
   - diagnose                once a day: read the evidence, file improvement proposals    auto (you accept them)
   - trial a draft unit      when a draft has no trial and its suite has enough dungeons  auto
+  - activate a unit         when a draft WON its trial (better than plain, not a tie)   trust: propose at first
   - implement a proposal    when you accepted it and it has no branch yet                auto
   - measure a proposal      when its branch exists and its effect was never measured    auto
   - weekly weak-model check GUIDE vs plain with a free model (plan 6.8)                 auto, weekly
@@ -14,7 +15,10 @@ Jobs that need a model use a FREE model (tidos_session.helper.background), never
 TIDOS; with no free model they are skipped. TIDOS never costs anything.
 Rules: one job at a time; a job that failed in the last 24 h is not retried automatically; each job runs at most
 DAILY_CAP times in 24 h, so a job that achieves nothing cannot loop; nothing here installs, pushes, merges,
-activates a unit or changes a switch: those stay yours.
+changes a switch or connects a tool: those stay yours.
+Graduated trust (tidos_brain.trust): each kind of job has a level (observe < propose < act_undo < act). Below
+act_undo the autopilot only suggests it; every job is written to the action journal, good outcomes raise the
+level after a streak, your undo lowers it. Unit activation starts at 'propose' and can earn act_undo (never more).
 
   python -I tidos_dashboard/autopilot.py --once      run every due job, one after another (START TIDOS calls this
                                                       in the background when the autopilot switch is on)
@@ -29,7 +33,7 @@ from datetime import datetime, timedelta, timezone
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tidos_brain import control, db  # noqa: E402
+from tidos_brain import control, db, trust  # noqa: E402
 from tidos_dashboard import jobs  # noqa: E402
 from tidos_session.detect import tidos_home  # noqa: E402
 
@@ -116,6 +120,10 @@ def decide(conn):
         if agent and u["state"] == "draft" and name not in trials and suite and jobs.trial_ready(suite):
             add("trial:" + name, "trial", {"unit": name, "suite": suite, "agent": agent},
                 "Trial %s" % name, "draft unit, never tested: %s dungeons with and without it" % suite)
+        trial = trials.get(name)
+        if u["state"] == "draft" and trial and trial.get("unit", 0) > trial.get("plain", 0):  # a win, not a tie
+            add("activate:" + name, "activate_unit", {"unit": name}, "Activate %s" % name,
+                "won its trial: %(unit)d%% with it vs %(plain)d%% plain on %(tasks)d dungeons" % trial)
     for item in evolve.load():
         if agent and item["status"] == "accepted" and not item.get("branch"):
             add("self_improve:%d" % item["id"], "self_improve", {"id": item["id"], "agent": agent},
@@ -148,6 +156,13 @@ def decide(conn):
 def _with_verdicts(recs):
     on = control.is_on("autopilot")
     for r in recs:
+        r["trust"] = trust.level(r["job"]) if r["job"] in trust.DEFAULTS else None
+        if r["auto"] and r["trust"] == "observe":
+            r["auto"], r["verdict"] = False, "trust: observe only"
+            continue
+        if r["auto"] and r["trust"] == "propose":
+            r["auto"], r["verdict"] = False, "your call: runs by itself after %d good runs" % trust.PROMOTE_AFTER
+            continue
         if not r["auto"]:
             r["verdict"] = "your call"
         elif _recently_failed(r["job"], r["params"]):
@@ -159,8 +174,19 @@ def _with_verdicts(recs):
     return recs
 
 
+def _settle(log=None):
+    try:
+        for a in trust.settle():
+            if log:
+                log("autopilot", "action #%d %s: %s" % (a["id"], a["state"], a["title"][:80]))
+    except (OSError, ValueError) as e:
+        if log:
+            log("autopilot", "action journal: %s" % e)
+
+
 def tick(conn, db_path=None, log=None):
-    """One autopilot step: start the first due auto job. Returns the job record or None."""
+    """One autopilot step: settle finished actions, start the first due auto job. Returns the job record or None."""
+    _settle(log)
     if not control.is_on("autopilot") or jobs.running():
         return None
     for r in decide(conn):
@@ -193,6 +219,7 @@ def loop(db_path=None, log=None, interval=TICK_SECONDS):
 def run_once(db_path=None):
     """Run every due auto job, one after another (START TIDOS / schedulers). Returns the records run."""
     done, seen = [], set()
+    _settle()
     for _ in range(MAX_JOBS_PER_RUN):
         conn = db.connect(db_path)
         try:

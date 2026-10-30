@@ -536,6 +536,39 @@ async function loadJobs() {
     loadJobs();
   }));
   if (d.running && !logJob) { const j = d.jobs.find((x) => x.id === d.running); if (j) showLog(j.id, t(j.title)); }
+  loadActions();
+}
+
+// ---- action journal (undo) + graduated trust
+async function loadActions() {
+  const r = await api("/api/actions");
+  if (!r.ok) return;
+  const cls = { kept: "ok", failed: "bad", undone: "warn", open: "" };
+  $("actionList").innerHTML = r.data.actions.map((a) => `
+    <tr><td>${esc(when(a.at))}</td><td>${esc(t(a.title))}</td><td>${esc(t(a.by))}</td>
+      <td><span class="pill ${cls[a.state] || ""}">${esc(t(a.state))}</span></td>
+      <td>${a.undoable && a.state !== "undone" ? `<button class="btn ghost act-undo" type="button" data-id="${a.id}">${t("Undo")}</button>` : ""}</td></tr>`).join("")
+    || `<tr><td colspan="5" class="muted">${t("No actions yet.")}</td></tr>`;
+  $("actionList").querySelectorAll(".act-undo").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm(t("Undo this action?"))) return;
+    b.disabled = true;
+    const res = await api("/api/actions/undo", { id: Number(b.dataset.id) });
+    toast(`<b>[SYSTEM]</b> ${esc(res.ok ? res.data.action.undo_detail : t(res.data.error || "failed"))}`, res.ok ? "" : "warn");
+    loadActions();
+  }));
+  const levels = ["observe", "propose", "act_undo", "act"];
+  $("trustList").innerHTML = r.data.levels.map((x) => `
+    <tr><td><b>${esc(x.kind)}</b></td>
+      <td><select class="trust-sel" data-kind="${esc(x.kind)}">
+        <option value="" ${x.pinned ? "" : "selected"}>${t("earned")}: ${esc(t(x.level))}</option>
+        ${levels.slice(0, levels.indexOf(x.ceiling) + 1).map((l) => `<option value="${l}" ${x.pinned && x.level === l ? "selected" : ""}>${esc(t(l))}</option>`).join("")}
+      </select></td>
+      <td>${x.streak}</td></tr>`).join("");
+  $("trustList").querySelectorAll(".trust-sel").forEach((s) => s.addEventListener("change", async () => {
+    const res = await api("/api/trust", { kind: s.dataset.kind, level: s.value || null });
+    if (!res.ok) toast(`<b>[SYSTEM]</b> ${esc(t(res.data.error || "failed"))}`, "warn");
+    loadActions();
+  }));
 }
 
 function openJobForm(kind, unit) {

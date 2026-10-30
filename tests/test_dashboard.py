@@ -272,6 +272,23 @@ class DashboardTests(unittest.TestCase):
         self.assertEqual(conn.execute("SELECT COUNT(*) FROM security_log WHERE event = 'connect'").fetchone()[0], 2)
         conn.close()
 
+    def test_actions_and_trust_endpoints(self):
+        home = os.path.join(self.tmp.name, "trusthome")
+        with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):
+            self.assertEqual(self.req("GET", "/api/actions")[0], 401)
+            self.assertEqual(self.req("POST", "/api/actions/undo", {"id": 1})[0], 401)
+            self.login_with_setup()
+            body = self.req("GET", "/api/actions")[1]
+            self.assertEqual(body["actions"], [])
+            self.assertIn("activate_unit", {x["kind"] for x in body["levels"]})
+            self.assertEqual(self.req("POST", "/api/actions/undo", {"id": 7})[0], 404)
+            self.assertEqual(self.req("POST", "/api/trust", {"kind": "trial", "level": "god"})[0], 400)
+            levels = self.req("POST", "/api/trust", {"kind": "trial", "level": "propose"})[1]["levels"]
+            self.assertEqual(next(x for x in levels if x["kind"] == "trial")["level"], "propose")
+            from tidos_brain import trust
+            item = trust.record("backup", "Back up")
+            self.assertEqual(self.req("POST", "/api/actions/undo", {"id": item["id"]})[0], 409)  # nothing to undo
+
     def test_memory_and_army_endpoints(self):
         home = os.path.join(self.tmp.name, "tidoshome2")
         with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):

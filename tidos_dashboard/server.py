@@ -161,6 +161,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 from tidos_scout import scout
                 return self._json(200, {"tools": scout.overview(conn)})
+            if path == "/api/actions":
+                from tidos_brain import trust
+                return self._json(200, {"actions": list(reversed(trust.journal(50))), "levels": trust.levels()})
             if path == "/api/connect":
                 from tidos_session import wire
                 return self._json(200, {"tools": wire.tools(), "snippet": wire.manual_snippet()})
@@ -298,6 +301,8 @@ class Handler(BaseHTTPRequestHandler):
             "/api/jobs/cancel": self._job_cancel,
             "/api/tools/action": self._tool_action,
             "/api/connect": self._connect,
+            "/api/actions/undo": self._action_undo,
+            "/api/trust": self._trust_level,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
             "/api/backups": self._backup,
@@ -482,7 +487,44 @@ class Handler(BaseHTTPRequestHandler):
         except (ValueError, KeyError) as e:
             return self._json(409, {"error": str(e).strip("'")})
         self.server.lockout.log("army", "%s %s" % (name, action))
+        from tidos_brain import trust
+        if action == "activate":  # your activations teach TIDOS when it may activate by itself
+            trust.record("activate_unit", "Activate %s" % name, by="owner", target=name)
+        else:
+            trust.reversed_by_you("activate_unit", name)
         return self._json(200, {"ok": True, "path": path})
+
+    def _action_undo(self, body):
+        """Undo one journaled action (activation, self-improve branch). Owner only, logged; lowers that kind's trust."""
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        if session.get("role", "owner") != "owner":
+            return self._json(403, {"error": "only the owner can undo TIDOS actions"})
+        from tidos_brain import trust
+        try:
+            item = trust.undo(int(body.get("id", -1)))
+        except KeyError:
+            return self._json(404, {"error": "no such action"})
+        except ValueError as e:
+            return self._json(409, {"error": str(e)})
+        self.server.lockout.log("action_undo", "#%d %s: %s" % (item["id"], item["kind"], item.get("undo_detail")))
+        return self._json(200, {"action": item, "level": trust.level(item["kind"])})
+
+    def _trust_level(self, body):
+        """Set the trust level of one kind of action (pinned), or clear it back to earned trust. Owner only."""
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        if session.get("role", "owner") != "owner":
+            return self._json(403, {"error": "only the owner can change TIDOS's trust"})
+        from tidos_brain import trust
+        try:
+            level = trust.set_level(str(body.get("kind")), body.get("level") or None)
+        except ValueError as e:
+            return self._json(400, {"error": str(e)})
+        self.server.lockout.log("trust", "%s -> %s" % (body.get("kind"), level))
+        return self._json(200, {"levels": trust.levels()})
 
     def _ask(self, body):
         if not self._session():

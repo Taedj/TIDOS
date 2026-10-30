@@ -158,10 +158,23 @@
       <div class="window">
         <h2>Autopilot — TIDOS decides what to run</h2>
         <div class="kv" id="apInfo"></div>
-        <p class="small faint note">TIDOS is free and works with any model: it uses the model of your last START TIDOS (Claude Code, OpenCode, Gemini CLI), or a free model when your tool has no command line. Switch the autopilot on or off in Security. It never installs, pushes, merges, activates a unit or changes a switch.</p>
+        <p class="small faint note">TIDOS is free and works with any model: jobs it runs by itself use a free model, jobs you start use your own. Switch the autopilot on or off in Security. It never installs, pushes, merges, changes a switch or connects a tool.</p>
 
         <h2 class="mt">Recommended now</h2>
         <div id="recs"></div>
+
+        <h2 class="mt">Actions TIDOS took — undo any of them</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>When</th><th>Action</th><th>By</th><th>Result</th><th></th></tr></thead>
+          <tbody id="actionList"></tbody>
+        </table></div>
+
+        <h2 class="mt">Trust — what TIDOS may do by itself</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Kind</th><th>Level</th><th>Good in a row</th></tr></thead>
+          <tbody id="trustList"></tbody>
+        </table></div>
+        <p class="small faint note">observe: shown only · propose: you click · act with undo: TIDOS does it and you can undo · act: TIDOS does it. Three good results in a row raise a level; your undo lowers it. A level you choose stays until you pick "earned".</p>
 
         <h2 class="mt">Run a job</h2>
         <div class="jobs-grid">

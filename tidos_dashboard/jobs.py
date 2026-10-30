@@ -125,6 +125,11 @@ def build(conn, job, p):
         return [PY, "scripts/daily_quest.py"], {"TIDOS_E2E": "1"}, "Daily quest (health check)", None
     if job == "validate_dungeons":
         return [PY, "-I", "tidos_evals/__main__.py", "validate"], {}, "Validate dungeons", None
+    if job == "activate_unit":
+        from tidos_learn import army
+        name = _need(p.get("unit"), {n for n, u in army.units().items() if u["state"] == "draft"}, "draft unit")
+        return ([PY, "-I", "tidos_learn/__main__.py", "army", "--activate", name], {},
+                "Activate %s (undo: Actions)" % name, None)
     if job == "diagnose":
         return [PY, "-I", "tidos_learn/__main__.py", "diagnose"], {}, "Diagnose: propose improvements", None
     if job == "backup":
@@ -276,6 +281,13 @@ def start(conn, job, params=None, by="owner", db_path=None, _popen=subprocess.Po
                   creationflags=flags)
     _PROCS[job_id] = proc
     _update(job_id, pid=proc.pid)
+    try:  # the action journal: every job is an action; its outcome earns or costs trust (tidos_brain.trust)
+        from tidos_brain import trust
+        p = params or {}
+        trust.record(job, title, by=by, job_id=job_id,
+                     target={"activate_unit": p.get("unit"), "self_improve": p.get("id")}.get(job, p or None))
+    except (OSError, ValueError):
+        pass
     threading.Thread(target=_wait, args=(job_id, proc, out, db_path), daemon=True).start()
     return record
 
