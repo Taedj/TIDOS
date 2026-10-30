@@ -238,6 +238,16 @@
     <!-- TOOL SCOUT -->
     <div id="view-tools" class="grid hidden">
       <div class="window">
+        <h2>Connect TIDOS to your AI tools</h2>
+        <p class="small faint">A connected tool gives TIDOS to every model you use in it, without typing START TIDOS.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>AI tool</th><th>On this computer</th><th>TIDOS</th><th>Actions</th></tr></thead>
+          <tbody id="connectList"></tbody>
+        </table></div>
+        <pre id="connectSnippet" class="hidden"></pre>
+        <p class="small faint note">Connect adds two things to that tool, and nothing else: the TIDOS tools (MCP server) and a short note telling the model to use them. Each file is backed up first; Disconnect removes exactly what was added.</p>
+      </div>
+      <div class="window">
         <h2>Tool Scout — capabilities TIDOS can recommend</h2>
         <div class="table-wrap"><table>
           <thead><tr><th>Tool</th><th>Capability</th><th>Installed</th><th>Trust</th><th>Used</th><th>Status</th><th>Actions</th></tr></thead>

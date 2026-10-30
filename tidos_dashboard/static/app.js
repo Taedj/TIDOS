@@ -357,8 +357,41 @@ async function loadEvolution() {
     .map(([k, v]) => `<span class="muted">${t(k)}</span><b>${v}</b>`).join("");
 }
 
+// ---- connect TIDOS to each AI tool (its MCP settings + global instructions), only when you click
+async function loadConnect() {
+  const r = await api("/api/connect");
+  if (!r.ok) return;
+  const state = (x) => x.how === "plugin" ? `<span class="pill ok">${t("via the TIDOS plugin")}</span>`
+    : x.how === "manual" ? `<span class="pill">${t("add by hand")}</span>`
+    : x.connected ? `<span class="pill ok">${t("connected")}</span>` : `<span class="pill">${t("not connected")}</span>`;
+  const action = (x) => x.how === "manual" ? `<button class="btn ghost conn" data-id="${esc(x.id)}" data-a="show">${t("Show what to paste")}</button>`
+    : x.how !== "auto" || !x.installed ? ""
+    : `<button class="btn ghost conn" data-id="${esc(x.id)}" data-a="${x.connected ? "disconnect" : "connect"}">${t(x.connected ? "Disconnect" : "Connect")}</button>`;
+  $("connectList").innerHTML = r.data.tools.map((x) => `
+    <tr><td><b>${esc(x.label)}</b>${x.files.length ? `<br><span class="small faint">${x.files.map(esc).join("<br>")}</span>` : ""}</td>
+    <td>${x.installed ? `<span class="pill ok">${t("yes")}</span>` : `<span class="pill">${t("not found")}</span>`}</td>
+    <td>${state(x)}</td><td>${action(x)}</td></tr>`).join("");
+  const rows = Object.fromEntries(r.data.tools.map((x) => [x.id, x]));
+  $("connectList").querySelectorAll(".conn").forEach((b) => b.addEventListener("click", async () => {
+    const tool = rows[b.dataset.id];
+    if (b.dataset.a === "show") {
+      $("connectSnippet").textContent = `${tool.label}\n\n${r.data.snippet}`;
+      $("connectSnippet").classList.remove("hidden");
+      return;
+    }
+    const verb = b.dataset.a === "connect" ? "Connect TIDOS to {name}?" : "Disconnect TIDOS from {name}?";
+    if (!confirm(`${t(verb, { name: tool.label })}\n\n${tool.files.join("\n")}`)) return;
+    b.disabled = true;
+    const res = await api("/api/connect", { tool: tool.id, action: b.dataset.a });
+    if (!res.ok) { b.disabled = false; toast(`<b>[SYSTEM]</b> ${esc(tool.label)}: ${esc(t(res.data.error || "failed"))}`, "warn"); return; }
+    toast(`<b>[SYSTEM]</b> ${esc(tool.label)}: ${res.data.done.map((d) => esc(d.status)).join(" · ")}`);
+    loadConnect();
+  }));
+}
+
 // ---- tool scout
 async function loadTools() {
+  loadConnect();
   const r = await api("/api/tools");
   if (!r.ok) return;
   const btn = (x, action, label) => `<button class="btn ghost tool" data-n="${esc(x.name)}" data-a="${action}">${t(label)}</button>`;

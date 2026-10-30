@@ -13,7 +13,7 @@ import re
 import sys
 from datetime import datetime, timezone
 
-from . import brief, commands, detect, effect, memory
+from . import brief, commands, detect, effect, memory, wire
 
 
 def _session_path():
@@ -189,10 +189,15 @@ def write_agents_md(project, tool="any"):
 
 
 def report(session, facts):
+    try:
+        connect = wire.hint(session["tool"])
+    except OSError:
+        connect = ""
     return ("TIDOS session\n"
             "  tool : %(tool)s\n  model: %(model)s  (%(model_source)s)\n  tier : %(tier)s  (rule %(tier_rule)s)\n"
             "  mode : %(mode)s\n" % session
-            + "  project: %s  [%s]\n" % (facts["name"], ", ".join(facts["stack"])))
+            + "  project: %s  [%s]\n" % (facts["name"], ", ".join(facts["stack"]))
+            + ("  " + connect + "\n" if connect else ""))
 
 
 def main(argv=None):
@@ -230,7 +235,10 @@ def main(argv=None):
     cm = sub.add_parser("commands", help="every TIDOS / command; --install puts them in each tool's / menu")
     cm.add_argument("--install", action="store_true")
     cm.add_argument("--json", action="store_true")
-    c = sub.add_parser("consent", help="community learning: agree (share anonymous lessons) / decline / status")
+    w = sub.add_parser("wire", help="connect TIDOS to an AI tool (MCP server + global instructions); no --tool: list")
+    w.add_argument("--tool", help="tool id from the list (opencode, gemini-cli, antigravity, vscode-copilot...)")
+    w.add_argument("--undo", action="store_true", help="disconnect: remove exactly what was added")
+    c = sub.add_parser("consent",help="community learning: agree (share anonymous lessons) / decline / status")
     c.add_argument("answer", choices=["agree", "decline", "status"])
     args = parser.parse_args(argv)
 
@@ -242,6 +250,25 @@ def main(argv=None):
             print(json.dumps(commands.listing(), indent=1))
         else:
             print(commands.text_listing())
+        return 0
+    if args.command == "wire":
+        if not args.tool:
+            for r in wire.tools():
+                state = {"plugin": "via the TIDOS plugin", "manual": "add by hand (wire --tool %s shows what)" % r["id"]
+                         }.get(r["how"]) or ("connected" if r["connected"] else "not connected")
+                print("%-15s %-18s %-13s %s" % (r["id"], r["label"], "installed" if r["installed"] else "not found",
+                                                state))
+            return 0
+        try:
+            if wire.find(args.tool).get("manual"):
+                print("Paste into %s's MCP settings, then its rules:\n\n%s" % (args.tool, wire.manual_snippet()))
+                return 0
+            done = wire.disconnect(args.tool) if args.undo else wire.connect(args.tool)
+        except ValueError as e:
+            print(e)
+            return 2
+        for path, what in done:
+            print("%s: %s" % (what, path))
         return 0
     if args.command == "consent":
         return consent(args.answer)

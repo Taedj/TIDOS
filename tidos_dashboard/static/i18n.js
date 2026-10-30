@@ -257,6 +257,16 @@ const AR = {
   "Last run": "آخر تشغيل", "Result": "النتيجة",
   "Skill drafts": "مسودات المهارات", "Specialist drafts": "مسودات المتخصصين", "Issue drafts": "مسودات القضايا",
 
+  // ---- connect TIDOS to AI tools
+  "Connect TIDOS to your AI tools": "اربط TIDOS بأدوات الذكاء الاصطناعي لديك",
+  "A connected tool gives TIDOS to every model you use in it, without typing START TIDOS.": "الأداة المربوطة تمنح TIDOS لكل نموذج تستعمله فيها، دون كتابة START TIDOS.",
+  "AI tool": "أداة الذكاء الاصطناعي", "On this computer": "على هذا الحاسوب",
+  "Connect adds two things to that tool, and nothing else: the TIDOS tools (MCP server) and a short note telling the model to use them. Each file is backed up first; Disconnect removes exactly what was added.": "الربط يضيف إلى الأداة شيئين فقط: أدوات TIDOS (خادم MCP) وملاحظة قصيرة تطلب من النموذج استعمالها. تُحفظ نسخة احتياطية من كل ملف أولًا؛ وفك الربط يزيل ما أُضيف بالضبط.",
+  "via the TIDOS plugin": "عبر إضافة TIDOS", "add by hand": "يُضاف يدويًا", "connected": "مربوطة", "not connected": "غير مربوطة",
+  "not found": "غير موجودة", "Show what to paste": "اعرض ما يجب لصقه", "Connect": "اربط", "Disconnect": "فك الربط",
+  "Connect TIDOS to {name}?": "ربط TIDOS بـ {name}؟", "Disconnect TIDOS from {name}?": "فك ربط TIDOS عن {name}؟",
+  "only the owner of this computer can change its AI tools": "مالك هذا الحاسوب وحده يستطيع تغيير أدوات الذكاء الاصطناعي فيه",
+
   // ---- tool scout
   "Tool Scout — capabilities TIDOS can recommend": "كشّاف الأدوات — قدرات يمكن لـ TIDOS أن يوصي بها",
   "Capability": "القدرة", "Installed": "مثبّتة", "Trust": "الثقة", "Used": "الاستخدام", "Actions": "الإجراءات",

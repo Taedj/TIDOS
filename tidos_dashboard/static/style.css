@@ -294,3 +294,4 @@ td.nowrap { white-space: nowrap; }
 #armyList tr { cursor: default; }
 #armyList tr.sel td { background: rgba(79,176,255,.12); }
 @media (max-width: 760px) { .g-army { grid-template-columns: 1fr; } .unit-desc { max-width: 220px; } }
+#connectSnippet { white-space: pre-wrap; overflow-wrap: anywhere; font-family: var(--mono); font-size: 12px; background: rgba(0,0,0,.35); padding: 10px; border-radius: 4px; }

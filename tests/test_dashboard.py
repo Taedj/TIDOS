@@ -247,6 +247,31 @@ class DashboardTests(unittest.TestCase):
             self.assertEqual(code, 409)  # refused: tool_install switch off by default (and ruff is blacklisted)
             self.assertIn("switch is off", json.dumps(body))
 
+    def test_connect_ai_tools_endpoints(self):
+        home = os.path.join(self.tmp.name, "userhome")
+        os.makedirs(os.path.join(home, ".config", "opencode"))
+        fake_home = mock.patch("tidos_session.wire.os.path.expanduser", lambda p: p.replace("~", home, 1))
+        no_path = mock.patch("tidos_session.wire.shutil.which", lambda exe: None)
+        with fake_home, no_path:
+            self.assertEqual(self.req("GET", "/api/connect")[0], 401)
+            self.assertEqual(self.req("POST", "/api/connect", {"tool": "opencode", "action": "connect"})[0], 401)
+            self.login_with_setup()
+            rows = {r["id"]: r for r in self.req("GET", "/api/connect")[1]["tools"]}
+            self.assertEqual((rows["opencode"]["installed"], rows["opencode"]["connected"]), (True, False))
+            self.assertFalse(rows["codex"]["installed"])
+            for bad in ({"tool": "opencode", "action": "rm"}, {"tool": "cursor", "action": "connect"},
+                        {"tool": "../x", "action": "connect"}):
+                self.assertEqual(self.req("POST", "/api/connect", bad)[0], 400, bad)
+            code, body = self.req("POST", "/api/connect", {"tool": "opencode", "action": "connect"})[:2]
+            self.assertEqual(code, 200)
+            self.assertEqual([d["status"] for d in body["done"]], ["added", "added"])
+            self.assertTrue(os.path.isfile(os.path.join(home, ".config", "opencode", "AGENTS.md")))
+            self.assertEqual(self.req("POST", "/api/connect", {"tool": "opencode", "action": "disconnect"})[0], 200)
+            self.assertFalse(os.path.exists(os.path.join(home, ".config", "opencode", "AGENTS.md")))
+        conn = db.connect(self.srv.db_path)
+        self.assertEqual(conn.execute("SELECT COUNT(*) FROM security_log WHERE event = 'connect'").fetchone()[0], 2)
+        conn.close()
+
     def test_memory_and_army_endpoints(self):
         home = os.path.join(self.tmp.name, "tidoshome2")
         with mock.patch.dict(os.environ, {"TIDOS_HOME_DIR": home}):

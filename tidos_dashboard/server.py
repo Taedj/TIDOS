@@ -161,6 +161,9 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/tools":
                 from tidos_scout import scout
                 return self._json(200, {"tools": scout.overview(conn)})
+            if path == "/api/connect":
+                from tidos_session import wire
+                return self._json(200, {"tools": wire.tools(), "snippet": wire.manual_snippet()})
             if path == "/api/evolution":
                 return self._json(200, stats.evolution())
             if path == "/api/notifications":
@@ -294,6 +297,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/jobs/run": self._job_run,
             "/api/jobs/cancel": self._job_cancel,
             "/api/tools/action": self._tool_action,
+            "/api/connect": self._connect,
             "/api/ask": self._ask,
             "/api/settings": self._setting,
             "/api/backups": self._backup,
@@ -514,6 +518,26 @@ class Handler(BaseHTTPRequestHandler):
             conn.close()
         self.server.lockout.log("backup", os.path.basename(path))
         return self._json(200, {"backups": explore.list_backups()})
+
+    def _connect(self, body):
+        """Connect / disconnect TIDOS to one AI tool (its MCP settings + global instructions). Owner only, logged."""
+        session = self._session()
+        if not session:
+            return self._json(401, {"error": "login required"})
+        if session.get("role", "owner") != "owner":
+            return self._json(403, {"error": "only the owner of this computer can change its AI tools"})
+        from tidos_session import wire
+        action = body.get("action")
+        if action not in ("connect", "disconnect"):
+            return self._json(400, {"error": "unknown action"})
+        try:
+            done = wire.connect(str(body.get("tool"))) if action == "connect" else wire.disconnect(str(body.get("tool")))
+        except ValueError as e:
+            return self._json(400, {"error": str(e)})
+        except OSError as e:
+            return self._json(500, {"error": "could not write the file: %s" % e})
+        self.server.lockout.log("connect", "%s %s: %s" % (action, body.get("tool"), "; ".join(s for _, s in done)))
+        return self._json(200, {"done": [{"file": f, "status": s} for f, s in done]})
 
     def _tool_action(self, body):
         """Tool scout: approve/propose/blacklist/reset, trust, vet, and install/uninstall (approved tools only,

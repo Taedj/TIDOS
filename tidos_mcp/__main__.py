@@ -1,8 +1,7 @@
 """Run the TIDOS MCP server on stdio: python -I tidos_mcp/__main__.py
 
-Register it (the user runs this; agents may not change their own configuration):
-  Claude Code : claude mcp add tidos -- python -I "<TIDOS>/tidos_mcp/__main__.py"
-  OpenCode    : opencode.json -> "mcp": {"tidos": {"type": "local", "command": ["python", "-I", "<TIDOS>/tidos_mcp/__main__.py"]}}
+Registered automatically: START TIDOS wires it into OpenCode and Gemini CLI (tidos_session/wire.py); Claude Code
+gets it from the TIDOS plugin. By hand: claude mcp add tidos -- python -I "<TIDOS>/tidos_mcp/__main__.py"
 """
 import os
 import sys

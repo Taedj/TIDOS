@@ -107,14 +107,35 @@ def _text(text, is_error=False):
     return {"content": [{"type": "text", "text": text}], "isError": is_error}
 
 
+CLIENT = {"tool": "auto"}  # the tool that launched this server (MCP initialize clientInfo.name)
+STARTED = set()            # projects started by this server process
+CLIENT_TOOLS = (("opencode", "opencode"), ("claude", "claude-code"), ("gemini", "gemini-cli"),
+                ("antigravity", "antigravity"), ("cursor", "cursor"), ("windsurf", "windsurf"), ("codex", "codex"))
+
+
+def client_tool(name):
+    name = (name or "").lower()
+    return next((tool for key, tool in CLIENT_TOOLS if key in name), "auto")
+
+
+def _start(args):
+    project = args["project_dir"]
+    tool = args.get("tool") if args.get("tool") not in (None, "", "auto") else CLIENT["tool"]
+    session, facts, text = session_cli.start(tool, args.get("model") or "auto", project, learn=True)
+    STARTED.add(os.path.normcase(os.path.abspath(project)))
+    return session_cli.report(session, facts) + "\n" + text
+
+
 def tool_start(args):
-    session, facts, text = session_cli.start(args.get("tool") or "auto", args.get("model") or "auto",
-                                             args["project_dir"], learn=True)
-    return _text(session_cli.report(session, facts) + "\n" + text)
+    return _text(_start(args))
 
 
 def tool_guide(args):
-    return _text(guide.guidance(args["request"], args["project_dir"])[1])
+    """Guidance for one request; starts the session first when the model skipped tidos_start (weak models do)."""
+    text = guide.guidance(args["request"], args["project_dir"])[1]
+    if os.path.normcase(os.path.abspath(args["project_dir"])) not in STARTED and os.path.isdir(args["project_dir"]):
+        text = _start({"project_dir": args["project_dir"]}) + "\n\n---\n" + text
+    return _text(text)
 
 
 def tool_verify(args):
@@ -198,6 +219,7 @@ def handle(message):
     try:
         if method == "initialize":
             asked = (message.get("params") or {}).get("protocolVersion")
+            CLIENT["tool"] = client_tool(((message.get("params") or {}).get("clientInfo") or {}).get("name"))
             result = {"protocolVersion": asked if asked in PROTOCOL_VERSIONS else PROTOCOL_VERSIONS[-1],
                       "capabilities": {"tools": {}}, "serverInfo": SERVER_INFO,
                       "instructions": "TIDOS: call tidos_start once per session and follow the brief it returns."}
