@@ -287,7 +287,7 @@ def start(conn, job, params=None, by="owner", db_path=None, _popen=subprocess.Po
     out = open(log, "w", encoding="utf-8")
     out.write("$ %s\n\n" % record["argv"])
     out.flush()
-    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", **extra_env)
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", TIDOS_JOB=job, **extra_env)
     flags = 0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW
     proc = _popen(argv, cwd=REPO_ROOT, stdout=out, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, env=env,
                   creationflags=flags)

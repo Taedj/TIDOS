@@ -188,6 +188,41 @@ def cmd_install_hooks(args):
     return 0
 
 
+def cmd_center(args):
+    """The Control Center review for the agent in this session (no password needed: reads ~/.tidos only)."""
+    from tidos_brain import center
+    if args.json:
+        print(json.dumps(center.overview(), indent=1, default=str))
+    else:
+        print(center.report())
+    return 0
+
+
+def cmd_center_health(args):
+    """Diagnostic reports: errors/anomalies/inconsistent states found in the real Center data (read-only)."""
+    from tidos_brain import center
+    print(json.dumps(center.health(force=args.force), indent=1, default=str) if args.json else center.health_text())
+    return 0
+
+
+def cmd_center_act(args):
+    """The ONE agent write path: propose / run_job. Everything else is refused (owner-only in the browser)."""
+    from tidos_brain import center
+    if args.kind == "run_job":
+        params = json.loads(args.params) if args.params else None
+        call = lambda: center.act("run_job", job=args.title, params=params)  # noqa: E731
+    else:
+        call = lambda: center.act("propose", title=args.title, reason=args.reason,
+                                  priority=args.priority)  # noqa: E731
+    try:
+        result = call()
+    except (ValueError, RuntimeError) as e:
+        print("%s\n%s" % ("REFUSED", e))
+        return 2
+    print("%s\n%s" % ("OK", result["detail"]))
+    return 0
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(prog="tidos_brain")
     parser.add_argument("--db", help="brain database path (default ~/.tidos/brain.db or $TIDOS_BRAIN_DB)")
@@ -226,6 +261,23 @@ def main(argv=None):
     p.add_argument("name")
     p.add_argument("--yes", action="store_true")
     p.set_defaults(func=cmd_restore)
+
+    p = sub.add_parser("center", help="the Control Center review for the agent in this session")
+    p.add_argument("--json", action="store_true")
+    p.set_defaults(func=cmd_center)
+
+    p = sub.add_parser("center-act", help="the only agent write path: propose / run_job (trust-gated)")
+    p.add_argument("kind", choices=["propose", "run_job"])
+    p.add_argument("title", help="propose: proposal title | run_job: the job name")
+    p.add_argument("--reason")
+    p.add_argument("--priority", default="medium", choices=["high", "medium", "low"])
+    p.add_argument("--params", help="run_job: JSON params, e.g. '{\"unit\": \"chef\"}'")
+    p.set_defaults(func=cmd_center_act)
+
+    p = sub.add_parser("center-health", help="diagnostic reports from the real Center data (read-only)")
+    p.add_argument("--json", action="store_true")
+    p.add_argument("--force", action="store_true", help="re-scan even when the data signature is unchanged")
+    p.set_defaults(func=cmd_center_health)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -32,7 +32,8 @@ BLOCK = """## TIDOS
 TIDOS is connected to you through the `tidos` MCP tools. Use them in every session:
 1. At the start of the session, call `tidos_start` once with `project_dir` = the absolute path of the current
    project (and `model` = your exact model id if you know it). Follow the brief it returns.
-2. At every new request from the user, call `tidos_guide` with the request and `project_dir`, and follow it.
+2. At a new request that is not trivial (simple questions, formatting and tiny fixes stay direct), call
+   `tidos_guide` with the request and `project_dir`, and follow it.
 3. Before saying a task is done, call `tidos_verify` with `project_dir` and report its real result.
 Never ask for, repeat or store passwords or tokens in the chat."""
 

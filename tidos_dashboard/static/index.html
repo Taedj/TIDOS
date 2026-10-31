@@ -65,6 +65,7 @@
 
   <nav class="tabs" id="tabs">
     <button class="tab active" data-view="status">Status</button>
+    <button class="tab" data-view="center">Agent Review</button>
     <button class="tab" data-view="live">Live Monitor</button>
     <button class="tab" data-view="security">Security</button>
     <button class="tab" data-view="dungeons">Dungeons</button>
@@ -110,6 +111,49 @@
           <thead><tr><th>Command</th><th>What it does</th></tr></thead>
           <tbody id="cmdList"></tbody></table></div>
         <div class="kv" id="cmdTools"></div>
+      </div>
+    </div>
+
+    <!-- AGENT REVIEW (Center Link) -->
+    <div id="view-center" class="grid g-2 hidden">
+      <div class="window">
+        <h2>Waiting on you (decide here)</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>What</th><th>Detail</th></tr></thead>
+          <tbody id="cOwner"></tbody></table></div>
+        <h2 class="mt">Recommended now</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Job</th><th>Verdict</th><th>Reason</th></tr></thead>
+          <tbody id="cRecs"></tbody></table></div>
+        <p class="small faint note">Data: ~/.tidos (Center Link, tidos_brain/center.py) — no password involved.</p>
+      </div>
+      <div class="window">
+        <h2>Agent can act on (with its trust level)</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Item</th><th>Detail</th></tr></thead>
+          <tbody id="cAgent"></tbody></table></div>
+        <h2 class="mt">Trust ladder</h2>
+        <div id="cTrust"></div>
+        <h2 class="mt">Notices</h2>
+        <div id="cNotes"></div>
+        <h2 class="mt">Recent jobs</h2>
+        <div id="cJobs"></div>
+      </div>
+
+      <!-- AGENT REVIEW: SYSTEM HEALTH -->
+      <div id="view-center-health" class="window span-2">
+        <h2>System Health <span id="cHealthCounts" class="small faint"></span></h2>
+        <p id="cHealth" class="small"></p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Severity</th><th>Component</th><th>Detected errors &amp; anomalies (evidence, root cause, recommendation)</th><th>Status</th><th>Owner actions</th></tr></thead>
+          <tbody id="cIssues"></tbody></table></div>
+        <h2 class="mt">Resolved issues</h2>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Severity</th><th>Component</th><th>Issue</th><th>Status</th><th>Owner actions</th></tr></thead>
+          <tbody id="cResolved"></tbody></table></div>
+        <p class="small faint note">Read-only scan of the real Center data (~/.tidos: jobs, trust journal, proposals,
+          update state, security log). Diagnostic reports never change production state; status moves are owner
+          decisions, logged like every owner action.</p>
       </div>
     </div>
 

@@ -59,6 +59,10 @@ COMMANDS = [
     Command("tidos-army", "", "Shadow Army: your subagents ranked by mission evidence", "tidos_learn army", ""),
     Command("tidos-tools", "", "Tool Scout: tools this project needs and their state", "tidos_scout needs --project .",
             "Never install a tool unless the user approves it."),
+    Command("tidos-center", "", "Deep review of the TIDOS Control Center in this session: pending actions, jobs, trust, next moves",
+            "tidos_brain center", "Show the report briefly, then ask the user which pending item(s) they want "
+            "handled: owner-only ones go to /TIDOSZIT (you never handle them here), agent ones may run via "
+            "`{run:tidos_brain center-act run_job <job>}` only when its trust level allows it."),
     Command("tidos-share", "[agree|decline|status]", "Community learning: agree or not to share anonymous lessons",
             "tidos_session consent " + ARGS, "If no answer was given, use `status`. Never choose agree or decline for "
             "the user. Not agree never limits TIDOS."),

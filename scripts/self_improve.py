@@ -21,6 +21,12 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
+for stream in (sys.stdout, sys.stderr):  # opencode prints \u2699-ish glyphs: bare cmd windows run cp1252
+    if stream is not None and getattr(stream, "encoding", "").lower().replace("-", "") not in ("utf8",):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (OSError, ValueError, AttributeError):
+            pass
 
 from tidos_learn import evolve  # noqa: E402
 
@@ -55,7 +61,8 @@ def count_tests(cwd):
 
 
 def implement(agent, prompt, work):
-    """Let the agent edit the worktree: OpenCode (any provider, free by default) or Claude Code."""
+    """Let the agent edit the worktree: OpenCode (any provider, free by default) or Claude Code.
+    A dead free model (server refuses) falls through to the next free one instead of wasting the run."""
     env = {k: v for k, v in os.environ.items() if k not in ("CLAUDECODE", "CLAUDE_CODE_ENTRYPOINT")}
     family, _, model = agent.partition(":")
     if family == "claude":
@@ -67,7 +74,7 @@ def implement(agent, prompt, work):
         proc = subprocess.run([exe, "-p", "--model", model, "--output-format", "json", "--permission-mode",
                                "acceptEdits", "--allowedTools", AGENT_TOOLS, "--max-budget-usd", "0.5"],
                               input=prompt, cwd=work, capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", timeout=3600, env=env)
+                              errors="replace", timeout=3600, env=dict(env, TIDOS_JOB="self_improve"))
         try:
             print(str(json.loads(proc.stdout.strip().splitlines()[-1]).get("result"))[-800:])
         except (ValueError, IndexError):
@@ -77,6 +84,8 @@ def implement(agent, prompt, work):
     if not exe:
         print("opencode CLI not found.")
         return False
+    from tidos_session import helper
+    try_names = [model] + [m for m in helper.FREE_FALLBACK if m != model]  # "provider/model" ids, same shape
     from tidos_evals.agents import OPENCODE_SANDBOX  # edits + language runners only; no web, no other shell
     scratch = [os.path.join(work, n) for n in ("PROPOSAL.md", "opencode.json")]
     with open(scratch[0], "w", encoding="utf-8") as f:
@@ -84,15 +93,30 @@ def implement(agent, prompt, work):
     with open(scratch[1], "w", encoding="utf-8") as f:
         json.dump(OPENCODE_SANDBOX, f)
     try:
-        proc = subprocess.run([exe, "run", "--dir", work, "-m", model, "Read PROPOSAL.md and do exactly what it says."],
-                              cwd=work, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                              timeout=3600, env=dict(env, PWD=work), stdin=subprocess.DEVNULL)
-        print((proc.stdout + proc.stderr)[-1200:])
+        tail = ""
+        for name in try_names:
+            try:
+                proc = subprocess.run([exe, "run", "--dir", work, "-m", name,
+                                       "Read PROPOSAL.md and do exactly what it says."],
+                                      cwd=work, capture_output=True, text=True, encoding="utf-8",
+                                      errors="replace", timeout=3600, env=dict(env, PWD=work, TIDOS_JOB="self_improve"),
+                                      stdin=subprocess.DEVNULL)
+            except subprocess.TimeoutExpired as e:
+                tail = str(e)
+                print("Model %s timed out: trying the next free model." % name)
+                continue
+            tail = (proc.stdout + proc.stderr)
+            if proc.returncode == 0 and "Unexpected server error" not in tail:
+                print(tail[-1200:])
+                return True
+            print("Model %s failed (exit %d, server refused or no output): trying the next free model."
+                  % (name, proc.returncode))
+        print("Every free model failed:\n" + tail[-1200:])
+        return False
     finally:
         for path in scratch:  # TIDOS's own instructions never end up in the commit
             if os.path.exists(path):
                 os.remove(path)
-    return True
 
 
 def gates(cwd):
@@ -101,6 +125,35 @@ def gates(cwd):
         code, out = run(argv, cwd)
         results.append((" ".join(argv).replace("{python}", "python"), code, out))
     return results
+
+
+def _branch_worktrees(branch, root=ROOT):
+    out = run(["git", "worktree", "list", "--porcelain"], root)[1]
+    found = []
+    for block in re.split(r"\n\s*\n", out):
+        if "branch refs/heads/%s" % branch in block:
+            first = block.strip().splitlines()
+            found.append(first[0][len("worktree "):])
+    return found
+
+
+def prepare_branch(branch, root=ROOT):
+    """A fresh worktree for branch; leftover auto branches are recycled when merged, refused when not.
+    Returns (error or None, work path)."""
+    run(["git", "worktree", "prune"], root)
+    if run(["git", "rev-parse", "--verify", "--quiet", "refs/heads/%s" % branch], root)[0] == 0:
+        if run(["git", "branch", "--merged", "HEAD", "--list", branch], root)[1].strip():
+            for wt in _branch_worktrees(branch, root):       # a branch checked out in a worktree
+                run(["git", "worktree", "remove", "--force", wt], root)  # cannot be deleted until freed
+            # git branch -d refuses unmerged branches by design: merged leftovers lose nothing
+            run(["git", "branch", "-d", branch], root)
+            print("Recycled %s: the previous attempt is fully merged into HEAD, starting fresh." % branch)
+        else:
+            return ("branch %s already exists (an UNMERGED earlier attempt): inspect it with `git log -p %s`, "
+                    "then delete it yourself if it should not stay: git branch -D %s" % (branch, branch, branch), None)
+    work = os.path.join(tempfile.mkdtemp(prefix="tidos-auto-"), "wt")
+    code, out = run(["git", "worktree", "add", "-q", "-b", branch, work, "HEAD"], root)
+    return (None, work) if code == 0 else ("Cannot create worktree/branch %s:\n%s" % (branch, out), None)
 
 
 def main(args=None):
@@ -118,10 +171,9 @@ def main(args=None):
         return 1
     slug = re.sub(r"[^a-z0-9]+", "-", item["title"].lower()).strip("-")[:40]
     branch = "auto/%d-%s" % (item["id"], slug)
-    work = os.path.join(tempfile.mkdtemp(prefix="tidos-auto-"), "wt")
-    code, out = run(["git", "worktree", "add", "-q", "-b", branch, work, "HEAD"], ROOT)
-    if code:
-        print("Cannot create worktree/branch %s:\n%s" % (branch, out))
+    refused, work = prepare_branch(branch)
+    if refused:
+        print(refused)
         return 1
     print("Worktree %s on branch %s" % (work, branch))
     impact = {"tests_before": count_tests(work)}

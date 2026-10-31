@@ -1,4 +1,4 @@
-"""The text TIDOS gives the model at START TIDOS.
+﻿"""The text TIDOS gives the model at START TIDOS.
 
 GUIDE mode (medium/weak models): a compact brief, hard-capped at 4 KB. The v4 boot (~86 KB of specs)
 did not help even a small Claude model in evals (+55% cost, no gain), so weak models get only what
@@ -11,6 +11,7 @@ import glob
 import os
 import re
 
+from . import commands
 from . import pbstate
 from .detect import REPO_ROOT, tidos_home
 
@@ -18,19 +19,20 @@ GUIDE_LIMIT = 4096
 PLAYBOOK_LIMIT = 1000
 SESSION_CLI = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
 LEARN_CLI = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "tidos_learn", "__main__.py")
+PER_REQUEST_HEADING = "## New request policy (fast / guide / deep)"
 
 WEAK_RULES = """\
 1. Work in SMALL steps: one file, one change at a time. Never rewrite whole files.
 2. Read before you edit: open the file and the code around the change first. Never guess a path,
    function name or API - check it. Use paths relative to the project folder.
 3. Before changing behavior, find or write the check that proves it (an existing test, or a small
-   script with the exact expected values from the user's request).
-4. After EVERY change, run the project's checks (see "How to check work"). Read the exact error
-   and fix that one thing. Never edit or delete tests to make them pass.
+   script with the exact expected values).
+4. After every change run the check that covers what you changed (a targeted test beats the whole
+   suite); run the FULL check suite before calling a task done. Read the exact error and fix that one
+   thing. Never edit or delete tests to make them pass.
 5. Never say "done" without showing the check output that proves it.
 6. If the request is unclear, or touches deploys, data, money, credentials or deletions: ASK the user first.
-7. If the same error comes back 3 times, STOP. Tell the user what you tried and suggest switching to
-   a stronger model for this step."""
+7. If the same error comes back 3 times, STOP. Say what you tried, and suggest a stronger model for this step."""
 
 
 def _front(text, key):
@@ -39,10 +41,11 @@ def _front(text, key):
 
 
 def _compact(text):
-    """Playbook body for the brief: no front matter, no example requests (they cost bytes, teach little)."""
+    """Playbook body for the brief: no front matter, no example requests, no checks section
+    (the project's "How to check work" already lists the checks - repeating them costs tokens)."""
     body = re.sub(r"^---.*?---\s*", "", text, flags=re.S)
     body = re.split(r"\n## Example requests", body)[0]
-    return body.strip()
+    return re.sub(r"\n## Checks that confirmed the work\n.*?(?=\n## |\Z)", "", body, flags=re.S).strip()
 
 
 def _playbooks(stack, project=None, limit=3, with_paths=False):
@@ -151,8 +154,11 @@ def guide_brief(session, facts, record=True, ablate=None):
     if session.get("tool") == "claude-code":
         per_request = ""  # the UserPromptSubmit hook injects per-request guidance automatically
     else:
-        per_request = ("## For EVERY new request from the user\nFirst run `python -I \"%s\" guide \"<the request in a "
-                       "few words>\"` and follow what it prints.\n\n" % SESSION_CLI)
+        per_request = (PER_REQUEST_HEADING + "\n"
+                       "Trivial requests - simple questions, formatting, tiny fixes: do them directly, NO guide call.\n"
+                       "For a medium or complex request, first run `python -I \"%s\" guide \"<the request in a few "
+                       "words>\"`: it prints effort fast/guide/deep; follow its guidance for guide/deep ones.\n\n"
+                       % SESSION_CLI)
     text = (
         "# TIDOS GUIDE MODE\n"
         "You are running on `%s` (tier: %s). TIDOS will guide you so you can work well with the user.\n\n"
@@ -189,21 +195,47 @@ def consent_block():
             % (CONSENT_QUESTION, cli, cli))
 
 
-def commands_footer():
+def _commands_installed(tool):
+    """True when commands.install() already put the TIDOS / commands into this tool's own menu."""
+    if not tool or tool == "unknown":
+        return False
+    ids = set(commands.installed_tools())
+    first = tool.split("-")[0]
+    return first in ids or any(i.startswith(first) or first.startswith(i) for i in ids)
+
+
+def commands_footer(session=None):
     """Slash commands that work in ANY tool (Antigravity, OpenCode, Gemini CLI, Cursor...): tools with a "/" menu get
-    them from commands.install(); every other tool's model follows this list when the user types one."""
-    from . import commands
+    them from commands.install(); every other tool's model follows this list when the user types one.
+    Compact: the full python.exe path appears once ("CL" in each run line stands for it), each description is its
+    first sentence, and a tool that already HAS the commands in its menu gets a 3-line pointer instead of the list."""
+    if _commands_installed((session or {}).get("tool")):
+        return ("## TIDOS commands\n"
+                "The TIDOS slash commands (like `/TIDOSZIT`, `/tidos-guide`) are installed in this tool's own / menu: use "
+                "them there. When the user types a TIDOS command, follow its instructions.\n"
+                "Never ask for, accept or repeat the control password in this chat: login happens in the browser only.\n")
+    return _commands_list_footer()
+
+
+def _commands_list_footer():
+    def short(text):
+        text = text.split("; ")[0].split(". ")[0].split(" (")[0].strip()
+        return text.rsplit(": ", 1)[-1]
+
     lines = ["", "## TIDOS commands",
              "When the user types one of these (with or without the leading /), do what it says. `/tidos-help` lists them.",
-             "Never ask for, accept or repeat the control password in this chat: login happens in the browser only."]
+             "Never ask for, accept or repeat the control password in this chat: login happens in the browser only.",
+             "Run lines: `CL \"pkg\" args` = `python -I \"%s/pkg/__main__.py\" args`." % REPO_ROOT.replace("\\", "/")]
     for c in commands.COMMANDS:
         name = "/" + c.name + (" " + c.args if c.args else "")
-        if c.cli:
-            run = commands.run_line(c.cli).replace(commands.ARGS, c.args or "")
-            lines.append("- `%s`: %s. Run: %s" % (name, c.description, run))
-        else:
-            lines.append("- `%s`: %s." % (name, c.description))
-    lines.append("After `/TIDOSZIT`: say the control center is open at http://localhost:8767/ (sign in there).")
+        run = None
+        if c.cli == "launcher":
+            run = commands.launcher()
+        elif c.cli:
+            pkg, _, rest = c.cli.partition(" ")
+            run = 'CL "%s" %s' % (pkg, rest.replace(commands.ARGS, c.args or ""))
+        desc = short(c.description)
+        lines.append(("- `%s`: %s. Run: %s" % (name, desc, run)) if run else "- `%s`: %s." % (name, desc))
     return "\n".join(lines) + "\n"
 
 

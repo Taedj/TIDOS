@@ -179,6 +179,14 @@ class Handler(BaseHTTPRequestHandler):
             if path == "/api/commands":
                 from tidos_session import commands
                 return self._json(200, {"commands": commands.listing(), "tools": commands.installed_tools()})
+            if path == "/api/center":
+                from tidos_brain import center
+                t = center.overview(self.server.db_path)
+                try:
+                    t["health"] = center.health(db_path=self.server.db_path)  # signature-cached scan on change
+                except Exception as e:  # noqa: BLE001 - the tab must survive a broken diagnostics pass
+                    t["health"] = {"error": "diagnostics unavailable: %s" % str(e)[:120], "issues": []}
+                return self._json(200, t)
             if path == "/api/share":
                 from tidos_learn import share
                 return self._json(200, {"consent": share.consent(), "last": share.last_upload(),
@@ -297,6 +305,7 @@ class Handler(BaseHTTPRequestHandler):
             "/api/auth/change": self._auth_change, "/api/switches": self._switches,
             "/api/playbooks/toggle": self._playbook_toggle,
             "/api/evolution/status": self._evolution_status,
+            "/api/center/diag": self._diag_status,
             "/api/army/action": self._army_action,
             "/api/share": self._share,
             "/api/community/export": self._community_export,
@@ -418,6 +427,21 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(400, {"error": "unknown proposal"})
         self.server.lockout.log("proposal", "#%s %s" % (body.get("id"), status))
         return self._json(200, {"ok": True})
+
+    def _diag_status(self, body):
+        """Owner action from the Agent Review tab: move one diagnostic report's status. Evidence is shown,
+        never edited; this touches only ~/.tidos/diagnostics.json - no production state."""
+        if not self._session():
+            return self._json(401, {"error": "login required"})
+        from tidos_brain import center
+        try:
+            item = center.health_set(str(body.get("id") or ""), str(body.get("status") or ""))
+        except KeyError:
+            return self._json(404, {"error": "unknown issue"})
+        except ValueError as e:
+            return self._json(400, {"error": str(e)})
+        self.server.lockout.log("diagnostics", "%s -> %s" % (item["id"], item["status"]))
+        return self._json(200, {"ok": True, "issue": {k: v for k, v in item.items() if isinstance(v, (str, int, float, type(None)))}})
 
     def _job_run(self, body):
         """Run a TIDOS job from a button (only jobs in tidos_dashboard.jobs.JOBS, parameters checked)."""

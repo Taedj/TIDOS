@@ -136,11 +136,22 @@ def hook_feedback(payload, conn):
 
 def guidance(request, project_dir=".", record=True):
     from tidos_learn.classify import task_type  # local import: classification lives with the learner
+    from . import effort  # local import: effort can swap in for other classifiers (kept out of hot paths)
 
     facts = detect.project_facts(os.path.abspath(project_dir))
     ttype = task_type(request)
-    parts = ["# TIDOS guide for this request (type: %s)" % ttype,
-             "## First: define done\n" + CHECKS_FIRST.get(ttype, CHECKS_FIRST["feature"])]
+    level = effort.classify(request)
+    if level == "fast":
+        text = ("# TIDOS guide for this request (type: %s, effort: fast)\n"
+                "Trivial: do it directly, no playbook needed. Still show the exact check (even one line) that "
+                "proves the result." % ttype)
+        if facts["checks"]:
+            text += "\n\n## Checks for this project\n" + ", ".join("`%s`" % c for c in facts["checks"])
+        return ttype, text + "\n"
+    parts = ["# TIDOS guide for this request (type: %s, effort: %s)" % (ttype, level)]
+    if level == "deep":
+        parts.append("Complex task: show a short plan first, then one file / one change per step.")
+    parts.append("## First: define done\n" + CHECKS_FIRST.get(ttype, CHECKS_FIRST["feature"]))
     served = []
     pb_path, pb = _project_playbook(facts["name"], ttype, facts["stack"])
     if pb:

@@ -52,7 +52,7 @@ class Task:
             from tidos_session import brief, detect, guide
             facts = detect.project_facts(workdir)
             text = brief.guide_brief({"model": "weak model", "tier": "weak", "tool": "opencode"}, facts, record=False, ablate=ablate)
-            text = text.split("## For EVERY new request")[0] + "\n" + guide.guidance(self.prompt, workdir, record=False)[1]
+            text = text.split(brief.PER_REQUEST_HEADING)[0] + "\n" + guide.guidance(self.prompt, workdir, record=False)[1]
             with open(os.path.join(workdir, "GUIDE.md"), "w", encoding="utf-8") as f:
                 f.write(text)
         elif with_tidos == "unit":  # Shadow Army trial: the subagent's own instructions

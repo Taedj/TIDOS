@@ -131,6 +131,17 @@ class BriefTests(Isolated):
         self.assertIn("tidoszit.", text)
         self.assertTrue(os.path.isfile(os.path.join(self.home, ".claude", "commands", "TIDOSZIT.md")))  # Claude Code
 
+    def test_start_from_a_tidos_job_never_rewrites_the_owner_session(self):
+        """Autopilot agents run START too: they get the brief, but the owner's last START TIDOS stays theirs."""
+        with mock.patch.dict(os.environ, {"TIDOS_JOB": "self_improve"}):
+            _, _, text = cli.start("opencode", "opencode/big-pickle", self.project)
+        self.assertIn("TIDOS GUIDE MODE", text)                       # the agent still works with the brief
+        self.assertFalse(os.path.exists(os.path.join(self.tidos, "session.json")))
+        self.assertFalse(os.path.exists(os.path.join(self.tidos, "brief.md")))
+        cli.start("claude-code", "claude-opus-5-5", self.project)     # without the marker it is a real START again
+        with open(os.path.join(self.tidos, "session.json"), encoding="utf-8") as f:
+            self.assertEqual(json.load(f)["model"], "claude-opus-5-5")
+
 
 class AgentsMdTests(Isolated):
     def test_block_is_inserted_then_replaced_and_keeps_user_content(self):

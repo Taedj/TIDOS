@@ -26,7 +26,8 @@ class ProtocolTests(unittest.TestCase):
                       {"jsonrpc": "2.0", "id": 4, "method": "tools/call", "params": {"name": "missing"}})
         self.assertEqual(replies[0]["result"]["protocolVersion"], "2024-11-05")
         self.assertEqual({t["name"] for t in replies[1]["result"]["tools"]},
-                         {"tidos_start", "tidos_guide", "tidos_verify", "tidos_recall", "tidos_note", "tidos_propose"})
+                         {"tidos_start", "tidos_guide", "tidos_verify", "tidos_recall", "tidos_note",
+                          "tidos_propose", "tidos_center", "tidos_center_act"})
         self.assertEqual(replies[2]["error"]["code"], -32601)
         self.assertEqual(replies[3]["error"]["code"], -32602)
         self.assertEqual(replies[4]["error"]["code"], -32700)      # parse error, server keeps running

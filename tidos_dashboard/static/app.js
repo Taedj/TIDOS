@@ -153,7 +153,8 @@ function startTimer(seconds) {
 document.querySelectorAll(".tab[data-view]").forEach((tab) =>
   tab.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
-    for (const v of ["status", "live", "dungeons", "playbooks", "army", "jobs", "community", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    for (const v of ["status", "center", "live", "dungeons", "playbooks", "army", "jobs", "community", "evolution", "tools", "memory", "security"]) $("view-" + v).classList.toggle("hidden", v !== tab.dataset.view);
+    if (tab.dataset.view === "center") loadCenter();
     if (tab.dataset.view === "community") loadCommunity();
     if (tab.dataset.view === "army") loadArmyTab();
     clearInterval(jobsTimer);
@@ -325,6 +326,75 @@ async function loadDungeons() {
 }
 
 // ---- evolution + notifications
+async function loadCenter() {
+  const r = await api("/api/center");
+  if (!r.ok) return;
+  const d = r.data;
+  const row = (a, b) => `<tr><td><b>${esc(t(a))}</b></td><td>${esc(t(b))}</td></tr>`;
+  $("cOwner").innerHTML = (d.pending.owner.map((p) => row(p.what, p.detail)).join("")
+    || `<tr><td colspan="2" class="muted">${t("Nothing is waiting on you.")}</td></tr>`);
+  $("cAgent").innerHTML = (d.pending.agent.map((p) => row(p.what, p.detail)).join("")
+    || `<tr><td colspan="2" class="muted">${t("Nothing queued for the agent.")}</td></tr>`);
+  $("cRecs").innerHTML = d.recommendations.map((r) => row(r.title, `${r.verdict || ""} — ${r.reason} (${r.model || "local"})`)).join("")
+    || `<tr><td colspan="3" class="muted">${t("Nothing due.")}</td></tr>`;
+  $("cTrust").innerHTML = d.trust.levels.map((l) =>
+    `<div class="kv"><span>${esc(l.kind)}</span><b>${esc(l.level)}${l.streak ? ` · streak ${l.streak}` : ""}${l.pinned ? " · pinned" : ""}</b></div>`).join("");
+  $("cNotes").innerHTML = d.notices.map((n) =>
+    `<div class="log-item"><span class="sys">[SYSTEM]</span><span class="${n.level === "bad" ? "lift-down" : n.level === "ok" ? "lift-up" : ""}">${esc(t(n.text))}</span></div>`).join("")
+    || `<p class="muted">${t("Nothing needs your attention.")}</p>`;
+  $("cJobs").innerHTML = d.jobs.recent.slice().reverse().map((j) =>
+    `<div class="log-item"><span class="sys">${esc(j.state || "")}</span> <b>${esc(j.title || j.job)}</b> <span class="small faint">${esc(j.started || "")} · by ${esc(j.by || "")}</span></div>`).join("")
+    || `<p class="muted">${t("No jobs yet.")}</p>`;
+  loadCenterHealth(d.health || {});
+}
+
+const DIAG_SEVERE = { critical: "bad", high: "bad", medium: "warn", low: "" };
+const DIAG_ACTIONS = { new: [["investigating", "Investigate"], ["resolved", "Mark resolved"]],
+                       investigating: [["confirmed", "Confirm"], ["resolved", "Mark resolved"]],
+                       confirmed: [["resolved", "Mark resolved"], ["new", "Re-open"]] };
+
+function diagRow(i, resolved) {
+  const srv = DIAG_SEVERE[i.severity] || "";
+  const statusCls = resolved ? "ok" : (i.status === "confirmed" ? "warn" : "");
+  const actsList = resolved ? [["new", "Re-open"]] : (DIAG_ACTIONS[i.status] || []);
+  const acts = actsList.map(([s, l]) =>
+    `<button class="btn ghost diag" data-id="${esc(i.id)}" data-s="${s}">${t(l)}</button>`).join(" ");
+  if (resolved) {
+    return `<tr><td><span class="pill ${srv}">${esc(t(i.severity))}</span></td><td>${esc(t(i.component))}</td>` +
+      `<td><b>${esc(i.id)}</b><br><span class="small faint">${esc(i.description)}</span></td>` +
+      `<td><span class="pill ok">${esc(t("resolved"))}</span><br><span class="small faint">${esc(i.resolved_at || "")}</span></td><td>${acts}</td></tr>`;
+  }
+  const ev = (i.evidence || []).map((e) => `<span class="small faint">· ${esc(e)}</span> `).join("");
+  return `<tr><td><span class="pill ${srv}">${esc(t(i.severity))}</span><br><span class="small faint">${esc(i.last_seen || "")}</span></td>` +
+    `<td>${esc(t(i.component))}</td>` +
+    `<td><b>${esc(i.description)}</b><br>${ev}<span class="small">${esc(t("Likely cause"))}: ${esc(i.root_cause || "?")} (${esc(t("confidence"))} ${i.confidence ?? "?"})</span><br><span class="small warn">→ ${esc(i.recommended || "")}</span></td>` +
+    `<td><span class="pill ${statusCls}">${esc(t(i.status))}</span><br><span class="small faint">×${i.times_seen || 1}</span></td><td>${acts}</td></tr>`;
+}
+
+function loadCenterHealth(h) {
+  const issues = Array.isArray(h.issues) ? h.issues : [];
+  const open = issues.filter((i) => i.status !== "resolved");
+  const resolved = issues.filter((i) => i.status === "resolved");
+  const counts = {};
+  for (const i of open) counts[i.severity] = (counts[i.severity] || 0) + 1;
+  const countTxt = open.length ? open.length + " open · " + ["critical", "high", "medium", "low"].filter((s) => counts[s]).map((s) => counts[s] + " " + t(s)).join(", ") : t("all clear");
+  $("cHealthCounts").textContent = `${t("Diagnosed at")} ${(h.generated_at || "").slice(0, 19).replace("T", " ")}`;
+  $("cHealth").innerHTML = h.error
+    ? `<b class="lift-down">${esc(h.error)}</b>`
+    : open.length ? `<b class="lift-down">${esc(countTxt)}</b> — ${esc(t("worst:"))} ${esc(open[0].severity)} (${esc(open[0].id)})`
+      : `<b class="lift-up">${esc(countTxt)}</b> <span class="small faint">· ${esc(t("no alert while the data is unresolved; unreadable data is reported, never assumed healthy"))}</span>`;
+  $("cIssues").innerHTML = open.map((i) => diagRow(i, false)).join("")
+    || `<tr><td colspan="5" class="muted">${t("No errors or anomalies detected in the latest scan.")}</td></tr>`;
+  $("cResolved").innerHTML = resolved.map((i) => diagRow(i, true)).join("")
+    || `<tr><td colspan="5" class="muted">${t("Nothing resolved yet.")}</td></tr>`;
+  const bind = (id) => $(id).querySelectorAll(".diag").forEach((b) => b.addEventListener("click", async () => {
+    const res = await api("/api/center/diag", { id: b.dataset.id, status: b.dataset.s });
+    if (res.ok) { toast(`<b>[SYSTEM]</b> ${esc(t("Issue {id} → {s}", { id: b.dataset.id, s: t(b.dataset.s) }))}`); loadCenter(); loadNotifications(); }
+    else toast(`<b>[SYSTEM]</b> ${esc(res.data.error || t("failed"))}`);
+  }));
+  bind("cIssues"); bind("cResolved");
+}
+
 async function loadNotifications() {
   const r = await api("/api/notifications");
   if (!r.ok) return;

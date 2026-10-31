@@ -117,18 +117,20 @@ def start(tool=None, model=None, project=".", env=None, learn=False):
                "started_at": datetime.now(timezone.utc).isoformat(timespec="seconds")}
     facts = detect.project_facts(project)
     text = brief.learn_brief(session, facts) if session["mode"] == "learn" else brief.guide_brief(session, facts)
-    text += brief.commands_footer()  # the same commands for tools without a / menu
+    text += brief.commands_footer(session)  # commands pointer when this tool's / menu has them, full list otherwise
     from tidos_brain import control
     if control.text("share_learning") == "unasked":  # asked once, until the user answers; never blocks TIDOS
         text += brief.consent_block()
-    os.makedirs(detect.tidos_home(), exist_ok=True)
-    with open(_session_path(), "w", encoding="utf-8") as f:
-        json.dump(dict(session, facts=facts), f, indent=2)
-    with open(os.path.join(detect.tidos_home(), "brief.md"), "w", encoding="utf-8") as f:
-        f.write(text)
-    effect.log_start(session)
-    with open(os.path.join(detect.tidos_home(), "repo_path"), "w", encoding="utf-8") as f:
-        f.write(detect.REPO_ROOT)  # lets the Claude Code plugin launcher find this checkout
+    job = os.environ.get("TIDOS_JOB")  # TIDOS's own job agents never rewrite the owner's last START TIDOS
+    if not job:
+        os.makedirs(detect.tidos_home(), exist_ok=True)
+        with open(_session_path(), "w", encoding="utf-8") as f:
+            json.dump(dict(session, facts=facts), f, indent=2)
+        with open(os.path.join(detect.tidos_home(), "brief.md"), "w", encoding="utf-8") as f:
+            f.write(text)
+        effect.log_start(session)
+        with open(os.path.join(detect.tidos_home(), "repo_path"), "w", encoding="utf-8") as f:
+            f.write(detect.REPO_ROOT)  # lets the Claude Code plugin launcher find this checkout
     return session, facts, text
 
 
@@ -163,7 +165,8 @@ def agents_md_block(project, tool="any"):
     body = snippet(tool).split("\n", 1)[1]  # drop the "paste into" comment
     return "\n".join([
         AGENTS_BEGIN, body.rstrip(), "",
-        "If the `tidos` MCP server is available: call `tidos_start` once, `tidos_guide` at every new request, and",
+        "If the `tidos` MCP server is available: call `tidos_start` once, `tidos_guide` when a new request is not "
+        "trivial (skip simple questions, formatting and tiny fixes), and",
         "`tidos_verify` before saying a task is done.", "",
         "Checks for this project: %s." % checks, AGENTS_END, ""])
 
@@ -232,6 +235,10 @@ def main(argv=None):
     sn.add_argument("--tool", default="claude-code")
     t = sub.add_parser("tier")
     t.add_argument("model")
+    s = sub.add_parser("stats", help="token estimate of the last brief (create --save as baseline, --compare diffs)")
+    s.add_argument("--save", action="store_true")
+    s.add_argument("--compare", action="store_true")
+    s.add_argument("--json", action="store_true")
     cm = sub.add_parser("commands", help="every TIDOS / command; --install puts them in each tool's / menu")
     cm.add_argument("--install", action="store_true")
     cm.add_argument("--json", action="store_true")
@@ -350,6 +357,31 @@ def main(argv=None):
     if args.command == "guide":
         from . import guide
         print(guide.guidance(args.request, args.project)[1])
+        return 0
+    if args.command == "stats":
+        from . import tokens
+        try:
+            with open(os.path.join(detect.tidos_home(), "brief.md"), encoding="utf-8") as f:
+                text = f.read()
+        except OSError:
+            print("No brief yet. Run START TIDOS first.")
+            return 1
+        cur = tokens.comparison(text)[0]
+        if args.save:
+            tokens.save(text)
+            print("Baseline saved.")
+        base = tokens.load()
+        if args.compare and base:
+            delta = cur["tokens"] - base["tokens"]
+            pct = round(100 * delta / base["tokens"]) if base["tokens"] else 0
+            print("baseline %d tokens -> current %d tokens (%+d, %d%%)" % (
+                base["tokens"], cur["tokens"], delta, pct))
+        if args.json:
+            print(json.dumps(dict(cur, baseline=base), indent=1))
+        else:
+            for name, tk in cur["sections"].items():
+                print("%5d  %s" % (tk, name))
+            print("%5d  TOTAL" % cur["tokens"])
         return 0
     if args.command == "status":
         try:

@@ -100,6 +100,21 @@ TOOLS = [
                     "automatically.",
      "inputSchema": {"type": "object", "properties": {
          "title": {"type": "string"}, "reason": {"type": "string"}}, "required": ["title", "reason"]}},
+    {"name": "tidos_center",
+     "description": "Deep review of the TIDOS Control Center for this session: pending decisions (yours vs the "
+                    "agent's), job recommendations, trust ladder, update state, notices. Read-only; no password needed.",
+     "inputSchema": {"type": "object", "properties": {}, "required": []}},
+    {"name": "tidos_center_act",
+     "description": "THE agent write path for the Control Center: `propose` (an idea for the evolution queue, the "
+                    "owner reviews it) or `run_job` (one whitelisted autopilot job, only when its trust level allows "
+                    "running by itself). Everything else is refused: switches, installs, connections, trust and "
+                    "updates are owner-only in the /TIDOSZIT browser.",
+     "inputSchema": {"type": "object", "properties": {
+         "kind": {"type": "string", "enum": ["propose", "run_job"]},
+         "title": {"type": "string", "description": "propose: the proposal title"},
+         "reason": {"type": "string"}, "priority": {"type": "string", "enum": ["high", "medium", "low"]},
+         "job": {"type": "string", "description": "run_job: one job name, e.g. distill, daily_quest, backup, diagnose"},
+         "params": {"type": "object", "description": "run_job: job params"}}, "required": ["kind"]}},
 ]
 
 
@@ -207,8 +222,22 @@ def tool_propose(args):
     return _text("Proposal #%d recorded for the user's review (not applied)." % item["id"])
 
 
+def tool_center(args):
+    from tidos_brain import center
+    return _text(center.report())
+
+
+def tool_center_act(args):
+    from tidos_brain import center
+    result = center.act(args["kind"], title=args.get("title"), reason=args.get("reason"),
+                        priority=args.get("priority", "medium"), job=args.get("job"),
+                        params=args.get("params"))
+    return _text(result["detail"])
+
+
 HANDLERS = {"tidos_start": tool_start, "tidos_guide": tool_guide, "tidos_verify": tool_verify,
-            "tidos_recall": tool_recall, "tidos_note": tool_note, "tidos_propose": tool_propose}
+            "tidos_recall": tool_recall, "tidos_note": tool_note, "tidos_propose": tool_propose,
+            "tidos_center": tool_center, "tidos_center_act": tool_center_act}
 
 
 def handle(message):
