@@ -1,0 +1,1134 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TIDOS Beginner & Vibe Coding Guide | دليل TIDOS للمبتدئين والبرمجة بالذكاء الاصطناعي</title>
+  <style>
+    :root {
+      --bg: #070a12;
+      --card-bg: #0d1220;
+      --card-border: #1a233a;
+      --accent-blue: #38bdf8;
+      --accent-blue-soft: rgba(56, 189, 248, 0.12);
+      --accent-green: #34d399;
+      --accent-green-soft: rgba(52, 211, 153, 0.12);
+      --accent-purple: #a78bfa;
+      --accent-purple-soft: rgba(167, 139, 250, 0.12);
+      --accent-amber: #fbbf24;
+      --accent-amber-soft: rgba(251, 191, 36, 0.12);
+      --accent-red: #f87171;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-faint: #64748b;
+      --code-bg: #030712;
+      --code-border: #1e293b;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-ar: "Cairo", "Tajawal", "Segoe UI", Tahoma, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, "Cascadia Code", monospace;
+      --radius: 12px;
+      --shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.4);
+    }
+
+    [data-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --card-border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --text-faint: #94a3b8;
+      --code-bg: #f1f5f9;
+      --code-border: #cbd5e1;
+      --accent-blue-soft: #e0f2fe;
+      --accent-green-soft: #d1fae5;
+      --accent-purple-soft: #ede9fe;
+      --accent-amber-soft: #fef3c7;
+      --shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.08);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: var(--font-sans);
+      line-height: 1.7;
+      font-size: 16px;
+      transition: background-color 0.2s, color 0.2s;
+    }
+
+    body.lang-ar {
+      font-family: var(--font-ar);
+      direction: rtl;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* HEADER & NAV */
+    header.top-nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 10, 18, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--card-border);
+      padding: 14px 0;
+    }
+    [data-theme="light"] header.top-nav {
+      background: rgba(248, 250, 252, 0.85);
+    }
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+      color: var(--text-main);
+      text-decoration: none;
+    }
+    .logo-icon {
+      width: 34px;
+      height: 34px;
+      background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.4);
+    }
+    .version-tag {
+      font-size: 11px;
+      padding: 2px 8px;
+      background: var(--accent-purple-soft);
+      color: var(--accent-purple);
+      border: 1px solid var(--accent-purple);
+      border-radius: 999px;
+      font-family: var(--font-mono);
+      font-weight: 600;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-primary {
+      background: var(--accent-blue);
+      color: #030712;
+    }
+    .btn-primary:hover {
+      background: #7dd3fc;
+      transform: translateY(-1px);
+    }
+    .btn-ghost {
+      background: transparent;
+      border-color: var(--card-border);
+      color: var(--text-main);
+    }
+    .btn-ghost:hover {
+      background: var(--card-border);
+    }
+    .lang-btn {
+      font-weight: 700;
+      background: var(--accent-purple-soft);
+      color: var(--accent-purple);
+      border-color: var(--accent-purple);
+    }
+
+    /* HERO SECTION */
+    .hero {
+      padding: 60px 0 40px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--accent-blue-soft);
+      color: var(--accent-blue);
+      border: 1px solid var(--accent-blue);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 44px;
+      line-height: 1.25;
+      margin-bottom: 16px;
+      font-weight: 800;
+    }
+    .hero h1 span {
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 19px;
+      color: var(--text-muted);
+      max-width: 800px;
+      margin: 0 auto 30px;
+      line-height: 1.6;
+    }
+
+    /* QUICK NAVIGATION PILLS */
+    .toc-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 50px;
+    }
+    .toc-pill {
+      padding: 6px 14px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      border-radius: 20px;
+      font-size: 13.5px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .toc-pill:hover {
+      border-color: var(--accent-blue);
+      color: var(--accent-blue);
+    }
+
+    /* LAYOUT & CARDS */
+    .section-title {
+      font-size: 28px;
+      font-weight: 800;
+      margin: 40px 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-num {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--accent-blue-soft);
+      color: var(--accent-blue);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 17px;
+      font-weight: 800;
+      font-family: var(--font-mono);
+      flex-shrink: 0;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    /* CODE & TERMINAL */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      overflow-x: auto;
+      font-family: var(--font-mono);
+      font-size: 14px;
+      color: #38bdf8;
+      margin: 12px 0;
+      direction: ltr !important;
+      text-align: left !important;
+    }
+    code {
+      font-family: var(--font-mono);
+      background: var(--code-bg);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 13.5px;
+      color: var(--accent-blue);
+      border: 1px solid var(--code-border);
+      direction: ltr;
+      display: inline-block;
+    }
+    pre code {
+      border: none;
+      padding: 0;
+      background: none;
+      color: inherit;
+    }
+
+    /* TABLES */
+    .table-container {
+      overflow-x: auto;
+      margin: 16px 0;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: start;
+      font-size: 15px;
+    }
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+      vertical-align: top;
+    }
+    th {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 0.5px;
+    }
+    tr:last-child td { border-bottom: none; }
+
+    /* CALLOUT BOXES */
+    .callout {
+      border-inline-start: 4px solid var(--accent-blue);
+      background: var(--accent-blue-soft);
+      padding: 14px 18px;
+      border-radius: 8px;
+      margin: 16px 0;
+    }
+    .callout.green {
+      border-color: var(--accent-green);
+      background: var(--accent-green-soft);
+    }
+    .callout.amber {
+      border-color: var(--accent-amber);
+      background: var(--accent-amber-soft);
+    }
+    .callout.purple {
+      border-color: var(--accent-purple);
+      background: var(--accent-purple-soft);
+    }
+    .callout b {
+      color: var(--text-main);
+    }
+
+    /* STEPS */
+    .step-list {
+      list-style: none;
+      margin: 16px 0;
+    }
+    .step-item {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 18px;
+      align-items: flex-start;
+    }
+    .step-badge {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--accent-blue);
+      color: #030712;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .step-content h4 {
+      font-size: 17px;
+      margin-bottom: 4px;
+      font-weight: 700;
+    }
+    .step-content p {
+      color: var(--text-muted);
+      font-size: 15px;
+    }
+
+    /* SOLO LEVELING RANKS */
+    .rank-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin: 16px 0;
+    }
+    .rank-card {
+      border: 1px solid var(--card-border);
+      background: var(--code-bg);
+      border-radius: 10px;
+      padding: 12px;
+      text-align: center;
+    }
+    .rank-letter {
+      font-size: 26px;
+      font-weight: 900;
+      font-family: var(--font-mono);
+      display: block;
+      margin-bottom: 4px;
+    }
+    .rank-card.E .rank-letter { color: #94a3b8; }
+    .rank-card.D .rank-letter { color: #38bdf8; }
+    .rank-card.C .rank-letter { color: #34d399; }
+    .rank-card.B .rank-letter { color: #fbbf24; }
+    .rank-card.A .rank-letter { color: #f87171; }
+    .rank-card.S .rank-letter { color: #c084fc; text-shadow: 0 0 10px rgba(192, 132, 252, 0.5); }
+    .rank-desc { font-size: 12px; color: var(--text-muted); }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--card-border);
+      padding: 40px 0 60px;
+      text-align: center;
+      color: var(--text-faint);
+      font-size: 14px;
+      margin-top: 60px;
+    }
+
+    /* LANGUAGE CONTENT TOGGLE */
+    .lang-block-en, .lang-inline-en { display: block; }
+    .lang-block-ar, .lang-inline-ar { display: none; }
+
+    body.lang-ar .lang-block-en, body.lang-ar .lang-inline-en { display: none !important; }
+    body.lang-ar .lang-block-ar, body.lang-ar .lang-inline-ar { display: block !important; }
+
+    span.lang-inline-en { display: inline !important; }
+    span.lang-inline-ar { display: none !important; }
+    body.lang-ar span.lang-inline-en { display: none !important; }
+    body.lang-ar span.lang-inline-ar { display: inline !important; }
+
+    /* RESPONSIVE */
+    @media (max-width: 880px) {
+      .grid-2, .grid-3 { grid-template-columns: 1fr; }
+      .hero h1 { font-size: 32px; }
+      .hero p { font-size: 16px; }
+      .section-title { font-size: 22px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAVIGATION BAR -->
+  <header class="top-nav">
+    <div class="container nav-inner">
+      <a href="#" class="logo-badge">
+        <div class="logo-icon">T</div>
+        <span>TIDOS</span>
+        <span class="version-tag">v5.4.1 Monarch</span>
+      </a>
+      <div class="nav-actions">
+        <button class="btn btn-ghost lang-btn" id="langToggle">
+          <span class="lang-inline-en">العربية 🇸🇦</span>
+          <span class="lang-inline-ar">English 🇬🇧</span>
+        </button>
+        <button class="btn btn-ghost" id="themeToggle" title="Toggle Dark/Light">🌓</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span class="lang-inline-en">✨ Next-Gen Development OS for Pair Programming</span>
+        <span class="lang-inline-ar">✨ نظام تشغيل التطوير الموجه بالذكاء الاصطناعي</span>
+      </div>
+      
+      <h1>
+        <span class="lang-inline-en">Mastering TIDOS: <span>The Beginner &amp; Vibe Coding Guide</span></span>
+        <span class="lang-inline-ar">دليل TIDOS الكامل: <span>للمبتدئين والبرمجة بأسلوب الـ Vibe Coding</span></span>
+      </h1>
+
+      <p>
+        <span class="lang-inline-en">
+          Learn how TIDOS turns free &amp; lightweight AI models into senior-level pair programmers by harvesting wisdom from your strong models. Zero cost, zero headaches, full privacy.
+        </span>
+        <span class="lang-inline-ar">
+          تعرف كيف يحوّل TIDOS النماذج الضعيفة والمجانية إلى مبرمجين محترفين عبر استخلاص الخبرات من النماذج القوية. تكلفة صفرية، خصوصية مطلقة، وبدون تعقيد.
+        </span>
+      </p>
+
+      <!-- TOC PILLS -->
+      <div class="toc-bar">
+        <a href="#what-is-tidos" class="toc-pill">
+          <span class="lang-inline-en">1. What is TIDOS?</span>
+          <span class="lang-inline-ar">1. ما هو TIDOS؟</span>
+        </a>
+        <a href="#vibe-coding" class="toc-pill">
+          <span class="lang-inline-en">2. Vibe Coding on a New Project</span>
+          <span class="lang-inline-ar">2. البرمجة في مشروع جديد (Vibe Coding)</span>
+        </a>
+        <a href="#first-time-install" class="toc-pill">
+          <span class="lang-inline-en">3. First-Time Setup</span>
+          <span class="lang-inline-ar">3. التثبيت لأول مرة</span>
+        </a>
+        <a href="#manual-vs-auto" class="toc-pill">
+          <span class="lang-inline-en">4. Manual vs. Automatic</span>
+          <span class="lang-inline-ar">4. ما هو يدوي وما يعمل تلقائياً</span>
+        </a>
+        <a href="#solo-leveling" class="toc-pill">
+          <span class="lang-inline-en">5. Solo Leveling &amp; Desktop Orb</span>
+          <span class="lang-inline-ar">5. نظام الرتب (RPG) والكرة الطافية (Orb)</span>
+        </a>
+        <a href="#evolution" class="toc-pill">
+          <span class="lang-inline-en">6. How TIDOS Evolves</span>
+          <span class="lang-inline-ar">6. كيف يتطور TIDOS ويفحص نفسه</span>
+        </a>
+      </div>
+    </section>
+
+    <!-- SECTION 1: WHAT IS TIDOS -->
+    <section id="what-is-tidos">
+      <div class="section-title">
+        <div class="section-num">1</div>
+        <h2>
+          <span class="lang-inline-en">What is TIDOS? (Explain Like I'm 5)</span>
+          <span class="lang-inline-ar">ما هو TIDOS؟ (شرح مبسط كأنك مبتدئ تماماً)</span>
+        </h2>
+      </div>
+
+      <div class="card">
+        <div class="lang-block-en">
+          <p>
+            Imagine you run a software workshop. You have a <strong>Master Craftsman</strong> (a strong, expensive AI like Claude 3.7 Sonnet or Gemini 2.5 Pro) and several <strong>Free Apprentices</strong> (fast, free models like OpenCode, Gemini Flash, or local open-source LLMs).
+          </p>
+          <p style="margin-top: 10px;">
+            Normally, apprentices make silly mistakes: they edit files without reading them, delete tests, guess commands, and say "All done!" when nothing compiles.
+          </p>
+          <div class="callout green" style="margin: 18px 0;">
+            <b>TIDOS is the Workshop Foreman (or Guild Master).</b>
+            <br>
+            When you work with the Master Craftsman, TIDOS quietly watches, writing down the exact recipes, project structure, successful checks, and your human corrections. Then, when you switch to a Free Apprentice, TIDOS stands behind them, hands them the exact recipe, prevents them from touching code before reading it, and refuses to let them say "done" until tests pass.
+          </div>
+          <p>
+            The result? <strong>You can build entire features for free</strong> using weak/free models because TIDOS provides the senior guidance.
+          </p>
+        </div>
+
+        <div class="lang-block-ar">
+          <p>
+            تخيّل أنك تملك ورشة برمجية. لديك <strong>كبير المعماريين</strong> (نموذج قوي ومكلف مثل Claude 3.7 Sonnet أو Gemini 2.5 Pro) ولديك <strong>متدربون مجانيون</strong> (نماذج مجانية سريعة مثل OpenCode أو Gemini Flash أو نماذج محلية مفتوحة المصدر).
+          </p>
+          <p style="margin-top: 10px;">
+            في العادة، المتدربون يرتكبون أخطاء كارثية: يعدلون ملفات لم يقرؤوها أصلاً، يتجاهلون الاختبارات، ويدّعون أنهم «انتهوا» بينما الكود لا يعمل!
+          </p>
+          <div class="callout green" style="margin: 18px 0;">
+            <b>هنا يأتي دور TIDOS — إنه بمثابة «مدير الورشة» الخبير.</b>
+            <br>
+            حين تعمل مع النموذج القوي، يقف TIDOS بصمت ويدوّن في «دماغه» المحلي كل الخطوات الناجحة، طرق الفحص، وكيف صحّحت الأخطاء. وحين تنتقل للعمل مع النموذج المجاني، يعطيه TIDOS «دليل العمل» جاهزاً، ويمنعه من تعديل الكود قبل قراءته، ويرفض إنهاء المهمة دون تشغيل اختبارات المشروع الفعلية.
+          </div>
+          <p>
+            النتيجة؟ <strong>تستطيع برمجة مشاريعك بالكامل بنماذج مجانية 100%</strong> وبنفس جودة النماذج العملاقة، لأن TIDOS يوجّهها خطوة بخطوة.
+          </p>
+        </div>
+      </div>
+
+      <!-- THE DUAL ENGINE DIAGRAM -->
+      <div class="grid-2">
+        <div class="card" style="border-color: var(--accent-green);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h3 style="color: var(--accent-green);">
+              <span class="lang-inline-en">1. LEARN Mode (Strong Models)</span>
+              <span class="lang-inline-ar">1. نمط التعلّم (النماذج القوية)</span>
+            </h3>
+            <span class="version-tag" style="background: var(--accent-green-soft); color: var(--accent-green); border-color: var(--accent-green);">Claude 3.7, GPT-4o, Pro</span>
+          </div>
+          <p class="lang-block-en" style="color: var(--text-muted); font-size: 15px;">
+            Activated automatically when you talk to powerful models. You code naturally. In the background, TIDOS hooks capture your prompts, code diffs, passing tests, and corrections into <code>~/.tidos/brain.db</code>. It periodically synthesizes these into reusable <strong>Playbooks</strong>.
+          </p>
+          <p class="lang-block-ar" style="color: var(--text-muted); font-size: 15px;">
+            يعمل تلقائياً عند استخدام النماذج القوية. تعمل كالمعتاد تماماً. في الخلفية، يسجل TIDOS خطوات الحل الناجحة، ملفات المشروع، وأوامر الاختبار في قاعدة بيانات خاصة بجهازك <code>~/.tidos/brain.db</code> ثم يحوّلها إلى «خطط عمل» (Playbooks).
+          </p>
+        </div>
+
+        <div class="card" style="border-color: var(--accent-amber);">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <h3 style="color: var(--accent-amber);">
+              <span class="lang-inline-en">2. GUIDE Mode (Weak / Free Models)</span>
+              <span class="lang-inline-ar">2. نمط التوجيه (النماذج المجانية)</span>
+            </h3>
+            <span class="version-tag" style="background: var(--accent-amber-soft); color: var(--accent-amber); border-color: var(--accent-amber);">OpenCode, Flash, Local</span>
+          </div>
+          <p class="lang-block-en" style="color: var(--text-muted); font-size: 15px;">
+            Activated automatically for lightweight or free models. TIDOS injects a dense &lt;4KB brief containing: project architecture facts, relevant learned playbooks, strict "read-before-edit" rules, and exact verification commands. It prevents loops and stops hallucinations cold.
+          </p>
+          <p class="lang-block-ar" style="color: var(--text-muted); font-size: 15px;">
+            يعمل تلقائياً مع النماذج السريعة والمجانية. يحقن TIDOS موجزاً فائق الدقة (أقل من 4 كيلوبايت) يحتوي على: حقائق المشروع، خطط العمل المناسبة للطلب، قاعدة «اقرأ قبل التعديل»، وأمر التحقق الصارم. هذا يمنع النموذج من التخريف أو الدخول في حلقات مفرغة.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: VIBE CODING ON A NEW PROJECT -->
+    <section id="vibe-coding">
+      <div class="section-title">
+        <div class="section-num">2</div>
+        <h2>
+          <span class="lang-inline-en">How to "Vibe Code" on a Brand New Project</span>
+          <span class="lang-inline-ar">كيف تبدأ مشروعاً جديداً بأسلوب الـ Vibe Coding</span>
+        </h2>
+      </div>
+
+      <div class="card">
+        <div class="lang-block-en">
+          <p><strong>"Vibe coding"</strong> means you speak in plain human language to your AI agent, focusing on your ideas, while the AI writes the code, designs the UI, and solves bugs. With TIDOS v5.4+, you never need to manually setup git submodules or copy files into your new project!</p>
+        </div>
+        <div class="lang-block-ar">
+          <p><strong>البرمجة بأسلوب الـ Vibe Coding</strong> تعني أن تتحدث باللغة الطبيعية مع الذكاء الاصطناعي، تركز فقط على أفكارك وما تريده، بينما يتولى الذكاء الاصطناعي كتابة الكود وحل المشاكل. مع إصدار TIDOS v5.4+، لم تعد بحاجة لنسخ ملفات أو عمل submodules داخل كل مشروع جديد!</p>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <ul class="step-list">
+            <li class="step-item">
+              <div class="step-badge">1</div>
+              <div class="step-content">
+                <h4>
+                  <span class="lang-inline-en">Create your new folder and open your AI tool</span>
+                  <span class="lang-inline-ar">أنشئ مجلد مشروعك الجديد وافتح أداتك المفضلة</span>
+                </h4>
+                <p class="lang-block-en">Create any empty folder anywhere (e.g. <code>mkdir my-cool-app; cd my-cool-app</code>) and open it in Antigravity, OpenCode, Claude Code, Cursor, or VS Code.</p>
+                <p class="lang-block-ar">أنشئ مجلداً فارغاً في أي مكان تريده وافتحه داخل Antigravity أو OpenCode أو Claude Code أو Cursor أو VS Code.</p>
+              </div>
+            </li>
+
+            <li class="step-item">
+              <div class="step-badge">2</div>
+              <div class="step-content">
+                <h4>
+                  <span class="lang-inline-en">Start TIDOS (Just type <code>/tidos-start</code> or <code>START TIDOS</code>)</span>
+                  <span class="lang-inline-ar">شغّل TIDOS (فقط اكتب <code>/tidos-start</code> أو <code>START TIDOS</code>)</span>
+                </h4>
+                <p class="lang-block-en">In your chat window, type <code>/tidos-start</code> (or if your tool is already connected via Tool Scout MCP, it boots automatically!). TIDOS detects your model tier, binds to your project directory, checks for learned playbooks, and pops up the desktop Orb.</p>
+                <p class="lang-block-ar">في نافذة المحادثة، اكتب <code>/tidos-start</code> (وإذا كانت أداتك متصلة مسبقاً عبر Tool Scout، سيبدأ TIDOS تلقائياً دون كتابة أي شيء!). يتعرف TIDOS على النموذج ومسار المشروع، ويطلق «الكرة الطافية» (Orb) على شاشتك.</p>
+              </div>
+            </li>
+
+            <li class="step-item">
+              <div class="step-badge">3</div>
+              <div class="step-content">
+                <h4>
+                  <span class="lang-inline-en">Vibe Code with single-request focus</span>
+                  <span class="lang-inline-ar">اكتب طلباتك باللغة الطبيعية واستمتع بالبرمجة</span>
+                </h4>
+                <p class="lang-block-en">
+                  Ask what you want: <em>"Build a responsive landing page with Tailwind and a dark mode toggle"</em> or <em>"/tidos add Google Auth login"</em>.
+                  <br>
+                  TIDOS ensures the model creates tests or validation steps, runs them, and refuses to mark the task done until the verification passes.
+                </p>
+                <p class="lang-block-ar">
+                  اطلب ما تريده بكل بساطة: <em>«ابنِ لي صفحة هبوط متجاوبة باستخدام Tailwind مع زر للوضع الليلي»</em> أو <em>«/tidos أضف تسجيل الدخول عبر Google»</em>.
+                  <br>
+                  يتكفل TIDOS بإلزام النموذج بفحص الكود والتأكد من عمله قبل إخبارك بالانتهاء.
+                </p>
+              </div>
+            </li>
+
+            <li class="step-item">
+              <div class="step-badge">4</div>
+              <div class="step-content">
+                <h4>
+                  <span class="lang-inline-en">Leave a tip for weaker models (Optional)</span>
+                  <span class="lang-inline-ar">اترك نصيحة للنماذج الأضعف عند الحاجة (اختياري)</span>
+                </h4>
+                <p class="lang-block-en">If you just solved a tricky bug with a strong model, type <code>/tidos-note always run npm run build before tests in this repo</code>. TIDOS saves this into project playbooks so future free models will never make that mistake!</p>
+                <p class="lang-block-ar">إذا حللت مشكلة معقدة مع نموذج قوي، اكتب <code>/tidos-note شغّل دائماً npm run build قبل الاختبارات في هذا المشروع</code>. يحفظ TIDOS هذه النصيحة لتقرأها النماذج المجانية مستقبلاً.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: FIRST TIME INSTALLATION -->
+    <section id="first-time-install">
+      <div class="section-title">
+        <div class="section-num">3</div>
+        <h2>
+          <span class="lang-inline-en">How TIDOS is Installed for the First Time</span>
+          <span class="lang-inline-ar">كيفية تثبيت TIDOS لأول مرة على جهازك</span>
+        </h2>
+      </div>
+
+      <div class="card">
+        <div class="lang-block-en">
+          <p>
+            Unlike typical tools that you must reinstall in every project, <strong>TIDOS installs ONCE per computer</strong> (located at <code>D:\work\Dev\TIDOS</code> on your machine) and stores its brain globally in your user directory (<code>C:\Users\&lt;You&gt;\.tidos\</code>).
+          </p>
+        </div>
+        <div class="lang-block-ar">
+          <p>
+            على عكس الأدوات التقليدية، <strong>يتم تثبيت TIDOS مرة واحدة فقط على جهاز الكمبيوتر</strong> (موجود على جهازك في <code>D:\work\Dev\TIDOS</code>) ويخزن «دماغه» ومعلوماته العامة في مجلد المستخدم الخاص بك (<code>~/.tidos/</code>).
+          </p>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <h4 style="margin-bottom: 10px;">
+            <span class="lang-inline-en">Connecting TIDOS to Your AI Tools (One Click in Tool Scout):</span>
+            <span class="lang-inline-ar">ربط TIDOS بأدوات الذكاء الاصطناعي (بنقرة واحدة في Tool Scout):</span>
+          </h4>
+
+          <div class="table-container">
+            <table>
+              <thead>
+                <tr>
+                  <th><span class="lang-inline-en">Tool</span><span class="lang-inline-ar">الأداة</span></th>
+                  <th><span class="lang-inline-en">How TIDOS Integrates</span><span class="lang-inline-ar">كيف يتصل TIDOS</span></th>
+                  <th><span class="lang-inline-en">What You Need to Do</span><span class="lang-inline-ar">ماذا تفعل أنت</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Antigravity / Gemini CLI</b></td>
+                  <td>MCP Config (<code>mcp_config.json</code>) + Global Skills (<code>.gemini/config/skills/</code>)</td>
+                  <td><span class="lang-inline-en">Already connected! Commands like <code>/tidos</code>, <code>/tidoszit</code> are ready.</span><span class="lang-inline-ar">متصل بالفعل! الأوامر مثل <code>/tidos</code> و <code>/tidoszit</code> جاهزة.</span></td>
+                </tr>
+                <tr>
+                  <td><b>OpenCode</b></td>
+                  <td>Config (<code>~/.config/opencode/opencode.json</code>) + Rules (<code>AGENTS.md</code>)</td>
+                  <td><span class="lang-inline-en">Click "Connect" in <code>/TIDOSZIT</code> → Tool Scout tab, or run <code>python tidos_session wire --tool opencode</code>.</span><span class="lang-inline-ar">انقر Connect في تبويب Tool Scout بمركز التحكم، أو شغّل الأمر البرمجي.</span></td>
+                </tr>
+                <tr>
+                  <td><b>Claude Code</b></td>
+                  <td>Native Plugin &amp; User Commands (<code>~/.claude/commands/</code>)</td>
+                  <td><span class="lang-inline-en">Installed automatically; provides <code>/TIDOSZIT</code>, <code>/tidos</code>, hooks.</span><span class="lang-inline-ar">مثبت تلقائياً؛ يوفر كافة أوامر / والـ hooks.</span></td>
+                </tr>
+                <tr>
+                  <td><b>VS Code + Copilot / Cline</b></td>
+                  <td>MCP Servers (<code>~/.copilot/mcp-config.json</code>, <code>cline_mcp_settings.json</code>)</td>
+                  <td><span class="lang-inline-en">Connect with 1-click in Tool Scout; restart the editor once.</span><span class="lang-inline-ar">اتصال بنقرة واحدة عبر Tool Scout ثم أعد تشغيل المحرر.</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: MANUAL VS AUTOMATIC -->
+    <section id="manual-vs-auto">
+      <div class="section-title">
+        <div class="section-num">4</div>
+        <h2>
+          <span class="lang-inline-en">Developer View: What is Manual vs. What is Automatic?</span>
+          <span class="lang-inline-ar">من منظور المطور: ما الذي يحدث تلقائياً وما الذي يتطلب تدخلك؟</span>
+        </h2>
+      </div>
+
+      <div class="grid-2">
+        <!-- AUTOMATIC -->
+        <div class="card" style="border-left: 4px solid var(--accent-green);">
+          <h3 style="color: var(--accent-green); margin-bottom: 16px;">
+            <span class="lang-inline-en">⚡ 100% Fully Automatic</span>
+            <span class="lang-inline-ar">⚡ يعمل تلقائياً بالكامل (بدون أي تدخل)</span>
+          </h3>
+
+          <ul style="padding-inline-start: 20px; color: var(--text-muted); font-size: 15px; line-height: 1.8;">
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Session &amp; Trace Recording:</span>
+                <span class="lang-inline-ar">تسجيل الجلسات والآثار:</span>
+              </strong>
+              <span class="lang-inline-en">Every prompt, file edited, check executed, and fix is recorded in <code>~/.tidos/brain.db</code>.</span>
+              <span class="lang-inline-ar">كل أمر، تعديل ملف، واختبار يتم تسجيله تلقائياً في قاعدة البيانات المحلية.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Privacy &amp; Secret Redaction:</span>
+                <span class="lang-inline-ar">تنقية الأسرار والخصوصية:</span>
+              </strong>
+              <span class="lang-inline-en">Passwords, tokens, local paths, emails, and IPs are scrubbed before storage.</span>
+              <span class="lang-inline-ar">يتم حجب المفاتيح السرية والمسارات والبريد الإلكتروني تلقائياً قبل حفظ أي بيانات.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Model Tier Detection:</span>
+                <span class="lang-inline-ar">التعرف على فئة النموذج:</span>
+              </strong>
+              <span class="lang-inline-en">TIDOS knows if your current model is strong or weak, picking LEARN or GUIDE mode automatically.</span>
+              <span class="lang-inline-ar">يعرف TIDOS نوع النموذج ويختار نمط التعلّم أو التوجيه تلقائياً.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Playbook Distillation:</span>
+                <span class="lang-inline-ar">استخلاص خطط العمل (Distillation):</span>
+              </strong>
+              <span class="lang-inline-en">Distills successful workflows into markdown playbooks in <code>~/.tidos/playbooks/</code>.</span>
+              <span class="lang-inline-ar">يستخرج الإجراءات الناجحة المتكررة ويحولها إلى ملفات توجيه تلقائياً.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Read-Before-Edit &amp; Check Enforcement:</span>
+                <span class="lang-inline-ar">فرض القراءة قبل التعديل والفحص الإلزامي:</span>
+              </strong>
+              <span class="lang-inline-en">Forces weak models to inspect target files first and run checks before completion.</span>
+              <span class="lang-inline-ar">يلزم النماذج الضعيفة بقراءة الملفات وتشغيل الاختبارات قبل إعلان الانتهاء.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Safe Self-Updates for Patches (v5.4+):</span>
+                <span class="lang-inline-ar">التحديث التلقائي الآمن للترقيعات:</span>
+              </strong>
+              <span class="lang-inline-en">Tests patch releases (e.g. v5.4.1) in an isolated Git worktree; applies them if all tests pass.</span>
+              <span class="lang-inline-ar">يختبر التحديثات الفرعية في فرع معزول ويطبقها تلقائياً إذا نجحت الاختبارات.</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- MANUAL -->
+        <div class="card" style="border-left: 4px solid var(--accent-blue);">
+          <h3 style="color: var(--accent-blue); margin-bottom: 16px;">
+            <span class="lang-inline-en">🛡️ Manual / Requires Your Decision</span>
+            <span class="lang-inline-ar">🛡️ يدوي / يتطلب قرارك وموافقتك</span>
+          </h3>
+
+          <ul style="padding-inline-start: 20px; color: var(--text-muted); font-size: 15px; line-height: 1.8;">
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">First-Time Tool Connection:</span>
+                <span class="lang-inline-ar">ربط الأدوات لأول مرة:</span>
+              </strong>
+              <span class="lang-inline-en">You click "Connect" in Tool Scout to wire a new editor (e.g. OpenCode or VS Code).</span>
+              <span class="lang-inline-ar">تقوم بالنقر على زر Connect في تبويب Tool Scout لربط محرر جديد.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Major/Minor Releases Approval:</span>
+                <span class="lang-inline-ar">الموافقة على التحديثات الكبيرة:</span>
+              </strong>
+              <span class="lang-inline-en">Minor or major versions (e.g., v5.5 or v6.0) notify you and wait for your explicit click.</span>
+              <span class="lang-inline-ar">الترقيات الكبيرة تنتظر نقرتك وموافقتك الصريحة بعد مراجعة الميزات.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Autopilot &amp; Tool Install Switches:</span>
+                <span class="lang-inline-ar">مفاتيح الأمان الحساسة:</span>
+              </strong>
+              <span class="lang-inline-en">Features like unattended autonomous jobs (<code>autopilot</code>) and CLI installs (<code>tool_install</code>) are OFF by default until you toggle them.</span>
+              <span class="lang-inline-ar">ميزات مثل تشغيل المهام بالخلفية وتثبيت أدوات النظام تكون مغلقة حتى تفتحها بنفسك.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">Evolution &amp; Improvement Proposals:</span>
+                <span class="lang-inline-ar">قبول مقترحات التطوير:</span>
+              </strong>
+              <span class="lang-inline-en">When TIDOS invents a new specialized agent or identifies a broken pattern, it files a proposal in <code>/TIDOSZIT</code> for you to Accept/Reject.</span>
+              <span class="lang-inline-ar">عندما يقترح TIDOS إنشاء وكيل مخصص جديد، يقدمه لك كمسودة لتقبله أو ترفضه.</span>
+            </li>
+            <li>
+              <strong style="color: var(--text-main);">
+                <span class="lang-inline-en">One-Click Undo:</span>
+                <span class="lang-inline-ar">التراجع بنقرة واحدة (Undo):</span>
+              </strong>
+              <span class="lang-inline-en">Any automatic action logged in the Action Journal can be instantly rolled back with an Undo button.</span>
+              <span class="lang-inline-ar">أي إجراء نفذه TIDOS يتم تسجيله في سجل الحركات ويمكن التراجع عنه بنقرة واحدة.</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: SOLO LEVELING & ORB -->
+    <section id="solo-leveling">
+      <div class="section-title">
+        <div class="section-num">5</div>
+        <h2>
+          <span class="lang-inline-en">The "Solo Leveling" System &amp; Desktop Orb</span>
+          <span class="lang-inline-ar">نظام الرتب (Solo Leveling) والكرة الطافية على سطح المكتب</span>
+        </h2>
+      </div>
+
+      <div class="card">
+        <div class="lang-block-en">
+          <p>
+            TIDOS is gamified with a <strong>Solo Leveling</strong> progression system. You don't gain XP from vanity metrics; you gain XP only when <strong>verified tasks pass real project checks on the first attempt</strong>! If you have to correct the AI repeatedly, XP is deducted.
+          </p>
+        </div>
+        <div class="lang-block-ar">
+          <p>
+            يحتوي TIDOS على نظام تقدم تفاعلي مستوحى من عالم <strong>Solo Leveling</strong>. لا تحصل على نقاط الخبرة (XP) جزافاً، بل تكسبها فقط عندما <strong>تنجح المهمة وتجتاز اختبارات المشروع الحقيقية من أول محاولة</strong>! وإذا قمت بتصحيح الذكاء الاصطناعي بسبب أخطائه، تُخصم نقاط.
+          </p>
+        </div>
+
+        <!-- RANKS -->
+        <div class="rank-grid">
+          <div class="rank-card E">
+            <span class="rank-letter">E</span>
+            <div class="rank-desc"><span class="lang-inline-en">Apprentice</span><span class="lang-inline-ar">مبتدئ</span></div>
+          </div>
+          <div class="rank-card D">
+            <span class="rank-letter">D</span>
+            <div class="rank-desc"><span class="lang-inline-en">Scout</span><span class="lang-inline-ar">مستكشف</span></div>
+          </div>
+          <div class="rank-card C">
+            <span class="rank-letter">C</span>
+            <div class="rank-desc"><span class="lang-inline-en">Specialist</span><span class="lang-inline-ar">مختص</span></div>
+          </div>
+          <div class="rank-card B">
+            <span class="rank-letter">B</span>
+            <div class="rank-desc"><span class="lang-inline-en">Architect</span><span class="lang-inline-ar">معماري</span></div>
+          </div>
+          <div class="rank-card A">
+            <span class="rank-letter">A</span>
+            <div class="rank-desc"><span class="lang-inline-en">Commander</span><span class="lang-inline-ar">قائد</span></div>
+          </div>
+          <div class="rank-card S">
+            <span class="rank-letter">S</span>
+            <div class="rank-desc"><span class="lang-inline-en">Monarch</span><span class="lang-inline-ar">العاهل (Monarch)</span></div>
+          </div>
+        </div>
+
+        <div class="callout purple" style="margin-top: 20px;">
+          <h4 style="color: var(--accent-purple); margin-bottom: 6px;">
+            <span class="lang-inline-en">🔮 The Floating Desktop Orb (New in v5.4!)</span>
+            <span class="lang-inline-ar">🔮 الكرة الطافية على سطح المكتب (جديد في v5.4)</span>
+          </h4>
+          <p class="lang-block-en" style="font-size: 15px;">
+            Whenever you run <code>START TIDOS</code>, a sleek floating orb appears on your desktop. It displays your current Rank, Level, and XP ring. Drag it anywhere you like. Clicking it opens a 4-tab HUD:
+            <strong>Journey</strong> (stats &amp; 14-day XP chart), <strong>Evolution</strong> (unlocked subagents &amp; proposals), <strong>Solutions</strong> (cleared tasks), and <strong>Next Moves</strong> (daily quests).
+          </p>
+          <p class="lang-block-ar" style="font-size: 15px;">
+            عند تشغيل <code>START TIDOS</code>، تظهر كرة شفافة طافية على سطح مكتبك. تعرض رتبتك الحالية، مستواك، وحلقة الـ XP. يمكنك سحبها لأي زاوية تفضلها. عند النقر عليها تُفتح لوحة تحكم سريعة:
+            <strong>الرحلة (Journey)</strong>، <strong>التطور (Evolution)</strong>، <strong>الحلول (Solutions)</strong>، و <strong>الخطوات التالية (Next Moves)</strong>.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: HOW TIDOS EVOLVES -->
+    <section id="evolution">
+      <div class="section-title">
+        <div class="section-num">6</div>
+        <h2>
+          <span class="lang-inline-en">How TIDOS Evolves &amp; Tests Itself (Evals / Dungeons)</span>
+          <span class="lang-inline-ar">كيف يطور TIDOS نفسه ويختبر قدراته (الزنازين / Dungeons)</span>
+        </h2>
+      </div>
+
+      <div class="card">
+        <div class="lang-block-en">
+          <p>How do we know TIDOS actually makes models smarter instead of just adding noise?</p>
+          <p style="margin-top: 10px;">
+            TIDOS includes <strong>30 verified coding challenge tasks ("Dungeons")</strong> spanning Python, React, Go, and Rust. Every dungeon has a strict test suite that fails completely untouched, and passes only when solved correctly.
+          </p>
+          <div class="table-container" style="margin-top: 14px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>Mechanism</th>
+                  <th>What it Does</th>
+                  <th>Safety Guarantee</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>Dungeon Benchmark</b></td>
+                  <td>Tests weak models with vs. without TIDOS guidance.</td>
+                  <td>Mathematical proof of performance improvement before any rule is kept.</td>
+                </tr>
+                <tr>
+                  <td><b>Graduated Trust</b></td>
+                  <td>Every capability starts in "Observe" mode, graduates to "Propose", then "Act with Undo".</td>
+                  <td>Nothing gets automatic rights without earning them through successful actions.</td>
+                </tr>
+                <tr>
+                  <td><b>Daily Diagnose</b></td>
+                  <td>Inspects failed checks, repeated corrections, and tool errors once a day.</td>
+                  <td>Files clear proposals with baseline metrics; never auto-applies without consent.</td>
+                </tr>
+                <tr>
+                  <td><b>Isolated Self-Update</b></td>
+                  <td>Clones updates to a separate Git worktree and runs all tests before upgrading.</td>
+                  <td>Zero chance of a broken release crashing your active environment; instant 1-click rollback.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="lang-block-ar">
+          <p>كيف نتأكد من أن TIDOS يجعل النماذج أذكى بالفعل بدلاً من إضاعة الوقت؟</p>
+          <p style="margin-top: 10px;">
+            يحتوي TIDOS على <strong>30 مهمة برمجية موثقة ومعيارية تسمى «الزنازين» (Dungeons)</strong> تشمل Python و React و Go و Rust. كل زنزانة تفشل بالكامل قبل التعديل، ولا تنجح إلا بحل الكود الصحيح واجتياز الفحص.
+          </p>
+          <div class="table-container" style="margin-top: 14px;">
+            <table>
+              <thead>
+                <tr>
+                  <th>الآلية</th>
+                  <th>ماذا تفعل</th>
+                  <th>ضمان الأمان</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><b>اختبارات الزنازين (Dungeons)</b></td>
+                  <td>تقارن أداء النموذج المجاني بمفرده مقارنة بأدائه مع توجيه TIDOS.</td>
+                  <td>إثبات رياضي قاطع لزيادة نسبة النجاح قبل اعتماد أي قاعدة جديدة.</td>
+                </tr>
+                <tr>
+                  <td><b>الثقة المتدرجة (Graduated Trust)</b></td>
+                  <td>تبدأ كل ميزة بمرحلة «المراقبة»، ثم «الاقتراح»، ثم «التنفيذ مع إمكانية التراجع».</td>
+                  <td>لا يحصل أي نظام تلقائي على صلاحيات دون إثبات جدارته عبر أدلة حقيقية.</td>
+                </tr>
+                <tr>
+                  <td><b>التشخيص اليومي (Diagnose)</b></td>
+                  <td>يفحص الأخطاء المتكررة وأسباب فشل المهام مرة واحدة كل يوم.</td>
+                  <td>يقدم لك تقريراً بمقترحات التحسين مع الأرقام، ولا يفرض أي تعديل.</td>
+                </tr>
+                <tr>
+                  <td><b>التحديث المعزول والآمن</b></td>
+                  <td>ينسخ التحديث إلى بيئة عمل معزولة (Git worktree) ويختبره بالكامل قبل اعتماده.</td>
+                  <td>استحالة تعطل بيئة عملك بسبب تحديث؛ مع زر تراجع فوري (Rollback) بنقرة واحدة.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: QUICK COMMAND CHEAT SHEET -->
+    <section id="cheatsheet">
+      <div class="section-title">
+        <div class="section-num">7</div>
+        <h2>
+          <span class="lang-inline-en">Quick Command Cheat Sheet</span>
+          <span class="lang-inline-ar">دليل الأوامر السريع (Cheat Sheet)</span>
+        </h2>
+      </div>
+
+      <div class="card">
+        <div class="lang-block-en">
+          <p>All slash commands work inside your AI chat (Antigravity, Claude Code, OpenCode):</p>
+        </div>
+        <div class="lang-block-ar">
+          <p>جميع أوامر <code>/</code> تعمل مباشرة داخل محادثة الذكاء الاصطناعي (Antigravity أو Claude Code أو OpenCode):</p>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Command</th>
+                <th><span class="lang-inline-en">What It Does</span><span class="lang-inline-ar">ما يفعله الأمر</span></th>
+                <th><span class="lang-inline-en">When to Use</span><span class="lang-inline-ar">متى تستخدمه</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>/tidos-start</code></td>
+                <td><span class="lang-inline-en">Boots TIDOS for the current project, detects model tier, shows Orb.</span><span class="lang-inline-ar">بدء TIDOS في المشروع الحالي والتعرف على النموذج وإظهار الكرة الطافية.</span></td>
+                <td><span class="lang-inline-en">At the start of your coding session.</span><span class="lang-inline-ar">في بداية جلسة البرمجة.</span></td>
+              </tr>
+              <tr>
+                <td><code>/tidos &lt;task&gt;</code></td>
+                <td><span class="lang-inline-en">Runs the full 7-step TIDOS loop: Plan → Read → Implement → Verify → Review → Learn.</span><span class="lang-inline-ar">تنفيذ دورة العمل الكاملة: خطة ← قراءة ← تنفيذ ← فحص ← مراجعة ← تعلّم.</span></td>
+                <td><span class="lang-inline-en">For any non-trivial coding feature or fix.</span><span class="lang-inline-ar">لأي ميزة برمجية جديدة أو إصلاح مهم.</span></td>
+              </tr>
+              <tr>
+                <td><code>/TIDOSZIT</code></td>
+                <td><span class="lang-inline-en">Launches the local owner Control Center in browser (<code>http://localhost:8767</code>).</span><span class="lang-inline-ar">فتح مركز التحكم الخاص بك في المتصفح المحلي.</span></td>
+                <td><span class="lang-inline-en">To see stats, toggle kill switches, wire tools, and check evals.</span><span class="lang-inline-ar">لمشاهدة الإحصائيات، إدارة مفاتيح الأمان، وربط الأدوات.</span></td>
+              </tr>
+              <tr>
+                <td><code>/tidos-tools</code></td>
+                <td><span class="lang-inline-en">Opens Tool Scout to inspect and connect AI tools and recipes.</span><span class="lang-inline-ar">فتح مستكشف الأدوات لفحص وربط أدوات الذكاء الاصطناعي.</span></td>
+                <td><span class="lang-inline-en">When adding a new AI assistant or linter.</span><span class="lang-inline-ar">عند إضافة محرر جديد أو أداة فحص.</span></td>
+              </tr>
+              <tr>
+                <td><code>/tidos-note &lt;advice&gt;</code></td>
+                <td><span class="lang-inline-en">Saves a permanent golden advice note for this repository.</span><span class="lang-inline-ar">حفظ نصيحة برمجية ذهبية دائمة لهذا المشروع.</span></td>
+                <td><span class="lang-inline-en">When you teach a tricky lesson you never want weak models to forget.</span><span class="lang-inline-ar">عندما تكتشف حلاً ذكياً وتريد للنماذج المجانية تذكره دائماً.</span></td>
+              </tr>
+              <tr>
+                <td><code>/tidos-status</code></td>
+                <td><span class="lang-inline-en">Prints your current Solo Leveling Rank, XP, stats, and active quests.</span><span class="lang-inline-ar">عرض رتبتك الحالية في Solo Leveling، نقاط الـ XP والمهام اليومية.</span></td>
+                <td><span class="lang-inline-en">To check your progression.</span><span class="lang-inline-ar">لمتابعة تقدمك ومستواك.</span></td>
+              </tr>
+              <tr>
+                <td><code>/tidos-help</code></td>
+                <td><span class="lang-inline-en">Lists every available command with description.</span><span class="lang-inline-ar">عرض قائمة بكافة الأوامر المتاحة مع شرحها.</span></td>
+                <td><span class="lang-inline-en">Anytime you forget a command.</span><span class="lang-inline-ar">عندما تحتاج لتذكر أمر معين.</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+      <p>
+        <span class="lang-inline-en">TIDOS v5.4.1 "Monarch" · Crafted for high-efficiency pair programming · Privacy First (Local Machine Storage Only)</span>
+        <span class="lang-inline-ar">TIDOS v5.4.1 «Monarch» · صُمم لرفع كفاءة البرمجة التشاركية بالذكاء الاصطناعي · خصوصية مطلقة (التخزين محلي بجهازك فقط)</span>
+      </p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Language Switcher
+    const langBtn = document.getElementById('langToggle');
+    let currentLang = 'en';
+
+    langBtn.addEventListener('click', () => {
+      currentLang = currentLang === 'en' ? 'ar' : 'en';
+      if (currentLang === 'ar') {
+        document.body.classList.add('lang-ar');
+        document.documentElement.setAttribute('lang', 'ar');
+        document.documentElement.setAttribute('dir', 'rtl');
+      } else {
+        document.body.classList.remove('lang-ar');
+        document.documentElement.setAttribute('lang', 'en');
+        document.documentElement.setAttribute('dir', 'ltr');
+      }
+    });
+
+    // Theme Switcher
+    const themeBtn = document.getElementById('themeToggle');
+    themeBtn.addEventListener('click', () => {
+      const currentTheme = document.documentElement.getAttribute('data-theme');
+      const nextTheme = currentTheme === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', nextTheme);
+    });
+  </script>
+</body>
+</html>
