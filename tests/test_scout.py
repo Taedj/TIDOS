@@ -154,7 +154,8 @@ class InstallTests(unittest.TestCase):
     def setUp(self):
         import hashlib
         self.tmp = tempfile.TemporaryDirectory()
-        self.zip = _zip("tool.exe", b"BINARY")
+        self.image = b"MZ fake binary"
+        self.zip = _zip("tool.exe", self.image)
         self.tools = [
             {"name": "dl", "capability": "c", "stacks": [], "repo": "o/dl", "detect": {"bin": "tool"}, "why": "w",
              "install": {"windows": "manual", "unix": "manual"},
@@ -180,6 +181,7 @@ class InstallTests(unittest.TestCase):
             mock.patch.object(scout, "vet", lambda t: {"ok": True, "version": "1.0"}),
             mock.patch.object(scout, "bin_dir", lambda: bindir),
             mock.patch.object(scout, "_ensure_user_path", lambda path: False),  # never touch the real registry
+            mock.patch.object(scout.subprocess, "run", lambda argv, **kw: mock.Mock(returncode=0, stdout="tool 1.0", stderr="")),
         ]
         for p in self.patches:
             p.start()
@@ -249,7 +251,7 @@ class InstallTests(unittest.TestCase):
         result = scout.install("dl", runner=self.runner, downloader=lambda url: self.zip)
         self.assertEqual(os.listdir(self.bindir), ["tool.exe"])   # the ../evil entry is never extracted
         with open(os.path.join(self.bindir, "tool.exe"), "rb") as f:
-            self.assertEqual(f.read(), b"BINARY")
+            self.assertEqual(f.read(), self.image)
         self.assertIn("sha256 verified", result["output"])
         self.assertEqual(self.calls, [])                          # no shell, no package manager
         self.assertTrue(scout.uninstall("dl")["ok"])
@@ -268,15 +270,17 @@ class InstallTests(unittest.TestCase):
     def test_prevet_quarantines_bad_binaries(self):
         tool = {"version": ["tool", "--version"]}
         bad = scout.prevet_binary(tool, "tool.exe", b"not a program")
-        self.assertFalse(bad["ok"])                                # does not run -> never installed
+        self.assertFalse(bad["ok"])                                # never runs: refused before any execution
+        self.assertIn("not an executable", bad["detail"])
+        image = b"MZ fake binary"
         script = "import os, sys; open('junk.txt', 'w').write('x'); print('tool 1.0')"
         with mock.patch.object(scout.subprocess, "run", lambda argv, cwd=None, **kw: (
                 open(os.path.join(cwd, "junk.txt"), "w").close(), mock.Mock(returncode=0, stdout="tool 1.0", stderr=""))[1]):
-            writer = scout.prevet_binary(tool, "tool.exe", b"x")
+            writer = scout.prevet_binary(tool, "tool.exe", image)
         self.assertFalse(writer["ok"])
         self.assertIn("wrote", writer["detail"])                   # a version check must not write files
         with mock.patch.object(scout.subprocess, "run", lambda argv, **kw: mock.Mock(returncode=0, stdout="tool 1.0", stderr="")):
-            self.assertEqual(scout.prevet_binary(tool, "tool.exe", b"x")["version"], "tool 1.0")
+            self.assertEqual(scout.prevet_binary(tool, "tool.exe", image)["version"], "tool 1.0")
 
     def test_verify_accepts_catalog_checks_only(self):
         from tidos_mcp import server as mcp

@@ -430,11 +430,46 @@ def _pip_user_scripts_on_path():
     return _ensure_user_path(scripts)
 
 
+_SEM_FAILCRITICALERRORS = 0x0001
+
+
+def _is_loadable_image(data):
+    """A quarantined download must carry this OS's image signature (PE on Windows, ELF on Unix) before prevet may run it."""
+    if os.name == "nt":
+        return data.startswith(b"MZ")
+    return data.startswith(b"\x7fELF")
+
+
+def _quiet_loader():
+    """Windows: while a quarantined image runs, keep the OS loader from raising hard-error dialogs
+    (SEM_FAILCRITICALERRORS, inherited by the child) so a corrupt image fails fast instead of waiting
+    for someone to click "Unsupported 16-Bit Application". Nothing to do elsewhere: returns no-op."""
+    if os.name != "nt":
+        return None
+    import ctypes
+    old = ctypes.c_uint32()
+
+    def restore():
+        try:
+            ctypes.windll.kernel32.SetThreadErrorMode(old.value, None)
+        except Exception:
+            pass
+
+    try:
+        if ctypes.windll.kernel32.SetThreadErrorMode(_SEM_FAILCRITICALERRORS, ctypes.byref(old)):
+            return restore
+    except Exception:
+        pass
+    return None
+
+
 def prevet_binary(tool, filename, exe_bytes, timeout=60):
     """Quarantine check BEFORE install: run the downloaded program's version command in an empty temp folder.
     Passes only if it exits 0 and writes nothing next to itself."""
     if not tool.get("version"):
         return {"ok": True, "version": "no version command", "detail": "skipped"}
+    if not _is_loadable_image(exe_bytes):
+        return {"ok": False, "version": "", "detail": "not an executable (wrong image header for this OS)"}
     with tempfile.TemporaryDirectory(prefix="tidos-prevet-") as tmp:
         exe = os.path.join(tmp, filename)
         with open(exe, "wb") as f:
@@ -443,11 +478,15 @@ def prevet_binary(tool, filename, exe_bytes, timeout=60):
             os.chmod(exe, 0o755)
         work = os.path.join(tmp, "work")
         os.makedirs(work)
+        restore = _quiet_loader()
         try:
             proc = subprocess.run([exe] + list(tool["version"][1:]), cwd=work, capture_output=True, text=True,
                                   encoding="utf-8", errors="replace", timeout=timeout, stdin=subprocess.DEVNULL)
         except (OSError, subprocess.TimeoutExpired) as e:
             return {"ok": False, "version": "", "detail": "did not run: %s" % type(e).__name__}
+        finally:
+            if restore:
+                restore()
         stray = sorted(set(os.listdir(tmp)) - {filename, "work"}) + os.listdir(work)
         out = (proc.stdout or proc.stderr).strip().splitlines()
         version = out[0][:80] if out else ""
